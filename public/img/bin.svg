@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24" height="24">
+	<path fill="#E02020" transform="translate(2 2)" d="M13.7207 0L6.2791901 0L5.2791901 3L0 3L0 5L2 5L2 20L18 20L18 5L20 5L20 3L14.7207 3L13.7207 0ZM12.6125 3L12.2792 2L7.7207098 2L7.3873801 3L12.6125 3ZM4 5L16 5L16 18L4 18L4 5Z" fill-rule="evenodd"/>
+	<path fill="#E02020" transform="translate(9 9)" d="M0 0L2 0L2 9L0 9L0 0Z"/>
+	<path fill="#E02020" transform="translate(13 9)" d="M0 0L2 0L2 9L0 9L0 0Z"/>
+</svg>
