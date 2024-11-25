@@ -34,7 +34,7 @@
 								<!--begin::Heading-->
 								<div class=" mb-11">
 									<!--begin::Title-->
-                                    <img alt="Logo" src="{{ url('img/1732202759709.jpg') }}" class="h-60px h-lg-75px">
+                                    <img alt="Logo" src="{{ url('img/logo_reangwa@5x-white@3x.png') }}" class="h-60px h-lg-75px">
                                     <br><br>
 									<h1 class="text-dark fw-bolder mb-3">Hi Administrator,</h1>
 									<!--end::Title-->
@@ -58,19 +58,19 @@
 									<!--end::Password-->
 								</div>
 								<!--end::Input group=-->
-								<!--begin::Wrapper-->
+								{{-- <!--begin::Wrapper-->
 								<div class="d-flex flex-stack flex-wrap gap-3 fs-base fw-semibold mb-8">
 									<div></div>
 									<!--begin::Link-->
 									<a href="../../demo1/dist/authentication/layouts/corporate/reset-password.html" class="link-primary">Forgot Password ?</a>
 									<!--end::Link-->
-								</div>
+								</div> --}}
 								<!--end::Wrapper-->
 								<!--begin::Submit button-->
-								<div class="d-grid mb-10">
-									<button type="submit" id="kt_sign_in_submit" class="btn btn-primary">
+								<div class="d-grid mb-10 mt-10">
+									<button type="submit" id="kt_sign_in_submit" class="btn btn-dark">
 										<!--begin::Indicator label-->
-										<span class="indicator-label">Sign In</span>
+										<span class="indicator-label">Login</span>
 										<!--end::Indicator label-->
 										<!--begin::Indicator progress-->
 										<span class="indicator-progress">Please wait...
@@ -87,13 +87,17 @@
 						<!--end::Wrapper-->
 					</div>
 					<!--end::Form-->
+                    <div class="d-flex flex-center ">
+                    <p style="color: #737576">Having trouble logging in? Reach out to Superadmin support.</p>
+                    </div>
 					<!--begin::Footer-->
-					<div class="d-flex flex-center flex-wrap px-5">
+					<div class="d-flex flex-center flex-wrap px-5 " style="border-top: 1px solid #E4E6EF; margin-top: 20px !important;">
+
+
 						<!--begin::Links-->
-						<div class="d-flex fw-semibold text-primary fs-base">
-							<a href="../../demo1/dist/pages/team.html" class="px-5" target="_blank">Terms</a>
-							<a href="../../demo1/dist/pages/pricing/column.html" class="px-5" target="_blank">Plans</a>
-							<a href="../../demo1/dist/pages/contact.html" class="px-5" target="_blank">Contact Us</a>
+						<div class="d-flex fw-semibold text-primary fs-base mt-5" >
+
+							<a class="px-5"  style="color: #737576">Elanco © 2025 vetlibrary.online All rights reserved.</a>
 						</div>
 						<!--end::Links-->
 					</div>
@@ -106,7 +110,7 @@
 					<div class="d-flex flex-column flex-center py-7 py-lg-15 px-5 px-md-15 w-100">
 						<!--end::Logo-->
 						<!--begin::Image-->
-						<img class="d-none d-lg-block mx-auto w-275px w-md-50 w-xl-500px mb-10 mb-lg-20" src="{{ url('img/1732202468708.jpg') }}" alt="" />
+						<img class="d-none d-lg-block mb-10 " src="{{ url('img/Rectangle@2x.png') }}" alt="" style="width: 100%; margin-top: auto; max-width:650px" />
 						<!--end::Image-->
 
 
