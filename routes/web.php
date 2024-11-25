@@ -13,15 +13,17 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+
 
 Route::get('logout', '\App\Http\Controllers\Auth\LoginController@logout');
 
 Auth::routes();
 
 Route::group(['middleware' => ['UserRole:superadmin|admin']], function() {
+
+    Route::get('/', function () {
+        return view('welcome');
+    });
 
     Route::get('/admin/dashboard', [App\Http\Controllers\DashboardController::class, 'index']);
     Route::get('/admin/course', [App\Http\Controllers\CourseController::class, 'index']);
