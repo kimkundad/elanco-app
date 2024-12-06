@@ -26,7 +26,7 @@ Route::group(['middleware' => ['UserRole:superadmin|admin']], function() {
     });
 
     Route::get('/admin/dashboard', [App\Http\Controllers\DashboardController::class, 'index']);
-    Route::get('/admin/course', [App\Http\Controllers\CourseController::class, 'index']);
+    Route::resource('/admin/course', App\Http\Controllers\CourseController::class);
     Route::get('/admin/quiz', [App\Http\Controllers\QuizController::class, 'index']);
     Route::get('/admin/survey', [App\Http\Controllers\SurvayController::class, 'index']);
     Route::get('/admin/members', [App\Http\Controllers\MemberController::class, 'index']);

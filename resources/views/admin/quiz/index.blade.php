@@ -91,9 +91,7 @@
                                     <input class="sorting__input" type="text" placeholder="Search">
                                 </div>
                                 <div class="sorting__actions">
-
-                                    <img src={{ url('img/2661440.png') }} style="width: 55px" />
-
+                                    <img src={{ url('img/add.svg') }} style="width: 65px" />
                                 </div>
                             </div>
                         </div>
@@ -108,6 +106,7 @@
                             <div class="products__cell">Name</div>
                             <div class="products__cell">Course Link</div>
                             <div class="products__cell">Submitted</div>
+                            <div class="products__cell"></div>
                             <div class="products__cell">Create Date</div>
                             <div class="products__cell"></div>
                         </div>
@@ -135,7 +134,9 @@
                             <div class="products__cell">
                                 <div class="products__payment">552</div>
                             </div>
-
+                            <div class="products__cell">
+                                <img src="{{ url('img/philippines.svg') }}" class="Flag_icon" />
+                            </div>
 
                             <div class="products__cell">
                                 <div class="products__payment">17 Aug 2024</div>
@@ -143,136 +144,32 @@
 
 
                             <div class="products__cell">
-                                <button class="actions__btn">
-                                    <svg class="icon icon-more">
+                                <div class="dropdown actions__btn">
+                                    <button class="dropdown-toggle">
+                                        <svg class="icon icon-more">
                                         <use xlink:href="#icon-more"></use>
                                     </svg>
-                                </button>
+                                    </button>
+                                    <div class="dropdown-menu">
+                                        <a href="#" class="dropdown-item">
+                                            <img src="{{ url('img/eye.svg') }}" class="eye_icon" />
+                                            Preview
+                                        </a>
+                                        <a href="#" class="dropdown-item">
+                                            <svg class="icon icon-edit">
+                                                <use xlink:href="#icon-edit"></use>
+                                            </svg>
+                                            Edit Quiz
+                                        </a>
+                                        <a href="#" class="dropdown-item delete">
+                                            <img src="{{ url('img/bin.svg') }}" class="eye_icon" />
+                                            Delete
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-
-                        <div class="products__row">
-                            <div class="products__cell">
-                                <div class="products__payment">2</div>
-                            </div>
-                            <div class="products__cell"><a class="products__item" href="#">
-
-                                    <div class="products__details">
-                                        <div class="products__title title">C001</div>
-
-                                    </div>
-                                </a></div>
-                            <div class="products__cell">
-                                <div class="products__details" style="max-width: 250px;">
-                                        <div class="products__info caption color-gray">A comprehensive course on
-                                            managing kidney and orthopedic
-                                            issues in animal care.</div>
-                                    </div>
-                            </div>
-                            <div class="products__cell">
-                                <div class="products__payment">3</div>
-                            </div>
-                            <div class="products__cell">
-                                <div class="products__payment">552</div>
-                            </div>
-
-
-                            <div class="products__cell">
-                                <div class="products__payment">17 Aug 2024</div>
-                            </div>
-
-
-                            <div class="products__cell">
-                                <button class="actions__btn">
-                                    <svg class="icon icon-more">
-                                        <use xlink:href="#icon-more"></use>
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-
-
-                        <div class="products__row">
-                            <div class="products__cell">
-                                <div class="products__payment">3</div>
-                            </div>
-                            <div class="products__cell"><a class="products__item" href="#">
-
-                                    <div class="products__details">
-                                        <div class="products__title title">C001</div>
-
-                                    </div>
-                                </a></div>
-                            <div class="products__cell">
-                                <div class="products__details" style="max-width: 250px;">
-                                        <div class="products__info caption color-gray">A comprehensive course on
-                                            managing kidney and orthopedic
-                                            issues in animal care.</div>
-                                    </div>
-                            </div>
-                            <div class="products__cell">
-                                <div class="products__payment">3</div>
-                            </div>
-                            <div class="products__cell">
-                                <div class="products__payment">552</div>
-                            </div>
-
-
-                            <div class="products__cell">
-                                <div class="products__payment">17 Aug 2024</div>
-                            </div>
-
-
-                            <div class="products__cell">
-                                <button class="actions__btn">
-                                    <svg class="icon icon-more">
-                                        <use xlink:href="#icon-more"></use>
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-
-
-                        <div class="products__row">
-                            <div class="products__cell">
-                                <div class="products__payment">4</div>
-                            </div>
-                            <div class="products__cell"><a class="products__item" href="#">
-
-                                    <div class="products__details">
-                                        <div class="products__title title">C001</div>
-
-                                    </div>
-                                </a></div>
-                            <div class="products__cell">
-                                <div class="products__details" style="max-width: 250px;">
-                                        <div class="products__info caption color-gray">A comprehensive course on
-                                            managing kidney and orthopedic
-                                            issues in animal care.</div>
-                                    </div>
-                            </div>
-                            <div class="products__cell">
-                                <div class="products__payment">3</div>
-                            </div>
-                            <div class="products__cell">
-                                <div class="products__payment">552</div>
-                            </div>
-
-
-                            <div class="products__cell">
-                                <div class="products__payment">17 Aug 2024</div>
-                            </div>
-
-
-                            <div class="products__cell">
-                                <button class="actions__btn">
-                                    <svg class="icon icon-more">
-                                        <use xlink:href="#icon-more"></use>
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
 
 
 

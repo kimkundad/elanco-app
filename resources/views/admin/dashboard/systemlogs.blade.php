@@ -124,7 +124,7 @@
                             </div>
                             <div class="products__cell">
                                 <a class="products__item" href="#">
-                                <img src="{{ url('img/avatars/300-1.jpg') }}" class="user_icon" />
+                                <img src="{{ url('img/philippines.svg') }}" class="Flag_icon" />
                                     <div class="products__details">
                                         <div class="products__title title pl-5" >Jacqueline Asong</div>
                                     </div>
@@ -137,60 +137,6 @@
                         </div>
 
 
-                        <div class="products__row">
-                            <div class="products__cell">
-                                <div class="products__payment">17 Aug 2024 | 05:90 AM</div>
-                            </div>
-                            <div class="products__cell">
-                                <a class="products__item" href="#">
-                                <img src="{{ url('img/avatars/300-2.jpg') }}" class="user_icon" />
-                                    <div class="products__details">
-                                        <div class="products__title title pl-5" >Jana Strassmann</div>
-                                    </div>
-                                </a>
-                            </div>
-                            <div class="products__cell">
-                                <div class="products__payment">IP 101.550.550.6 </div>
-                            </div>
-                            <div class="products__cell color-red">Successful Login</div>
-                        </div>
-
-                        <div class="products__row">
-                            <div class="products__cell">
-                                <div class="products__payment">17 Aug 2024 | 05:90 AM</div>
-                            </div>
-                            <div class="products__cell">
-                                <a class="products__item" href="#">
-                                <img src="{{ url('img/avatars/300-3.jpg') }}" class="user_icon" />
-                                    <div class="products__details">
-                                        <div class="products__title title pl-5" >Ored Sjogren</div>
-                                    </div>
-                                </a>
-                            </div>
-                            <div class="products__cell">
-                                <div class="products__payment">IP 101.550.550.6 </div>
-                            </div>
-                            <div class="products__cell color-red">Edit Courses</div>
-                        </div>
-
-
-                        <div class="products__row">
-                            <div class="products__cell">
-                                <div class="products__payment">17 Aug 2024 | 05:90 AM</div>
-                            </div>
-                            <div class="products__cell">
-                                <a class="products__item" href="#">
-                                <img src="{{ url('img/avatars/300-4.jpg') }}" class="user_icon" />
-                                    <div class="products__details">
-                                        <div class="products__title title pl-5" >Dr. Nattapon Choavanaslp</div>
-                                    </div>
-                                </a>
-                            </div>
-                            <div class="products__cell">
-                                <div class="products__payment">IP 101.550.550.6 </div>
-                            </div>
-                            <div class="products__cell color-red">Successful Logout</div>
-                        </div>
 
 
 

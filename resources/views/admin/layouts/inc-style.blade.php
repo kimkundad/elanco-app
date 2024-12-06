@@ -1,6 +1,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Poppins:ital,wght@0,500;1,500&amp;display=swap" rel="stylesheet">
 <link rel="stylesheet" media="all" href="{{ url('admin/css/app.min.css') }}">
-
+<link rel="stylesheet" media="all" href="{{ url('admin/css/style.css') }}">
     <script>
       var viewportmeta = document.querySelector('meta[name="viewport"]');
       if (viewportmeta) {

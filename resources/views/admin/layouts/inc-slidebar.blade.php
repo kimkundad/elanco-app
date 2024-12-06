@@ -120,7 +120,7 @@
                               </svg>
                           </div>
                           <div class="sidebar__text">Profile</div>
-                      </a><a class="sidebar__link" href="#">
+                      </a><a class="sidebar__link" href="{{ url('logout') }}">
                           <div class="sidebar__icon">
                               <svg class="icon icon-logout">
                                   <use xlink:href="#icon-logout"></use>
@@ -128,7 +128,7 @@
                           </div>
                           <div class="sidebar__text">Log out</div>
                       </a></div><a class="sidebar__user" href="#">
-                      <div class="sidebar__ava"><img class="sidebar__pic" src="img/ava.png" alt="" /></div>
+                      <div class="sidebar__ava"><img class="sidebar__pic" src="{{ url('admin/img/ava.png') }}" alt="" /></div>
                       <div class="sidebar__desc">
                           <div class="sidebar__man">Tam Tran</div>
                           <div class="sidebar__status caption">Free account</div>
