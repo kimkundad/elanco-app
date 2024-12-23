@@ -201,7 +201,7 @@
                     <button class="inbox__btn btn btn_white" onclick="showTab('tab2', this)">Course Detail</button>
                 </div>
 
-                <form method="POST" action="{{ url('/admin/course') }}" enctype="multipart/form-data">
+                <form method="POST" id="questionForm" action="{{ url('/admin/course') }}" enctype="multipart/form-data">
                         {{ csrf_field() }}
 
                 <div class="tab-content">
@@ -419,7 +419,7 @@
                         <div class="showFlex" style=" padding-bottom:20px">
                             <div class="itemFlex">
                                 <div id="editor-container" style="height: 320px;"></div>
-                                <textarea name="detail" id="quill-content" style="display:none;"></textarea>
+                                <textarea name="course_description" id="quill-content" style="display:none;"></textarea>
                             </div>
                             <div class="itemFlex">
                                 <p class="text-gray">What you will learn in this course</p>
@@ -435,7 +435,7 @@
                         </div>
 
                         <div class="products__more">
-                            <a class=" btn btn_green" type="submit">Save</a>
+                            <a class=" btn btn_green submit_ans" >Save</a>
                             {{-- <a class=" btn btn_green" onclick="activateTab2()">Next</a> --}}
                         </div>
                     </div>
@@ -459,6 +459,17 @@
 
 
     <script>
+
+    document.querySelector('.submit_ans').addEventListener('click', function(e) {
+            e.preventDefault(); // ป้องกันการทำงานแบบ default ของ <a>
+
+            // ดึงข้อมูลจาก QuillJS
+            var quillContent = quill.root.innerHTML;
+            document.getElementById('quill-content').value = quillContent; // ใส่ค่าใน textarea
+
+            // Submit ฟอร์ม
+            document.getElementById('questionForm').submit();
+        });
 
 
     function activateTab2() {
@@ -503,6 +514,8 @@
         const inputField = document.createElement('input');
         inputField.type = 'text';
         inputField.placeholder = 'Enter text here';
+        inputField.classList.add('choice-input'); // เพิ่ม class
+        inputField.name = 'choice[]'; // เพิ่ม name
 
         const removeBtn = document.createElement('button');
         removeBtn.classList.add('remove-btn');

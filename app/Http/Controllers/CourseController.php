@@ -9,6 +9,8 @@ use App\Models\MainCategory;
 use App\Models\SubCategory;
 use App\Models\AnimalType;
 use App\Models\quiz;
+use App\Models\itemDes;
+
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Facades\Image;
 use Illuminate\Support\Facades\DB;
@@ -66,6 +68,8 @@ class CourseController extends Controller
             'duration' => 'nullable|string',
             'url_video' => 'nullable|url',
             'id_quiz' => 'required',
+            'choice' => 'nullable|array', // Validate choice as an array
+            'choice.*' => 'nullable|string|max:255', // Validate each choice
         ]);
 
         $filename = null;
@@ -102,11 +106,23 @@ class CourseController extends Controller
             ? 'https://kimspace2.sgp1.cdn.digitaloceanspaces.com/elanco/course/' . $filename
             : null;
            $objs->course_preview = $request->course_preview;
+           $objs->course_preview = $request->course_preview;
            $objs->status = $request->status ?? 0;
            $objs->duration = $request->duration;
            $objs->url_video = $request->url_video;
            $objs->id_quiz = $request->id_quiz;
            $objs->save();
+
+           if ($request->has('choice')) {
+            foreach ($request->choice as $choice) {
+                if (!is_null($choice)) {
+                    $itemDes = new itemDes();
+                    $itemDes->course_id = $objs->id;
+                    $itemDes->detail = $choice;
+                    $itemDes->save();
+                }
+            }
+        }
 
 
            if ($request->has('countries')) {

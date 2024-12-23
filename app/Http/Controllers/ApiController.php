@@ -42,7 +42,8 @@ class ApiController extends Controller
                 },
                 'animalTypes' => function ($query) {
                     $query->select('animal_types.id', 'animal_types.name');
-                }
+                },
+                'itemDes' // เพิ่ม itemDes
             ])
             ->get()
             ->map(function ($course) {
@@ -53,6 +54,7 @@ class ApiController extends Controller
                 return [
                     'id' => $course->id,
                     'course_title' => $course->course_title,
+                    'course_description' => $course->course_description,
                     'course_preview' => $course->course_preview,
                     'duration' => $course->duration,
                     'url_video' => $course->url_video,
@@ -74,6 +76,11 @@ class ApiController extends Controller
                     'animal_types' => $course->animalTypes->map(function ($animal) {
                         return ['name' => $animal->name];
                     }),
+                    'item_des' => $course->itemDes->map(function ($item) {
+                    return [
+                        'detail' => $item->detail,
+                    ];
+                })
                 ];
             });
 
@@ -128,7 +135,8 @@ class ApiController extends Controller
                 },
                 'animalTypes' => function ($query) {
                     $query->select('animal_types.id', 'animal_types.name');
-                }
+                },
+                'itemDes' // เพิ่ม itemDes
             ])
             ->get()
             ->map(function ($course) {
@@ -138,6 +146,7 @@ class ApiController extends Controller
                 return [
                     'id' => $course->id,
                     'course_title' => $course->course_title,
+                    'course_description' => $course->course_description,
                     'course_preview' => $course->course_preview,
                     'duration' => $course->duration,
                     'url_video' => $course->url_video,
@@ -147,10 +156,23 @@ class ApiController extends Controller
                     'updated_at' => $course->updated_at,
                     'id_quiz' => $course->id_quiz,
                     'thumbnail' => $course->thumbnail,
-                    'countries' => $course->countries->map(fn($country) => ['name' => $country->name]),
-                    'main_categories' => $course->mainCategories->map(fn($category) => ['name' => $category->name]),
-                    'sub_categories' => $course->subCategories->map(fn($subcategory) => ['name' => $subcategory->name]),
-                    'animal_types' => $course->animalTypes->map(fn($animal) => ['name' => $animal->name]),
+                    'countries' => $course->countries->map(function ($country) {
+                        return ['name' => $country->name];
+                    }),
+                    'main_categories' => $course->mainCategories->map(function ($category) {
+                        return ['name' => $category->name];
+                    }),
+                    'sub_categories' => $course->subCategories->map(function ($subcategory) {
+                        return ['name' => $subcategory->name];
+                    }),
+                    'animal_types' => $course->animalTypes->map(function ($animal) {
+                        return ['name' => $animal->name];
+                    }),
+                    'item_des' => $course->itemDes->map(function ($item) {
+                    return [
+                        'detail' => $item->detail,
+                    ];
+                })
                 ];
             });
 
@@ -192,7 +214,7 @@ class ApiController extends Controller
             })
             ->orderBy('created_at', 'desc') // เรียงลำดับจากใหม่ล่าสุด
             ->take(12) // จำกัด 12 รายการ
-            ->with(['countries', 'mainCategories', 'subCategories', 'animalTypes'])
+            ->with(['countries', 'mainCategories', 'subCategories', 'animalTypes', 'itemDes'])
             ->get();
 
             // จัดการข้อมูลก่อนส่งกลับ
@@ -200,6 +222,7 @@ class ApiController extends Controller
                 return [
                     'id' => $course->id,
                     'course_title' => $course->course_title,
+                    'course_description' => $course->course_description,
                     'course_preview' => $course->course_preview,
                     'duration' => $course->duration,
                     'url_video' => $course->url_video,
@@ -207,11 +230,25 @@ class ApiController extends Controller
                     'ratting' => number_format($course->ratting,1),
                     'created_at' => $course->created_at,
                     'updated_at' => $course->updated_at,
-                    'thumbnail' => $course->course_img,
-                    'countries' => $course->countries->map(fn($country) => ['name' => $country->name]),
-                    'main_categories' => $course->mainCategories->map(fn($mainCategory) => ['name' => $mainCategory->name]),
-                    'sub_categories' => $course->subCategories->map(fn($subCategory) => ['name' => $subCategory->name]),
-                    'animal_types' => $course->animalTypes->map(fn($animalType) => ['name' => $animalType->name]),
+                    'id_quiz' => $course->id_quiz,
+                    'thumbnail' => $course->thumbnail,
+                    'countries' => $course->countries->map(function ($country) {
+                        return ['name' => $country->name];
+                    }),
+                    'main_categories' => $course->mainCategories->map(function ($category) {
+                        return ['name' => $category->name];
+                    }),
+                    'sub_categories' => $course->subCategories->map(function ($subcategory) {
+                        return ['name' => $subcategory->name];
+                    }),
+                    'animal_types' => $course->animalTypes->map(function ($animal) {
+                        return ['name' => $animal->name];
+                    }),
+                    'item_des' => $course->itemDes->map(function ($item) {
+                    return [
+                        'detail' => $item->detail,
+                    ];
+                })
                 ];
             });
 
@@ -252,7 +289,7 @@ class ApiController extends Controller
             ->whereHas('countries', function ($query) use ($userCountryId) {
                 $query->where('country_id', $userCountryId);
             })
-            ->with(['countries', 'mainCategories', 'subCategories', 'animalTypes'])
+            ->with(['countries', 'mainCategories', 'subCategories', 'animalTypes', 'itemDes'])
             ->get();
 
         // จัดรูปแบบข้อมูลสำหรับการส่งกลับ
@@ -260,6 +297,7 @@ class ApiController extends Controller
             return [
                 'id' => $course->id,
                 'course_title' => $course->course_title,
+                'course_description' => $course->course_description,
                 'course_preview' => $course->course_preview,
                 'duration' => $course->duration,
                 'url_video' => $course->url_video,
@@ -267,11 +305,25 @@ class ApiController extends Controller
                 'ratting' => number_format($course->ratting,1),
                 'created_at' => $course->created_at,
                 'updated_at' => $course->updated_at,
-                'thumbnail' => $course->course_img,
-                'countries' => $course->countries->map(fn($country) => ['name' => $country->name]),
-                'main_categories' => $course->mainCategories->map(fn($mainCategory) => ['name' => $mainCategory->name]),
-                'sub_categories' => $course->subCategories->map(fn($subCategory) => ['name' => $subCategory->name]),
-                'animal_types' => $course->animalTypes->map(fn($animalType) => ['name' => $animalType->name]),
+                'id_quiz' => $course->id_quiz,
+                'thumbnail' => $course->thumbnail,
+                'countries' => $course->countries->map(function ($country) {
+                    return ['name' => $country->name];
+                }),
+                'main_categories' => $course->mainCategories->map(function ($category) {
+                    return ['name' => $category->name];
+                }),
+                'sub_categories' => $course->subCategories->map(function ($subcategory) {
+                    return ['name' => $subcategory->name];
+                }),
+                'animal_types' => $course->animalTypes->map(function ($animal) {
+                    return ['name' => $animal->name];
+                }),
+                'item_des' => $course->itemDes->map(function ($item) {
+                return [
+                    'detail' => $item->detail,
+                ];
+            })
             ];
         });
 
@@ -307,12 +359,13 @@ class ApiController extends Controller
             $user = JWTAuth::parseToken()->authenticate();
 
             // ค้นหา Course โดย ID พร้อมโหลดความสัมพันธ์
-            $course = Course::with(['countries', 'mainCategories', 'subCategories', 'animalTypes'])->findOrFail($id);
+            $course = Course::with(['countries', 'mainCategories', 'subCategories', 'animalTypes', 'itemDes'])->findOrFail($id);
 
             // จัดรูปแบบข้อมูลสำหรับการส่งกลับ
             $formattedCourse = [
                 'id' => $course->id,
                 'course_title' => $course->course_title,
+                'course_description' => $course->course_description,
                 'course_preview' => $course->course_preview,
                 'duration' => $course->duration,
                 'url_video' => $course->url_video,
@@ -325,6 +378,9 @@ class ApiController extends Controller
                 'main_categories' => $course->mainCategories->map(fn($mainCategory) => ['name' => $mainCategory->name]),
                 'sub_categories' => $course->subCategories->map(fn($subCategory) => ['name' => $subCategory->name]),
                 'animal_types' => $course->animalTypes->map(fn($animalType) => ['name' => $animalType->name]),
+                'item_des' => $course->itemDes->map(fn($item) => [
+                'detail' => $item->detail
+            ]), // จัดรูปแบบ item_des
             ];
 
             // ส่งข้อมูล

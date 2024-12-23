@@ -34,4 +34,9 @@ class course extends Model
         return $this->belongsToMany(AnimalType::class, 'course_animal_type');
     }
 
+    public function itemDes()
+    {
+        return $this->hasMany(itemDes::class, 'course_id');
+    }
+
 }
