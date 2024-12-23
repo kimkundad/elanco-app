@@ -172,87 +172,91 @@
                             <div class="products__cell"></div>
                             <div class="products__cell"></div>
                         </div>
-                        <div class="products__row">
-                            <div class="products__cell">
-                                <div class="products__payment">1</div>
-                            </div>
-                            <div class="products__cell"><a class="products__item" href="#">
-                                    <div class="products__preview"><img class="products__pic"
-                                            src="{{ url('img/Rectangle Copy@2x.png') }}" alt=""></div>
-                                    <div class="products__details" style="max-width: 250px;">
-                                        <div class="products__title title">C001</div>
-                                        <div class="products__info caption color-gray">A comprehensive course on
-                                            managing kidney and orthopedic
-                                            issues in animal care.</div>
-                                    </div>
-                                </a></div>
-                            <div class="products__cell">
-                                <div class="products__payment">4.8</div>
-                            </div>
-                            <div class="products__cell">
-                                <div class="products__payment">578</div>
-                            </div>
-                            <div class="products__cell">
-                                <img src="{{ url('img/philippines.svg') }}" class="Flag_icon" />
-                            </div>
-                            <div class="products__cell">
-                                <div class="products__status caption bg-green">Orthopaedic</div>
-                            </div>
 
-                            <div class="products__cell">
-                                <div class="products__payment">3</div>
-                            </div>
-                            <div class="products__cell">
-                                <div class="products__payment">17 Aug 2024</div>
-                            </div>
-                            <div class="products__cell">
-                                <div style="display: flex">
-                                    <button class="actions__btn">
-                                        <svg class="icon icon-comment">
-                                            <use xlink:href="#icon-comment"></use>
-                                        </svg>
-                                    </button>
-                                    <button class="actions__btn">
-                                        <svg class="icon icon-star">
-                                            <use xlink:href="#icon-star"></use>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="products__cell">
-                                <label class="switch switch_theme ">
-                                    <input class="switch__input" type="checkbox"><span class="switch__in"
-                                        style="    padding-left: 0px;"><span class="switch__box"
-                                            style="width: 44px;"></span><span class="switch__icon">
-                                        </span></span>
-                                </label>
-                            </div>
-                            <div class="products__cell">
-                                <div class="dropdown actions__btn">
-                                    <button class="dropdown-toggle">
-                                        <svg class="icon icon-more">
-                                        <use xlink:href="#icon-more"></use>
-                                    </svg>
-                                    </button>
-                                    <div class="dropdown-menu">
-                                        <a href="#popup-settings" class="dropdown-item js-popup-open" data-effect="mfp-zoom-in">
-                                            <img src="{{ url('img/eye.svg') }}" class="eye_icon" />
-                                            Preview
-                                        </a>
-                                        <a href="#" class="dropdown-item">
-                                            <svg class="icon icon-edit">
-                                                <use xlink:href="#icon-edit"></use>
+                        @if($objs)
+                            @foreach($objs as $u)
+                                <div class="products__row">
+                                    <div class="products__cell">
+                                        <div class="products__payment">1</div>
+                                    </div>
+                                    <div class="products__cell"><a class="products__item" href="#">
+                                            <div class="products__preview"><img class="products__pic"
+                                                    src="{{ $u->course_img }}" alt=""></div>
+                                            <div class="products__details" style="max-width: 250px;">
+                                                <div class="products__title title">C001</div>
+                                                <div class="products__info caption color-gray">{{ $u->course_title }}</div>
+                                            </div>
+                                        </a></div>
+                                    <div class="products__cell">
+                                        <div class="products__payment">0.0</div>
+                                    </div>
+                                    <div class="products__cell">
+                                        <div class="products__payment">0</div>
+                                    </div>
+                                    <div class="products__cell">
+                                        <img src="{{ url('img/philippines.svg') }}" class="Flag_icon" />
+                                    </div>
+                                    <div class="products__cell">
+                                        <div class="products__status caption bg-green">null</div>
+                                    </div>
+
+                                    <div class="products__cell">
+                                        <div class="products__payment">0</div>
+                                    </div>
+                                    <div class="products__cell">
+                                        <div class="products__payment">17 Aug 2024</div>
+                                    </div>
+                                    <div class="products__cell">
+                                        <div style="display: flex">
+                                            <button class="actions__btn">
+                                                <svg class="icon icon-comment">
+                                                    <use xlink:href="#icon-comment"></use>
+                                                </svg>
+                                            </button>
+                                            <button class="actions__btn">
+                                                <svg class="icon icon-star">
+                                                    <use xlink:href="#icon-star"></use>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="products__cell">
+                                        <label class="switch switch_theme ">
+                                            <input class="switch__input" type="checkbox"><span class="switch__in"
+                                                style="    padding-left: 0px;"><span class="switch__box"
+                                                    style="width: 44px;"></span><span class="switch__icon">
+                                                </span></span>
+                                        </label>
+                                    </div>
+                                    <div class="products__cell">
+                                        <div class="dropdown actions__btn">
+                                            <button class="dropdown-toggle">
+                                                <svg class="icon icon-more">
+                                                <use xlink:href="#icon-more"></use>
                                             </svg>
-                                            Edit Course
-                                        </a>
-                                        <a href="#" class="dropdown-item delete">
-                                            <img src="{{ url('img/bin.svg') }}" class="eye_icon" />
-                                            Delete
-                                        </a>
+                                            </button>
+                                            <div class="dropdown-menu">
+                                                <a href="#popup-settings" class="dropdown-item js-popup-open" data-effect="mfp-zoom-in">
+                                                    <img src="{{ url('img/eye.svg') }}" class="eye_icon" />
+                                                    Preview
+                                                </a>
+                                                <a href="{{url('admin/course/'.$u->id.'/edit')}}" class="dropdown-item">
+                                                    <svg class="icon icon-edit">
+                                                        <use xlink:href="#icon-edit"></use>
+                                                    </svg>
+                                                    Edit Course
+                                                </a>
+                                                <a href="#" class="dropdown-item delete">
+                                                    <img src="{{ url('img/bin.svg') }}" class="eye_icon" />
+                                                    Delete
+                                                </a>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
+                            @endforeach
+                        @endif
+
 
 
                     </div>

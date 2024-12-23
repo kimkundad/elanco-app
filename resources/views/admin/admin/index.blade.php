@@ -99,7 +99,9 @@
                                 </div>
                                 <div class="sorting__actions">
 
+                                   <a href="{{ url('admin/adminUser/create') }}">
                                     <img src={{ url('img/add.svg') }} style="width: 65px" />
+                                    </a>
 
                                 </div>
                             </div>
@@ -119,34 +121,37 @@
                             <div class="products__cell"></div>
                         </div>
 
+                        @isset($objs)
+                        @foreach ($objs as $item)
+
                         <div class="products__row">
                             <div class="products__cell">
                                 <div class="products__payment">1</div>
                             </div>
                             <div class="products__cell">
                                 <a class="products__item" href="#">
-                                <img src="{{ url('img/avatars/300-1.jpg') }}" class="user_icon" />
+                                <img src="{{ $item->avatar }}" class="user_icon" />
                                     <div class="products__details">
-                                        <div class="products__title title pl-5" >Jacqueline Asong</div>
+                                        <div class="products__title title pl-5" >{{ $item->name }} {{ $item->surname }}</div>
                                     </div>
                                 </a>
                             </div>
                             <div class="products__cell">
                                 <a class="products__item" href="#">
                                     <div class="products__details">
-                                        <div class="products__title title">Username</div>
+                                        <div class="products__title title">{{ $item->email }}</div>
                                     </div>
                                 </a>
                             </div>
                             <div class="products__cell">
-                                <div class="products__status caption bg-blue">Administrator</div>
+                                <div class="products__status caption bg-blue">{{ $item->name1 }}</div>
                             </div>
 
                             <div class="products__cell text-center">
                                 <img src="{{ url('img/philippines.svg') }}" class="Flag_icon" />
                             </div>
                             <div class="products__cell">
-                                <div class="products__payment">17 Aug 2024 | 05:90 AM</div>
+                                <div class="products__payment">{{ $item->updated_ats }}</div>
                             </div>
                             <div class="products__cell">
 
@@ -177,123 +182,11 @@
                             </div>
                         </div>
 
-
-                        <div class="products__row">
-                            <div class="products__cell">
-                                <div class="products__payment">1</div>
-                            </div>
-                            <div class="products__cell">
-                                <a class="products__item" href="#">
-                                <img src="{{ url('img/avatars/300-1.jpg') }}" class="user_icon" />
-                                    <div class="products__details">
-                                        <div class="products__title title pl-5" >Jacqueline Asong</div>
-                                    </div>
-                                </a>
-                            </div>
-                            <div class="products__cell">
-                                <a class="products__item" href="#">
-                                    <div class="products__details">
-                                        <div class="products__title title">Username</div>
-                                    </div>
-                                </a>
-                            </div>
-                            <div class="products__cell">
-                                <div class="products__status caption bg-blue">Administrator</div>
-                            </div>
-
-                            <div class="products__cell text-center">
-                                <img src="{{ url('img/philippines.svg') }}" class="Flag_icon" />
-                            </div>
-                            <div class="products__cell">
-                                <div class="products__payment">17 Aug 2024 | 05:90 AM</div>
-                            </div>
-                            <div class="products__cell">
-
-                                <div class="dropdown actions__btn">
-                                    <button class="dropdown-toggle">
-                                        <svg class="icon icon-more">
-                                        <use xlink:href="#icon-more"></use>
-                                    </svg>
-                                    </button>
-                                    <div class="dropdown-menu">
-                                        <a href="#" class="dropdown-item">
-                                            <img src="{{ url('img/eye.svg') }}" class="eye_icon" />
-                                            Preview
-                                        </a>
-                                        <a href="#" class="dropdown-item">
-                                            <svg class="icon icon-edit">
-                                                <use xlink:href="#icon-edit"></use>
-                                            </svg>
-                                            Edit Member
-                                        </a>
-                                        <a href="#" class="dropdown-item delete">
-                                            <img src="{{ url('img/bin.svg') }}" class="eye_icon" />
-                                            Delete
-                                        </a>
-                                    </div>
-                                </div>
-
-                            </div>
-                        </div>
+                        @endforeach
+                        @endisset
 
 
-                        <div class="products__row">
-                            <div class="products__cell">
-                                <div class="products__payment">1</div>
-                            </div>
-                            <div class="products__cell">
-                                <a class="products__item" href="#">
-                                <img src="{{ url('img/avatars/300-1.jpg') }}" class="user_icon" />
-                                    <div class="products__details">
-                                        <div class="products__title title pl-5" >Jacqueline Asong</div>
-                                    </div>
-                                </a>
-                            </div>
-                            <div class="products__cell">
-                                <a class="products__item" href="#">
-                                    <div class="products__details">
-                                        <div class="products__title title">Username</div>
-                                    </div>
-                                </a>
-                            </div>
-                            <div class="products__cell">
-                                <div class="products__status caption bg-blue">Administrator</div>
-                            </div>
 
-                            <div class="products__cell text-center">
-                                <img src="{{ url('img/philippines.svg') }}" class="Flag_icon" />
-                            </div>
-                            <div class="products__cell">
-                                <div class="products__payment">17 Aug 2024 | 05:90 AM</div>
-                            </div>
-                            <div class="products__cell">
-
-                                <div class="dropdown actions__btn">
-                                    <button class="dropdown-toggle">
-                                        <svg class="icon icon-more">
-                                        <use xlink:href="#icon-more"></use>
-                                    </svg>
-                                    </button>
-                                    <div class="dropdown-menu">
-                                        <a href="#" class="dropdown-item">
-                                            <img src="{{ url('img/eye.svg') }}" class="eye_icon" />
-                                            Preview
-                                        </a>
-                                        <a href="#" class="dropdown-item">
-                                            <svg class="icon icon-edit">
-                                                <use xlink:href="#icon-edit"></use>
-                                            </svg>
-                                            Edit Member
-                                        </a>
-                                        <a href="#" class="dropdown-item delete">
-                                            <img src="{{ url('img/bin.svg') }}" class="eye_icon" />
-                                            Delete
-                                        </a>
-                                    </div>
-                                </div>
-
-                            </div>
-                        </div>
 
 
 

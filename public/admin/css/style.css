@@ -121,3 +121,95 @@
   .field__label {
     font-size: 13px;
 }
+
+.p-10{
+    padding: 10px;
+}
+.checkbox-set{
+    display: flex;
+
+}
+.ml-10{
+    margin-left: 10px;
+}
+.btn_green{
+    color: #fff;
+    background: #40B430;
+}
+
+.image-upload-container {
+    text-align: center;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.image-preview {
+    position: relative;
+    width: 300px; /* Adjust width as needed */
+    height: 200px; /* Adjust height as needed */
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.image-preview img {
+    max-width: 100%;
+    max-height: 100%;
+    display: block;
+}
+
+.remove-image-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-size: 16px;
+    color: #333;
+    display: none; /* Hidden by default */
+}
+
+.upload-btn {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.upload-btn:hover {
+    background-color: #0056b3;
+}
+
+.image-size-text {
+    font-size: 12px;
+    color: #777;
+}
+
+/* Show the remove button when an image is uploaded */
+.image-preview:hover .remove-image-btn {
+    display: block;
+}
+
+
+.alert-success {
+    color: #17c653;
+    border-color: #17c653;
+    background-color: #dfffea;
+    padding: 1.25rem !important;
+    border-radius: 10px;
+    border: 1px solid  #a2e8ba;
+    margin-bottom: 15px;
+}

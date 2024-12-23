@@ -2,6 +2,8 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Auth\ApiAuthController;
+use App\Http\Controllers\ApiController;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,6 +16,22 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
+
+Route::post('/login', [ApiAuthController::class, 'login']);
+
+Route::post('/refresh-token', [ApiAuthController::class, 'refreshToken']);
+
+
+Route::middleware(['auth:api'])->group(function () {
+    Route::get('/user', [ApiAuthController::class, 'user']);
+    Route::post('/logout', [ApiAuthController::class, 'logout']);
+    Route::get('/courses', [ApiController::class, 'courses']);
+    Route::get('/courses/highlight', [ApiController::class, 'highlightCourses']);
+    Route::get('/courses/explore', [ApiController::class, 'exploreCourses']);
+    Route::get('/courses/new', [ApiController::class, 'newCourses']);
+    Route::get('/course/{id}', [ApiController::class, 'courseDetail']);
+    Route::get('/courses/{id}/quiz', [ApiController::class, 'getCourseQuiz']);
+    Route::post('/quiz/{id}/submit', [ApiController::class, 'submitQuiz']);
+
 });
+

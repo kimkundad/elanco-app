@@ -13,7 +13,7 @@ class CreateUsersTable extends Migration
      */
     public function up()
     {
-        
+
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
@@ -30,7 +30,6 @@ class CreateUsersTable extends Migration
             $table->string('birthday')->nullable();
             $table->string('zipcode')->nullable();
             $table->integer('country')->default('0');
-            $table->integer('shop_id')->default('0');
             $table->integer('status')->default('0');
             $table->string('code_user')->nullable();
             $table->double('point', 15, 2)->default('0.0');
