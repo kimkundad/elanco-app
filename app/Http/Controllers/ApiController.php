@@ -686,6 +686,126 @@ class ApiController extends Controller
 }
 
 
+public function PostReview(Request $request, $id)
+{
+    // ตรวจสอบข้อมูลที่ส่งมา
+    $validatedData = $request->validate([
+        'rating' => 'required|integer|min:1|max:5', // rating ต้องเป็นตัวเลขระหว่าง 1-5
+    ]);
+
+    try {
+        // ตรวจสอบผู้ใช้
+        $user = JWTAuth::parseToken()->authenticate();
+        if (!$user) {
+            return response()->json([
+                'error' => 'Unauthorized',
+                'message' => 'User not authenticated',
+            ], 401);
+        }
+
+        // ตรวจสอบว่ามี CourseAction อยู่หรือไม่
+        $courseAction = CourseAction::where('course_id', $id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$courseAction) {
+            // หากไม่มี CourseAction ให้สร้างใหม่
+            $courseAction = CourseAction::create([
+                'course_id' => $id,
+                'user_id' => $user->id,
+                'isFinishCourse' => false,
+                'lastTimestamp' => 0,
+                'isFinishVideo' => false,
+                'isFinishQuiz' => false,
+                'isDownloadCertificate' => false,
+                'isReview' => true,
+                'rating' => $validatedData['rating'], // ตั้งค่า rating
+            ]);
+        } else {
+            // หากมี CourseAction อยู่แล้ว ให้ทำการอัปเดต
+            $courseAction->update([
+                'isReview' => true,
+                'rating' => $validatedData['rating'], // อัปเดตค่า rating
+            ]);
+        }
+
+        // ส่งข้อมูลกลับ
+        return response()->json([
+            'message' => 'Review submitted successfully.',
+            'courseAction' => [
+                'course_id' => $courseAction->course_id,
+                'user_id' => $courseAction->user_id,
+                'lastTimestamp' => (int) $courseAction->lastTimestamp,
+                'isFinishVideo' => $courseAction->isFinishVideo == 1,
+                'isFinishQuiz' => $courseAction->isFinishQuiz == 1,
+                'isDownloadCertificate' => $courseAction->isDownloadCertificate == 1,
+                'isReview' => $courseAction->isReview == 1,
+                'isFinishCourse' => $courseAction->isFinishCourse == 1,
+                'rating' => $courseAction->rating,
+            ],
+        ], 200);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => 'Internal Server Error',
+            'message' => $e->getMessage(),
+        ], 500);
+    }
+}
+
+
+
+
+public function upProgress(Request $request, $id)
+{
+    // ตรวจสอบข้อมูลที่ส่งมา
+    $validatedData = $request->validate([
+        'timestamp' => 'required|integer|min:0',
+        'isFinishVideo' => 'required|boolean',
+    ]);
+
+    try {
+        // ตรวจสอบผู้ใช้
+        $user = JWTAuth::parseToken()->authenticate();
+        if (!$user) {
+            return response()->json([
+                'error' => 'Unauthorized',
+                'message' => 'User not authenticated',
+            ], 401);
+        }
+
+        // ใช้ updateOrCreate เพื่อตรวจสอบและอัปเดต/สร้างข้อมูล
+        $courseAction = CourseAction::updateOrCreate(
+            [
+                'course_id' => $id,
+                'user_id' => $user->id, // อ้างอิงผู้ใช้
+            ],
+            [
+                'lastTimestamp' => $validatedData['timestamp'],
+                'isFinishVideo' => $validatedData['isFinishVideo'],
+            ]
+        );
+
+        return response()->json([
+            'message' => 'Progress updated successfully.',
+            'courseAction' => [
+                'lastTimestamp' => (int) $courseAction->lastTimestamp,
+                'isFinishVideo' => $courseAction->isFinishVideo == 1,
+                'isFinishQuiz' => $courseAction->isFinishQuiz == 1,
+                'isDownloadCertificate' => $courseAction->isDownloadCertificate == 1,
+                'isReview' => $courseAction->isReview == 1,
+                'isFinishCourse' => $courseAction->isFinishCourse == 1,
+                'rating' => $courseAction->rating,
+            ],
+        ], 200);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => 'Internal Server Error',
+            'message' => $e->getMessage(),
+        ], 500);
+    }
+}
 
 
 

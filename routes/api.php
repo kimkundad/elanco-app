@@ -33,6 +33,8 @@ Route::middleware(['auth:api'])->group(function () {
     Route::get('/courses/{id}/quiz', [ApiController::class, 'getCourseQuiz']);
     Route::post('/quiz/{id}/submit', [ApiController::class, 'submitQuiz']);
     Route::get('/courses/{id}/progress', [ApiController::class, 'getCourseAction']);
+    Route::put('/courses/{id}/progress', [ApiController::class, 'upProgress']);
+    Route::post('/courses/{id}/review', [ApiController::class, 'PostReview']);
 
 });
 
