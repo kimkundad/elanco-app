@@ -22,34 +22,31 @@ class ApiController extends Controller
 
 
     public function getCourseAction($id)
-    {
-        $courseAction = CourseAction::where('course_id', $id)->first();
+{
+    $courseAction = CourseAction::where('course_id', $id)->first();
 
-        if (!$courseAction) {
-            // หากไม่พบข้อมูล ให้ส่งค่าเริ่มต้นกลับมา
-            return response()->json([
-                'course_id' => $id,
-                'isFinishCourse' => false,
-                'lastTimestamp' => 0,
-                'isFinishVideo' => false,
-                'isFinishQuiz' => false,
-                'isDownloadCertificate' => false,
-                'isReview' => false,
-            ]);
-        }
-
+    if (!$courseAction) {
+        // หากไม่พบข้อมูล ให้ส่งค่าเริ่มต้นกลับมา
         return response()->json([
-            'course_id' => $courseAction->course_id,
-            'isFinishCourse' => $courseAction->isFinishCourse,
-            'lastTimestamp' => $courseAction->lastTimestamp,
-            'isFinishVideo' => $courseAction->isFinishVideo,
-            'isFinishQuiz' => $courseAction->isFinishQuiz,
-            'isDownloadCertificate' => $courseAction->isDownloadCertificate,
-            'isReview' => $courseAction->isReview,
+            'isFinishCourse' => false,
+            'lastTimestamp' => 0, // unit is sec
+            'isFinishVideo' => false,
+            'isFinishQuiz' => false,
+            'isDownloadCertificate' => false,
+            'isReview' => false,
         ]);
-
-
     }
+
+    // ส่งข้อมูลกลับพร้อมแปลงค่าจาก 0/1 เป็น true/false
+    return response()->json([
+        'isFinishCourse' => $courseAction->isFinishCourse == 1,
+        'lastTimestamp' => (int) $courseAction->lastTimestamp, // แปลงเป็น int
+        'isFinishVideo' => $courseAction->isFinishVideo == 1,
+        'isFinishQuiz' => $courseAction->isFinishQuiz == 1,
+        'isDownloadCertificate' => $courseAction->isDownloadCertificate == 1,
+        'isReview' => $courseAction->isReview == 1,
+    ]);
+}
 
 
     public function courses(Request $request)
@@ -603,20 +600,23 @@ class ApiController extends Controller
     try {
         // ตรวจสอบผู้ใช้
         $user = JWTAuth::parseToken()->authenticate();
-        if (!$user) {
-            return response()->json([
-                'error' => 'Unauthorized',
-                'message' => 'User not authenticated',
-            ], 401);
-        }
 
         // ดึงข้อมูล Quiz พร้อมคำถามและคำตอบ
-        $quiz = quiz::with('questions.answers')->findOrFail($id);
+        $quiz = Quiz::with('questions.answers')->findOrFail($id);
 
         if ($quiz->questions->isEmpty()) {
             return response()->json([
                 'error' => 'Invalid Quiz',
                 'message' => 'The quiz has no questions.',
+            ], 400);
+        }
+
+        // ค้นหา Course ที่สัมพันธ์กับ Quiz
+        $course = Course::where('id_quiz', $quiz->id)->first();
+        if (!$course) {
+            return response()->json([
+                'error' => 'Invalid Quiz',
+                'message' => 'No course associated with this quiz.',
             ], 400);
         }
 
@@ -628,13 +628,6 @@ class ApiController extends Controller
         foreach ($quiz->questions as $question) {
             $submittedAnswerId = collect($request->answers)
                 ->firstWhere(fn($answerId) => $question->answers->pluck('id')->contains($answerId));
-
-            if (!$submittedAnswerId) {
-                return response()->json([
-                    'error' => 'Invalid Answer',
-                    'message' => 'One or more answers are invalid.',
-                ], 400);
-            }
 
             $correctAnswer = $question->answers->firstWhere('answers_status', 1);
 
@@ -649,13 +642,28 @@ class ApiController extends Controller
         // ตรวจสอบผ่านหรือไม่
         $isPass = $scorePercentage >= $passPercentage;
 
-        // บันทึกการทำแบบทดสอบ
-        $attempt = QuizAttempt::create([
-            'user_id' => $user->id,
-            'quiz_id' => $quiz->id,
-            'score' => $correctPoints,
-            'total_questions' => $totalPoints,
-        ]);
+        // ตรวจสอบและจัดการ QuizAttempt
+        $attempt = QuizAttempt::updateOrCreate(
+            [
+                'user_id' => $user->id,
+                'quiz_id' => $quiz->id,
+            ],
+            [
+                'score' => $correctPoints,
+                'total_questions' => $totalPoints,
+            ]
+        );
+
+        // อัปเดตหรือสร้าง course_action
+        $courseAction = CourseAction::updateOrCreate(
+            [
+                'course_id' => $course->id, // ใช้ course_id จาก Course
+                'user_id' => $user->id,
+            ],
+            [
+                'isFinishQuiz' => $isPass, // อัปเดตสถานะ isFinishQuiz
+            ]
+        );
 
         // ส่งข้อมูลกลับ
         return response()->json([
@@ -676,6 +684,8 @@ class ApiController extends Controller
         ], 500);
     }
 }
+
+
 
 
 

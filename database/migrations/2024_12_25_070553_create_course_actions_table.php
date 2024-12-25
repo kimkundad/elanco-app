@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('course_actions', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('course_id'); // เชื่อมโยงกับ courses
+            $table->foreignId('user_id')->constrained()->onDelete('cascade'); // ผู้ทำแบบทดสอบ
             $table->boolean('isFinishCourse')->default(false);
             $table->integer('lastTimestamp')->default(0); // เวลาหน่วยเป็นวินาที
             $table->boolean('isFinishVideo')->default(false);
