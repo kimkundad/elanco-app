@@ -13,4 +13,9 @@ class Speaker extends Model
     {
         return $this->belongsTo(course::class, 'course_id');
     }
+
+    public function countryDetails()
+    {
+        return $this->belongsTo(Country::class, 'country', 'id'); // 'country' คือ foreign key
+    }
 }

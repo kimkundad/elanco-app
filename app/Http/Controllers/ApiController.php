@@ -203,7 +203,7 @@ class ApiController extends Controller
                             'name' => $item->name,
                             'avatar' => $item->avatar,
                             'job_position' => $item->job_position,
-                            'country' => $item->country,
+                            'country' => $item->countryDetails ? $item->countryDetails->name : null, // ใช้ countryDetails
                             'file' => $item->file,
                             'description' => $item->description,
                         ];
@@ -330,7 +330,7 @@ class ApiController extends Controller
                             'name' => $item->name,
                             'avatar' => $item->avatar,
                             'job_position' => $item->job_position,
-                            'country' => $item->country,
+                            'country' => $item->countryDetails ? $item->countryDetails->name : null, // ใช้ countryDetails
                             'file' => $item->file,
                             'description' => $item->description,
                         ];
@@ -443,7 +443,7 @@ class ApiController extends Controller
                             'name' => $item->name,
                             'avatar' => $item->avatar,
                             'job_position' => $item->job_position,
-                            'country' => $item->country,
+                            'country' => $item->countryDetails ? $item->countryDetails->name : null, // ใช้ countryDetails
                             'file' => $item->file,
                             'description' => $item->description,
                         ];
@@ -554,7 +554,7 @@ class ApiController extends Controller
                         'name' => $item->name,
                         'avatar' => $item->avatar,
                         'job_position' => $item->job_position,
-                        'country' => $item->country,
+                        'country' => $item->countryDetails ? $item->countryDetails->name : null, // ใช้ countryDetails
                         'file' => $item->file,
                         'description' => $item->description,
                     ];
@@ -600,7 +600,7 @@ public function courseDetail($id)
             'subCategories',
             'animalTypes',
             'itemDes',
-            'Speaker',
+            'Speaker.countryDetails', // เพิ่มการโหลดข้อมูล Country ของ Speaker
             'referances'
         ])->findOrFail($id);
 
@@ -609,7 +609,7 @@ public function courseDetail($id)
             ->where('user_id', $user->id)
             ->value('isFinishCourse') == 1;
 
-        // ดึง Related Courses โดยใช้ Country, SubCategory และ MainCategory เดียวกัน
+        // ดึง Related Courses
         $relatedCourses = Course::whereHas('countries', function ($query) use ($course) {
             $query->whereIn('countries.id', $course->countries->pluck('id'));
         })
@@ -664,7 +664,7 @@ public function courseDetail($id)
                 'name' => $speaker->name,
                 'avatar' => $speaker->avatar,
                 'job_position' => $speaker->job_position,
-                'country' => $speaker->country,
+                'country' => $speaker->countryDetails ? $speaker->countryDetails->name : null, // ใช้ countryDetails
                 'file' => $speaker->file,
                 'description' => $speaker->description,
             ]), // จัดรูปแบบ speakers
@@ -697,6 +697,7 @@ public function courseDetail($id)
         ], 400);
     }
 }
+
 
 
 
