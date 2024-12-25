@@ -76,10 +76,20 @@ class ApiController extends Controller
                 },
                 'itemDes',
                 'Speaker',
-                'referances'
+                'referances',
+                // ดึงความสัมพันธ์กับ CourseAction
+                'courseActions' => function ($query) use ($user) {
+                    $query->where('user_id', $user->id)
+                          ->select('course_id', 'isFinishCourse'); // เลือกเฉพาะฟิลด์ที่ต้องการ
+                },
             ])
             ->get()
             ->map(function ($course) {
+                // ตรวจสอบว่า CourseAction มีข้อมูลหรือไม่
+                $isFinishCourse = $course->courseActions->first()
+                ? $course->courseActions->first()->isFinishCourse == 1
+                : false;
+
                 // แปลงข้อมูลในรูปแบบที่ต้องการ
                 $course->thumbnail = $course->course_img;
                 unset($course->course_img); // ลบฟิลด์ `course_img` ที่ไม่ต้องการ
@@ -97,6 +107,7 @@ class ApiController extends Controller
                     'updated_at' => $course->updated_at,
                     'id_quiz' => $course->id_quiz,
                     'thumbnail' => $course->thumbnail,
+                    'isFinishCourse' => $isFinishCourse, // เพิ่มสถานะ isFinishCourse
                     'countries' => $course->countries->map(function ($country) {
                         return ['name' => $country->name];
                     }),
@@ -191,10 +202,22 @@ class ApiController extends Controller
                 },
                 'itemDes',
                 'Speaker',
-                'referances'
+                'referances',
+                // ดึงความสัมพันธ์กับ CourseAction
+                'courseActions' => function ($query) use ($user) {
+                    $query->where('user_id', $user->id)
+                          ->select('course_id', 'isFinishCourse'); // เลือกเฉพาะฟิลด์ที่ต้องการ
+                },
             ])
             ->get()
             ->map(function ($course) {
+
+                // ตรวจสอบว่า CourseAction มีข้อมูลหรือไม่
+                $isFinishCourse = $course->courseActions->first()
+                ? $course->courseActions->first()->isFinishCourse == 1
+                : false;
+
+
                 $course->thumbnail = $course->course_img;
                 unset($course->course_img);
 
@@ -211,6 +234,7 @@ class ApiController extends Controller
                     'updated_at' => $course->updated_at,
                     'id_quiz' => $course->id_quiz,
                     'thumbnail' => $course->thumbnail,
+                    'isFinishCourse' => $isFinishCourse, // เพิ่มสถานะ isFinishCourse
                     'countries' => $course->countries->map(function ($country) {
                         return ['name' => $country->name];
                     }),
@@ -289,11 +313,27 @@ class ApiController extends Controller
             })
             ->orderBy('created_at', 'desc') // เรียงลำดับจากใหม่ล่าสุด
             ->take(12) // จำกัด 12 รายการ
-            ->with(['countries', 'mainCategories', 'subCategories', 'animalTypes', 'itemDes', 'Speaker', 'referances'])
+            ->with([
+                'countries',
+                'mainCategories',
+                'subCategories',
+                'animalTypes',
+                'itemDes',
+                'Speaker',
+                'referances',
+                'courseActions' => function ($query) use ($user) {
+                    $query->where('user_id', $user->id); // ดึงเฉพาะข้อมูลของผู้ใช้งานนี้
+                }
+            ])
             ->get();
 
             // จัดการข้อมูลก่อนส่งกลับ
             $formattedCourses = $courses->map(function ($course) {
+
+                $isFinishCourse = $course->courseActions->first()
+                ? $course->courseActions->first()->isFinishCourse == 1
+                : false;
+
                 return [
                     'id' => $course->id,
                     'course_title' => $course->course_title,
@@ -306,7 +346,8 @@ class ApiController extends Controller
                     'created_at' => $course->created_at,
                     'updated_at' => $course->updated_at,
                     'id_quiz' => $course->id_quiz,
-                    'thumbnail' => $course->thumbnail,
+                    'thumbnail' => $course->course_img,
+                    'isFinishCourse' => $isFinishCourse, // เพิ่มสถานะการเรียน
                     'countries' => $course->countries->map(function ($country) {
                         return ['name' => $country->name];
                     }),
@@ -384,11 +425,28 @@ class ApiController extends Controller
             ->whereHas('countries', function ($query) use ($userCountryId) {
                 $query->where('country_id', $userCountryId);
             })
-            ->with(['countries', 'mainCategories', 'subCategories', 'animalTypes', 'itemDes', 'Speaker', 'referances'])
+            ->with([
+                'countries',
+                'mainCategories',
+                'subCategories',
+                'animalTypes',
+                'itemDes',
+                'Speaker',
+                'referances',
+                'courseActions' => function ($query) use ($user) {
+                    $query->where('user_id', $user->id); // ดึงเฉพาะข้อมูลของผู้ใช้งานนี้
+                }
+            ])
             ->get();
 
         // จัดรูปแบบข้อมูลสำหรับการส่งกลับ
         $formattedCourses = $courses->map(function ($course) {
+
+            $isFinishCourse = $course->courseActions->first()
+                ? $course->courseActions->first()->isFinishCourse == 1
+                : false;
+
+
             return [
                 'id' => $course->id,
                 'course_title' => $course->course_title,
@@ -401,7 +459,8 @@ class ApiController extends Controller
                 'created_at' => $course->created_at,
                 'updated_at' => $course->updated_at,
                 'id_quiz' => $course->id_quiz,
-                'thumbnail' => $course->thumbnail,
+                'thumbnail' => $course->course_img,
+                'isFinishCourse' => $isFinishCourse, // เพิ่มสถานะการเรียน
                 'countries' => $course->countries->map(function ($country) {
                     return ['name' => $country->name];
                 }),

@@ -49,4 +49,9 @@ class course extends Model
         return $this->hasMany(Referance::class, 'course_id');
     }
 
+    public function courseActions()
+    {
+        return $this->hasMany(CourseAction::class, 'course_id');
+    }
+
 }
