@@ -483,6 +483,7 @@ class ApiController extends Controller
     }
 
 
+
     public function exploreCourses(Request $request)
 {
     try {
