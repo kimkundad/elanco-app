@@ -587,77 +587,117 @@ class ApiController extends Controller
 
 
 
-    public function courseDetail($id)
-    {
-        try {
-            // ตรวจสอบและดึงผู้ใช้จาก JWT
-            $user = JWTAuth::parseToken()->authenticate();
+public function courseDetail($id)
+{
+    try {
+        // ตรวจสอบและดึงผู้ใช้จาก JWT
+        $user = JWTAuth::parseToken()->authenticate();
 
-            // ค้นหา Course โดย ID พร้อมโหลดความสัมพันธ์
-            $course = Course::with(['countries', 'mainCategories', 'subCategories', 'animalTypes', 'itemDes', 'Speaker', 'referances'])->findOrFail($id);
+        // ค้นหา Course โดย ID พร้อมโหลดความสัมพันธ์
+        $course = Course::with([
+            'countries',
+            'mainCategories',
+            'subCategories',
+            'animalTypes',
+            'itemDes',
+            'Speaker',
+            'referances'
+        ])->findOrFail($id);
 
-            $isFinishCourse = CourseAction::where('course_id', $id)
+        // ตรวจสอบว่าผู้ใช้เคยเรียนคอร์สนี้หรือไม่
+        $isFinishCourse = CourseAction::where('course_id', $id)
             ->where('user_id', $user->id)
             ->value('isFinishCourse') == 1;
 
-            // จัดรูปแบบข้อมูลสำหรับการส่งกลับ
-            $formattedCourse = [
-                'id' => $course->id,
-                'course_title' => $course->course_title,
-                'course_description' => $course->course_description,
-                'course_preview' => $course->course_preview,
-                'duration' => $course->duration,
-                'url_video' => $course->url_video,
-                'status' => $course->status,
-                'ratting' => number_format($course->ratting,1),
-                'created_at' => $course->created_at,
-                'updated_at' => $course->updated_at,
-                'thumbnail' => $course->course_img,
-                'isFinishCourse' => $isFinishCourse,
-                'countries' => $course->countries->map(fn($country) => ['name' => $country->name]),
-                'main_categories' => $course->mainCategories->map(fn($mainCategory) => ['name' => $mainCategory->name]),
-                'sub_categories' => $course->subCategories->map(fn($subCategory) => ['name' => $subCategory->name]),
-                'animal_types' => $course->animalTypes->map(fn($animalType) => ['name' => $animalType->name]),
-                'item_des' => $course->itemDes->map(fn($item) => [
-                'detail' => $item->detail,
-                ]), // จัดรูปแบบ item_des
-                'speakers' => $course->Speaker->map(fn($speaker) => [
-                    'id' => $speaker->id,
-                    'name' => $speaker->name,
-                    'avatar' => $speaker->avatar,
-                    'job_position' => $speaker->job_position,
-                    'country' => $speaker->country,
-                    'file' => $speaker->file,
-                    'description' => $speaker->description,
-                ]), // จัดรูปแบบ speakers
-                'referances' => $course->referances->map(fn($referance) => [
-                    'id' => $referance->id,
-                    'title' => $referance->title,
-                    'image' => $referance->image,
-                    'file' => $referance->file,
-                    'description' => $referance->description,
-                ]), // จัดรูปแบบ referances
-            ];
+        // ดึง Related Courses โดยใช้ Country, SubCategory และ MainCategory เดียวกัน
+        $relatedCourses = Course::whereHas('countries', function ($query) use ($course) {
+            $query->whereIn('countries.id', $course->countries->pluck('id'));
+        })
+            ->whereHas('subCategories', function ($query) use ($course) {
+                $query->whereIn('sub_categories.id', $course->subCategories->pluck('id'));
+            })
+            ->whereHas('mainCategories', function ($query) use ($course) {
+                $query->whereIn('main_categories.id', $course->mainCategories->pluck('id'));
+            })
+            ->where('id', '!=', $id) // ไม่รวมคอร์สปัจจุบัน
+            ->take(5) // จำกัดจำนวนคอร์ส
+            ->get();
 
-            // ส่งข้อมูล
-            return response()->json($formattedCourse, 200);
-        } catch (TokenExpiredException $e) {
-            return response()->json([
-                'error' => 'Token has expired',
-                'message' => 'Please refresh your token or login again.',
-            ], 401);
-        } catch (TokenInvalidException $e) {
-            return response()->json([
-                'error' => 'Token is invalid',
-                'message' => 'The provided token is not valid.',
-            ], 401);
-        } catch (JWTException $e) {
-            return response()->json([
-                'error' => 'Token not provided',
-                'message' => 'Authorization token is missing from your request.',
-            ], 400);
-        }
+        // จัดรูปแบบข้อมูลสำหรับ Related Courses
+        $formattedRelatedCourses = $relatedCourses->map(function ($relatedCourse) {
+            return [
+                'id' => $relatedCourse->id,
+                'course_title' => $relatedCourse->course_title,
+                'thumbnail' => $relatedCourse->course_img,
+                'duration' => $relatedCourse->duration,
+                'ratting' => number_format($relatedCourse->ratting, 1),
+                'main_categories' => $relatedCourse->mainCategories->map(fn($mainCategory) => ['name' => $mainCategory->name]),
+                'sub_categories' => $relatedCourse->subCategories->map(fn($subCategory) => ['name' => $subCategory->name]),
+                'countries' => $relatedCourse->countries->map(fn($country) => ['name' => $country->name]),
+                'course_description' => $relatedCourse->course_description,
+            ];
+        });
+
+        // จัดรูปแบบข้อมูลสำหรับการส่งกลับ
+        $formattedCourse = [
+            'id' => $course->id,
+            'course_title' => $course->course_title,
+            'course_description' => $course->course_description,
+            'course_preview' => $course->course_preview,
+            'duration' => $course->duration,
+            'url_video' => $course->url_video,
+            'status' => $course->status,
+            'ratting' => number_format($course->ratting, 1),
+            'created_at' => $course->created_at,
+            'updated_at' => $course->updated_at,
+            'thumbnail' => $course->course_img,
+            'isFinishCourse' => $isFinishCourse,
+            'countries' => $course->countries->map(fn($country) => ['name' => $country->name]),
+            'main_categories' => $course->mainCategories->map(fn($mainCategory) => ['name' => $mainCategory->name]),
+            'sub_categories' => $course->subCategories->map(fn($subCategory) => ['name' => $subCategory->name]),
+            'animal_types' => $course->animalTypes->map(fn($animalType) => ['name' => $animalType->name]),
+            'item_des' => $course->itemDes->map(fn($item) => [
+                'detail' => $item->detail,
+            ]), // จัดรูปแบบ item_des
+            'speakers' => $course->Speaker->map(fn($speaker) => [
+                'id' => $speaker->id,
+                'name' => $speaker->name,
+                'avatar' => $speaker->avatar,
+                'job_position' => $speaker->job_position,
+                'country' => $speaker->country,
+                'file' => $speaker->file,
+                'description' => $speaker->description,
+            ]), // จัดรูปแบบ speakers
+            'referances' => $course->referances->map(fn($referance) => [
+                'id' => $referance->id,
+                'title' => $referance->title,
+                'image' => $referance->image,
+                'file' => $referance->file,
+                'description' => $referance->description,
+            ]), // จัดรูปแบบ referances
+            'related_courses' => $formattedRelatedCourses, // เพิ่ม Related Courses
+        ];
+
+        // ส่งข้อมูล
+        return response()->json($formattedCourse, 200);
+    } catch (TokenExpiredException $e) {
+        return response()->json([
+            'error' => 'Token has expired',
+            'message' => 'Please refresh your token or login again.',
+        ], 401);
+    } catch (TokenInvalidException $e) {
+        return response()->json([
+            'error' => 'Token is invalid',
+            'message' => 'The provided token is not valid.',
+        ], 401);
+    } catch (JWTException $e) {
+        return response()->json([
+            'error' => 'Token not provided',
+            'message' => 'Authorization token is missing from your request.',
+        ], 400);
     }
+}
+
 
 
 
