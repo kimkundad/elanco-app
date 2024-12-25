@@ -35,6 +35,7 @@ Route::middleware(['auth:api'])->group(function () {
     Route::get('/courses/{id}/progress', [ApiController::class, 'getCourseAction']);
     Route::put('/courses/{id}/progress', [ApiController::class, 'upProgress']);
     Route::post('/courses/{id}/review', [ApiController::class, 'PostReview']);
+    Route::get('/courses/{id}/certificate', [ApiController::class, 'getCertificate']);
 
 });
 

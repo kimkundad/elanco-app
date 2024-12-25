@@ -49,6 +49,77 @@ class ApiController extends Controller
 }
 
 
+        public function getCertificate(Request $request, $id)
+        {
+            try {
+                // ตรวจสอบและดึงผู้ใช้จาก JWT
+                $user = JWTAuth::parseToken()->authenticate();
+
+                // URL ของไฟล์ PDF
+                $pdfUrl = 'https://kimspace2.sgp1.cdn.digitaloceanspaces.com/elanco/getCertificate.pdf';
+
+                // ดาวน์โหลดไฟล์ PDF
+                $pdfContent = file_get_contents($pdfUrl);
+
+                if (!$pdfContent) {
+                    return response()->json([
+                        'error' => 'File not found',
+                        'message' => 'Unable to download the certificate file.',
+                    ], 404);
+                }
+
+                // แปลงไฟล์ PDF เป็น Base64
+                $pdfBase64 = base64_encode($pdfContent);
+
+                // อัปเดตสถานะ isDownloadCertificate เป็น true
+                $courseAction = CourseAction::updateOrCreate(
+                    [
+                        'course_id' => $id,
+                        'user_id' => $user->id,
+                    ],
+                    [
+                        'isDownloadCertificate' => true,
+                        'isFinishCourse' => true,
+                    ]
+                );
+
+                // ส่งข้อมูล Base64 กลับใน response
+                return response()->json([
+                    'certificate_base64' => $pdfBase64,
+                    'message' => 'Certificate downloaded successfully.',
+                    'courseAction' => [
+                        'course_id' => $courseAction->course_id,
+                        'user_id' => $courseAction->user_id,
+                        'isDownloadCertificate' => $courseAction->isDownloadCertificate,
+                        'isFinishCourse' => $courseAction->isFinishCourse,
+                    ],
+                ], 200);
+
+            } catch (TokenExpiredException $e) {
+                return response()->json([
+                    'error' => 'Token has expired',
+                    'message' => 'Please refresh your token or login again.',
+                ], 401);
+            } catch (TokenInvalidException $e) {
+                return response()->json([
+                    'error' => 'Token is invalid',
+                    'message' => 'The provided token is not valid.',
+                ], 401);
+            } catch (JWTException $e) {
+                return response()->json([
+                    'error' => 'Token not provided',
+                    'message' => 'Authorization token is missing from your request.',
+                ], 400);
+            } catch (\Exception $e) {
+                // กรณีเกิดข้อผิดพลาดทั่วไป
+                return response()->json([
+                    'error' => 'Internal Server Error',
+                    'message' => $e->getMessage(),
+                ], 500);
+            }
+        }
+
+
     public function courses(Request $request)
     {
 
@@ -535,6 +606,10 @@ class ApiController extends Controller
             // ค้นหา Course โดย ID พร้อมโหลดความสัมพันธ์
             $course = Course::with(['countries', 'mainCategories', 'subCategories', 'animalTypes', 'itemDes', 'Speaker', 'referances'])->findOrFail($id);
 
+            $isFinishCourse = CourseAction::where('course_id', $id)
+            ->where('user_id', $user->id)
+            ->value('isFinishCourse') == 1;
+
             // จัดรูปแบบข้อมูลสำหรับการส่งกลับ
             $formattedCourse = [
                 'id' => $course->id,
@@ -548,6 +623,7 @@ class ApiController extends Controller
                 'created_at' => $course->created_at,
                 'updated_at' => $course->updated_at,
                 'thumbnail' => $course->course_img,
+                'isFinishCourse' => $isFinishCourse,
                 'countries' => $course->countries->map(fn($country) => ['name' => $country->name]),
                 'main_categories' => $course->mainCategories->map(fn($mainCategory) => ['name' => $mainCategory->name]),
                 'sub_categories' => $course->subCategories->map(fn($subCategory) => ['name' => $subCategory->name]),
