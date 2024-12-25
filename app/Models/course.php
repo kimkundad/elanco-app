@@ -39,4 +39,14 @@ class course extends Model
         return $this->hasMany(itemDes::class, 'course_id');
     }
 
+    public function Speaker()
+    {
+        return $this->hasMany(Speaker::class, 'course_id');
+    }
+
+    public function referances()
+    {
+        return $this->hasMany(Referance::class, 'course_id');
+    }
+
 }

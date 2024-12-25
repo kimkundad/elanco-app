@@ -13,11 +13,45 @@ use Illuminate\Database\Eloquent\ModelNotFoundException as ModelNotFoundExceptio
 use App\Models\course;
 use App\Models\quiz;
 use App\Models\QuizAttempt;
+use App\Models\CourseAction;
 
 
 class ApiController extends Controller
 {
     //
+
+
+    public function getCourseAction($id)
+    {
+        $courseAction = CourseAction::where('course_id', $id)->first();
+
+        if (!$courseAction) {
+            // หากไม่พบข้อมูล ให้ส่งค่าเริ่มต้นกลับมา
+            return response()->json([
+                'course_id' => $id,
+                'isFinishCourse' => false,
+                'lastTimestamp' => 0,
+                'isFinishVideo' => false,
+                'isFinishQuiz' => false,
+                'isDownloadCertificate' => false,
+                'isReview' => false,
+            ]);
+        }
+
+        return response()->json([
+            'course_id' => $courseAction->course_id,
+            'isFinishCourse' => $courseAction->isFinishCourse,
+            'lastTimestamp' => $courseAction->lastTimestamp,
+            'isFinishVideo' => $courseAction->isFinishVideo,
+            'isFinishQuiz' => $courseAction->isFinishQuiz,
+            'isDownloadCertificate' => $courseAction->isDownloadCertificate,
+            'isReview' => $courseAction->isReview,
+        ]);
+
+
+    }
+
+
     public function courses(Request $request)
     {
 
@@ -43,7 +77,9 @@ class ApiController extends Controller
                 'animalTypes' => function ($query) {
                     $query->select('animal_types.id', 'animal_types.name');
                 },
-                'itemDes' // เพิ่ม itemDes
+                'itemDes',
+                'Speaker',
+                'referances'
             ])
             ->get()
             ->map(function ($course) {
@@ -80,7 +116,27 @@ class ApiController extends Controller
                     return [
                         'detail' => $item->detail,
                     ];
-                })
+                    }),
+                    'speakers' => $course->Speaker->map(function ($item) {
+                        return [
+                            'id' => $item->id,
+                            'name' => $item->name,
+                            'avatar' => $item->avatar,
+                            'job_position' => $item->job_position,
+                            'country' => $item->country,
+                            'file' => $item->file,
+                            'description' => $item->description,
+                        ];
+                    }),
+                    'referances' => $course->referances->map(function ($referance) {
+                        return [
+                            'id' => $referance->id,
+                            'title' => $referance->title,
+                            'image' => $referance->image,
+                            'file' => $referance->file,
+                            'description' => $referance->description,
+                        ];
+                    }),
                 ];
             });
 
@@ -136,7 +192,9 @@ class ApiController extends Controller
                 'animalTypes' => function ($query) {
                     $query->select('animal_types.id', 'animal_types.name');
                 },
-                'itemDes' // เพิ่ม itemDes
+                'itemDes',
+                'Speaker',
+                'referances'
             ])
             ->get()
             ->map(function ($course) {
@@ -172,7 +230,27 @@ class ApiController extends Controller
                     return [
                         'detail' => $item->detail,
                     ];
-                })
+                    }),
+                    'speakers' => $course->Speaker->map(function ($item) {
+                        return [
+                            'id' => $item->id,
+                            'name' => $item->name,
+                            'avatar' => $item->avatar,
+                            'job_position' => $item->job_position,
+                            'country' => $item->country,
+                            'file' => $item->file,
+                            'description' => $item->description,
+                        ];
+                    }),
+                    'referances' => $course->referances->map(function ($referance) {
+                        return [
+                            'id' => $referance->id,
+                            'title' => $referance->title,
+                            'image' => $referance->image,
+                            'file' => $referance->file,
+                            'description' => $referance->description,
+                        ];
+                    }),
                 ];
             });
 
@@ -214,7 +292,7 @@ class ApiController extends Controller
             })
             ->orderBy('created_at', 'desc') // เรียงลำดับจากใหม่ล่าสุด
             ->take(12) // จำกัด 12 รายการ
-            ->with(['countries', 'mainCategories', 'subCategories', 'animalTypes', 'itemDes'])
+            ->with(['countries', 'mainCategories', 'subCategories', 'animalTypes', 'itemDes', 'Speaker', 'referances'])
             ->get();
 
             // จัดการข้อมูลก่อนส่งกลับ
@@ -248,7 +326,27 @@ class ApiController extends Controller
                     return [
                         'detail' => $item->detail,
                     ];
-                })
+                    }),
+                    'speakers' => $course->Speaker->map(function ($item) {
+                        return [
+                            'id' => $item->id,
+                            'name' => $item->name,
+                            'avatar' => $item->avatar,
+                            'job_position' => $item->job_position,
+                            'country' => $item->country,
+                            'file' => $item->file,
+                            'description' => $item->description,
+                        ];
+                    }),
+                    'referances' => $course->referances->map(function ($referance) {
+                        return [
+                            'id' => $referance->id,
+                            'title' => $referance->title,
+                            'image' => $referance->image,
+                            'file' => $referance->file,
+                            'description' => $referance->description,
+                        ];
+                    }),
                 ];
             });
 
@@ -289,7 +387,7 @@ class ApiController extends Controller
             ->whereHas('countries', function ($query) use ($userCountryId) {
                 $query->where('country_id', $userCountryId);
             })
-            ->with(['countries', 'mainCategories', 'subCategories', 'animalTypes', 'itemDes'])
+            ->with(['countries', 'mainCategories', 'subCategories', 'animalTypes', 'itemDes', 'Speaker', 'referances'])
             ->get();
 
         // จัดรูปแบบข้อมูลสำหรับการส่งกลับ
@@ -323,7 +421,27 @@ class ApiController extends Controller
                 return [
                     'detail' => $item->detail,
                 ];
-            })
+                }),
+                'speakers' => $course->Speaker->map(function ($item) {
+                        return [
+                            'id' => $item->id,
+                            'name' => $item->name,
+                            'avatar' => $item->avatar,
+                            'job_position' => $item->job_position,
+                            'country' => $item->country,
+                            'file' => $item->file,
+                            'description' => $item->description,
+                        ];
+                    }),
+                    'referances' => $course->referances->map(function ($referance) {
+                        return [
+                            'id' => $referance->id,
+                            'title' => $referance->title,
+                            'image' => $referance->image,
+                            'file' => $referance->file,
+                            'description' => $referance->description,
+                        ];
+                    }),
             ];
         });
 
@@ -359,7 +477,7 @@ class ApiController extends Controller
             $user = JWTAuth::parseToken()->authenticate();
 
             // ค้นหา Course โดย ID พร้อมโหลดความสัมพันธ์
-            $course = Course::with(['countries', 'mainCategories', 'subCategories', 'animalTypes', 'itemDes'])->findOrFail($id);
+            $course = Course::with(['countries', 'mainCategories', 'subCategories', 'animalTypes', 'itemDes', 'Speaker', 'referances'])->findOrFail($id);
 
             // จัดรูปแบบข้อมูลสำหรับการส่งกลับ
             $formattedCourse = [
@@ -379,8 +497,24 @@ class ApiController extends Controller
                 'sub_categories' => $course->subCategories->map(fn($subCategory) => ['name' => $subCategory->name]),
                 'animal_types' => $course->animalTypes->map(fn($animalType) => ['name' => $animalType->name]),
                 'item_des' => $course->itemDes->map(fn($item) => [
-                'detail' => $item->detail
-            ]), // จัดรูปแบบ item_des
+                'detail' => $item->detail,
+                ]), // จัดรูปแบบ item_des
+                'speakers' => $course->Speaker->map(fn($speaker) => [
+                    'id' => $speaker->id,
+                    'name' => $speaker->name,
+                    'avatar' => $speaker->avatar,
+                    'job_position' => $speaker->job_position,
+                    'country' => $speaker->country,
+                    'file' => $speaker->file,
+                    'description' => $speaker->description,
+                ]), // จัดรูปแบบ speakers
+                'referances' => $course->referances->map(fn($referance) => [
+                    'id' => $referance->id,
+                    'title' => $referance->title,
+                    'image' => $referance->image,
+                    'file' => $referance->file,
+                    'description' => $referance->description,
+                ]), // จัดรูปแบบ referances
             ];
 
             // ส่งข้อมูล
