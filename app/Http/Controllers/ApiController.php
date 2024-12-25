@@ -14,6 +14,7 @@ use App\Models\course;
 use App\Models\quiz;
 use App\Models\QuizAttempt;
 use App\Models\CourseAction;
+use App\Models\Country;
 
 
 class ApiController extends Controller
@@ -482,19 +483,26 @@ class ApiController extends Controller
     }
 
 
-    public function exploreCourses()
+    public function exploreCourses(Request $request)
 {
     try {
-        // ตรวจสอบและดึงผู้ใช้จาก JWT
-        $user = JWTAuth::parseToken()->authenticate();
+        // รับ country flag จาก request
+        $countryFlag = $request->country;
 
-        // ID ของประเทศของผู้ใช้
-        $userCountryId = $user->country;
+        // ตรวจสอบว่า country flag มีอยู่ในฐานข้อมูลหรือไม่
+        $country = Country::where('flag', $countryFlag)->first();
+      //  dd($request->all());
+        if (!$country) {
+            return response()->json([
+                'error' => 'Country not found',
+                'message' => 'The specified country flag does not exist.',
+            ], 404);
+        }
 
-        // ดึงข้อมูลคอร์สที่มี featured == 1 และมีประเทศตรงกับผู้ใช้
+        // ดึงข้อมูลคอร์สที่มี featured == 1 และเชื่อมโยงกับประเทศที่ระบุ
         $courses = Course::where('featured', 1)
-            ->whereHas('countries', function ($query) use ($userCountryId) {
-                $query->where('country_id', $userCountryId);
+            ->whereHas('countries', function ($query) use ($country) {
+                $query->where('country_id', $country->id);
             })
             ->with([
                 'countries',
@@ -503,21 +511,12 @@ class ApiController extends Controller
                 'animalTypes',
                 'itemDes',
                 'Speaker',
-                'referances',
-                'courseActions' => function ($query) use ($user) {
-                    $query->where('user_id', $user->id); // ดึงเฉพาะข้อมูลของผู้ใช้งานนี้
-                }
+                'referances'
             ])
             ->get();
 
         // จัดรูปแบบข้อมูลสำหรับการส่งกลับ
         $formattedCourses = $courses->map(function ($course) {
-
-            $isFinishCourse = $course->courseActions->first()
-                ? $course->courseActions->first()->isFinishCourse == 1
-                : false;
-
-
             return [
                 'id' => $course->id,
                 'course_title' => $course->course_title,
@@ -526,12 +525,11 @@ class ApiController extends Controller
                 'duration' => $course->duration,
                 'url_video' => $course->url_video,
                 'status' => $course->status,
-                'ratting' => number_format($course->ratting,1),
+                'ratting' => number_format($course->ratting, 1),
                 'created_at' => $course->created_at,
                 'updated_at' => $course->updated_at,
                 'id_quiz' => $course->id_quiz,
                 'thumbnail' => $course->course_img,
-                'isFinishCourse' => $isFinishCourse, // เพิ่มสถานะการเรียน
                 'countries' => $course->countries->map(function ($country) {
                     return ['name' => $country->name];
                 }),
@@ -545,30 +543,30 @@ class ApiController extends Controller
                     return ['name' => $animal->name];
                 }),
                 'item_des' => $course->itemDes->map(function ($item) {
-                return [
-                    'detail' => $item->detail,
-                ];
+                    return [
+                        'detail' => $item->detail,
+                    ];
                 }),
                 'speakers' => $course->Speaker->map(function ($item) {
-                        return [
-                            'id' => $item->id,
-                            'name' => $item->name,
-                            'avatar' => $item->avatar,
-                            'job_position' => $item->job_position,
-                            'country' => $item->country,
-                            'file' => $item->file,
-                            'description' => $item->description,
-                        ];
-                    }),
-                    'referances' => $course->referances->map(function ($referance) {
-                        return [
-                            'id' => $referance->id,
-                            'title' => $referance->title,
-                            'image' => $referance->image,
-                            'file' => $referance->file,
-                            'description' => $referance->description,
-                        ];
-                    }),
+                    return [
+                        'id' => $item->id,
+                        'name' => $item->name,
+                        'avatar' => $item->avatar,
+                        'job_position' => $item->job_position,
+                        'country' => $item->country,
+                        'file' => $item->file,
+                        'description' => $item->description,
+                    ];
+                }),
+                'referances' => $course->referances->map(function ($referance) {
+                    return [
+                        'id' => $referance->id,
+                        'title' => $referance->title,
+                        'image' => $referance->image,
+                        'file' => $referance->file,
+                        'description' => $referance->description,
+                    ];
+                }),
             ];
         });
 
@@ -576,24 +574,15 @@ class ApiController extends Controller
         return response()->json([
             'courses' => $formattedCourses,
         ], 200);
-
-    } catch (TokenExpiredException $e) {
+    } catch (\Exception $e) {
+        // จัดการข้อผิดพลาดทั่วไป
         return response()->json([
-            'error' => 'Token has expired',
-            'message' => 'Please refresh your token or login again.',
-        ], 401);
-    } catch (TokenInvalidException $e) {
-        return response()->json([
-            'error' => 'Token is invalid',
-            'message' => 'The provided token is not valid.',
-        ], 401);
-    } catch (JWTException $e) {
-        return response()->json([
-            'error' => 'Token not provided',
-            'message' => 'Authorization token is missing from your request.',
-        ], 400);
+            'error' => 'Internal Server Error',
+            'message' => $e->getMessage(),
+        ], 500);
     }
 }
+
 
 
 
