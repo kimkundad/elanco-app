@@ -24,14 +24,24 @@ class ApiAuthController extends Controller
             return response()->json(['error' => 'Could not create token'], 500);
         }
 
+        // ดึงข้อมูลผู้ใช้และโหลด countryDetails
+        $user = Auth::user();
+        $user->load('countryDetails');
+
         return response()->json([
             'success' => true,
             'access_token' => $token,
-            'user'=> Auth::user(),
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'country' => $user->countryDetails ? $user->countryDetails->name : null, // ดึงชื่อประเทศ
+            ],
             'verify' => 1,
-            'refresh_token' => $this->createRefreshToken($request->email)
-            ]);
+            'refresh_token' => $this->createRefreshToken($request->email),
+        ]);
     }
+
 
     public function logout()
     {
@@ -45,8 +55,15 @@ class ApiAuthController extends Controller
             // ตรวจสอบและดึงผู้ใช้จาก JWT
             $user = JWTAuth::parseToken()->authenticate();
 
+            $user->load('countryDetails');
+
             return response()->json([
-                'user' => $user
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'country' => $user->countryDetails ? $user->countryDetails->name : null, // แสดงชื่อประเทศ
+                ]
             ], 200);
 
         } catch (TokenExpiredException $e) {

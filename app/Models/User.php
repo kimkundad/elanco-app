@@ -91,4 +91,10 @@ class User extends Authenticatable implements JWTSubject
             'is_admin' => $this->is_admin, // ตัวอย่างข้อมูลเพิ่มเติม
         ];
     }
+
+    public function countryDetails()
+    {
+        return $this->belongsTo(Country::class, 'country', 'id'); // 'country' คือ foreign key
+    }
+
 }
