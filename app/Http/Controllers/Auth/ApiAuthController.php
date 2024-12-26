@@ -35,7 +35,7 @@ class ApiAuthController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'country' => $user->countryDetails ? $user->countryDetails->name : null, // ดึงชื่อประเทศ
+                'flag' => $user->countryDetails ? $user->countryDetails->name : null, // ดึงชื่อประเทศ
             ],
             'verify' => 1,
             'refresh_token' => $this->createRefreshToken($request->email),
@@ -62,7 +62,7 @@ class ApiAuthController extends Controller
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'country' => $user->countryDetails ? $user->countryDetails->name : null, // แสดงชื่อประเทศ
+                    'flag' => $user->countryDetails ? $user->countryDetails->name : null, // แสดงชื่อประเทศ
                 ]
             ], 200);
 
