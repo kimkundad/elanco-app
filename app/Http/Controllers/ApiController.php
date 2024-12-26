@@ -57,7 +57,7 @@ class ApiController extends Controller
                 $user = JWTAuth::parseToken()->authenticate();
 
                 // URL ของไฟล์ PDF
-                $pdfUrl = 'https://kimspace2.sgp1.cdn.digitaloceanspaces.com/elanco/getCertificate.pdf';
+                $pdfUrl = 'https://kimspace2.sgp1.cdn.digitaloceanspaces.com/elanco/certificate_pdf.pdf';
 
                 // ดาวน์โหลดไฟล์ PDF
                 $pdfContent = file_get_contents($pdfUrl);
