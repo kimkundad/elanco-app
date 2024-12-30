@@ -175,6 +175,37 @@
         cursor: pointer;
 
 }
+.upload-container {
+      text-align: center;
+    }
+
+    .upload-btn {
+      background-color: #000033; /* Navy blue */
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 20px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: inline-block;
+    }
+
+    .upload-btn:hover {
+      background-color: #3333cc; /* Lighter navy */
+    }
+
+    .hidden-input {
+      display: none;
+    }
+
+    .file-name {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #666;
+      display: none;
+    }
     </style>
 
 @stop('stylesheet')
@@ -409,11 +440,12 @@
 
 
 
+
                 </div>
 
                 <div id="tab2" class="products products_main">
-                    <div class="widget__title mt-20 pb-10" style="border-bottom: 2px solid #E4E4E4;">Course Description
-                        </div>
+
+                    <div class="widget__title mt-20 pb-10" style="border-bottom: 2px solid #E4E4E4;">Course Description</div>
                         <br>
 
                         <div class="showFlex" style=" padding-bottom:20px">
@@ -428,9 +460,120 @@
                                 <div id="input-list" class="input-list">
                                     <!-- Inputs will be dynamically added here -->
                                 </div>
-                                <button id="add-item" class="add-item-btn">Add Item</button>
+                                <br>
+                                <a id="add-item" class="add-item-btn mt-10">Add Item</a>
                                 </div>
 
+                            </div>
+                        </div>
+
+
+                        <div class="widget__title mt-20 pb-10" style="border-bottom: 2px solid #E4E4E4;">Speaker background</div>
+                        <br>
+                        <div class="showFlex" style=" padding-bottom:20px">
+                            <div class="itemFlex">
+
+                                <div class="image-upload-container">
+
+                                        <div class="image-preview" id="imagePreview1">
+                                            <img id="previewImage1" src="{{ url('img/Mask@2x.png') }}" alt="Preview" />
+                                            <a class="remove-image-btn" id="removeImage1">&times;</a>
+                                        </div>
+                                        <label for="imageUpload1" class="upload-btn">Upload Image</label>
+                                        <input type="file" id="imageUpload1" name="speaker_img" accept="image/*"
+                                            style="display: none;" />
+                                        <p class="image-size-text">Banner Size xxx x xxx px</p>
+
+                                </div>
+
+
+                                <div class="field__label">Professor Name</div>
+                                <div class="field__wrap">
+                                    <input class="field__input" name="speaker_name" type="text"
+                                        placeholder="Name here..."
+                                        value="{{ old('speaker_name') ? old('speaker_name') : '' }}">
+                                </div>
+
+                                <div class="field__label mt-10">Job Position</div>
+                                <div class="field__wrap">
+                                    <input class="field__input" name="speaker_job" type="text"
+                                        placeholder="Preview here..."
+                                        value="{{ old('speaker_job') ? old('speaker_job') : '' }}">
+                                </div>
+
+                                <div>
+                                        <div class="field__label mt-10">Country</div>
+                                        <div class="field__wrap">
+                                            <select class="field__input" name="speaker_country">
+                                                <option >Select Speaker’s Country</option>
+                                                 @if ($countries)
+                                                    @foreach ($countries as $country)
+                                                    <option value="{{ $country->id }}">{{ $country->name }}</option>
+                                                    @endforeach
+                                                @endif
+                                            </select>
+                                        </div>
+                                    </div>
+
+
+
+
+                            </div>
+                            <div class="itemFlex">
+                                <div id="editor-container2" style="height: 320px;"></div>
+                                <textarea name="speaker_background" id="quill-content2" style="display:none;"></textarea>
+
+                                <div class="mt-10">
+                                    <label for="file-input" class="upload-btn">Upload File</label>
+                                    <input type="file" id="file-input" name="file_speaker" class="hidden-input">
+                                    <p id="file-name" class="file-name">No file chosen</p>
+                                </div>
+                            </div>
+                        </div>
+
+
+
+                        <div class="widget__title mt-20 pb-10" style="border-bottom: 2px solid #E4E4E4;">Reference detail</div>
+                        <br>
+                        <div class="showFlex" style=" padding-bottom:20px">
+                            <div class="itemFlex">
+
+                                <div class="image-upload-container">
+
+                                        <div class="image-preview" id="imagePreview2">
+                                            <img id="previewImage2" src="{{ url('img/Mask@2x.png') }}" alt="Preview" />
+                                            <a class="remove-image-btn" id="removeImage2">&times;</a>
+                                        </div>
+                                        <label for="imageUpload2" class="upload-btn">Upload Image</label>
+                                        <input type="file" id="imageUpload2" name="reference_img" accept="image/*"
+                                            style="display: none;" />
+                                        <p class="image-size-text">Banner Size xxx x xxx px</p>
+
+                                </div>
+
+
+                                <div class="field__label">Product Title</div>
+                                <div class="field__wrap">
+                                    <input class="field__input" name="product_name" type="text"
+                                        placeholder="Name here..."
+                                        value="{{ old('product_name') ? old('product_name') : '' }}">
+                                </div>
+
+
+                                <div class="mt-10">
+                                    <label for="file-input1" class="upload-btn">Upload File</label>
+                                    <input type="file" id="file-input1" name="file_product" class="hidden-input">
+                                    <p id="file-name1" class="file-name">No file chosen</p>
+                                </div>
+
+
+
+
+
+                            </div>
+                            <div class="itemFlex">
+                                <div id="editor-container3" style="height: 320px;"></div>
+                                <textarea name="reference_detail" id="quill-content3" style="display:none;"></textarea>
                             </div>
                         </div>
 
@@ -460,12 +603,45 @@
 
     <script>
 
+    const fileInput = document.getElementById('file-input');
+    const fileNameDisplay = document.getElementById('file-name');
+
+    fileInput.addEventListener('change', function () {
+      if (fileInput.files.length > 0) {
+        fileNameDisplay.textContent = `Selected file: ${fileInput.files[0].name}`;
+        fileNameDisplay.style.display = 'block';
+      } else {
+        fileNameDisplay.textContent = 'No file chosen';
+        fileNameDisplay.style.display = 'none';
+      }
+    });
+
+    const fileInput1 = document.getElementById('file-input1');
+    const fileNameDisplay1 = document.getElementById('file-name1');
+
+    fileInput1.addEventListener('change', function () {
+      if (fileInput1.files.length > 0) {
+        fileNameDisplay1.textContent = `Selected file: ${fileInput1.files[0].name}`;
+        fileNameDisplay1.style.display = 'block';
+      } else {
+        fileNameDisplay1.textContent = 'No file chosen';
+        fileNameDisplay1.style.display = 'none';
+      }
+    });
+
+
     document.querySelector('.submit_ans').addEventListener('click', function(e) {
             e.preventDefault(); // ป้องกันการทำงานแบบ default ของ <a>
 
             // ดึงข้อมูลจาก QuillJS
-            var quillContent = quill.root.innerHTML;
-            document.getElementById('quill-content').value = quillContent; // ใส่ค่าใน textarea
+            const courseDescription = quill1.root.innerHTML;
+            const speakerBackground = quill2.root.innerHTML;
+            const reference = quill3.root.innerHTML;
+
+            // Update hidden textareas with Quill content
+            document.querySelector('#quill-content').value = courseDescription;
+            document.querySelector('#quill-content2').value = speakerBackground;
+            document.querySelector('#quill-content3').value = reference;
 
             // Submit ฟอร์ม
             document.getElementById('questionForm').submit();
@@ -600,6 +776,36 @@
             }
         });
 
+        document.getElementById("imageUpload1").addEventListener("change", function(event) {
+            const file = event.target.files[0];
+            const previewImage = document.getElementById("previewImage1");
+            const removeButton = document.getElementById("removeImage1");
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImage.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+                removeButton.style.display = "block";
+            }
+        });
+
+        document.getElementById("imageUpload2").addEventListener("change", function(event) {
+            const file = event.target.files[0];
+            const previewImage = document.getElementById("previewImage2");
+            const removeButton = document.getElementById("removeImage2");
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImage.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+                removeButton.style.display = "block";
+            }
+        });
+
         document.getElementById("removeImage").addEventListener("click", function() {
             const previewImage = document.getElementById("previewImage");
             previewImage.src = "{{ url('img/Mask@1.5x.png') }}"; // Default image path
@@ -608,7 +814,23 @@
         });
 
 
-        var quill = new Quill('#editor-container', {
+        document.getElementById("removeImage1").addEventListener("click", function() {
+            const previewImage = document.getElementById("previewImage1");
+            previewImage.src = "{{ url('img/Mask@1.5x.png') }}"; // Default image path
+            this.style.display = "none";
+            document.getElementById("imageUpload1").value = ""; // Reset the input
+        });
+
+
+        document.getElementById("removeImage2").addEventListener("click", function() {
+            const previewImage = document.getElementById("previewImage2");
+            previewImage.src = "{{ url('img/Mask@1.5x.png') }}"; // Default image path
+            this.style.display = "none";
+            document.getElementById("imageUpload2").value = ""; // Reset the input
+        });
+
+
+        var quill1 = new Quill('#editor-container', {
             theme: 'snow', // 'snow' เป็นธีมที่ใช้งานง่ายและสวยงาม
             placeholder: 'Write your question here...',
             modules: {
@@ -619,6 +841,31 @@
                     ['bold', 'italic', 'underline'],
                     ['image', 'code-block']
                 ]
+            },
+        });
+
+        const quill2 = new Quill('#editor-container2', {
+            theme: 'snow',
+            placeholder: 'Write the speaker background...',
+            modules: {
+            toolbar: [
+                [{ header: [1, 2, false] }],
+                ['bold', 'italic', 'underline'],
+                ['image', 'code-block'],
+            ],
+            },
+        });
+
+
+        const quill3 = new Quill('#editor-container3', {
+            theme: 'snow',
+            placeholder: 'Write the speaker background...',
+            modules: {
+            toolbar: [
+                [{ header: [1, 2, false] }],
+                ['bold', 'italic', 'underline'],
+                ['image', 'code-block'],
+            ],
             },
         });
 

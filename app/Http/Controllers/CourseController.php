@@ -11,6 +11,9 @@ use App\Models\AnimalType;
 use App\Models\quiz;
 use App\Models\itemDes;
 
+use App\Models\Speaker;
+use App\Models\Referance;
+
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Facades\Image;
 use Illuminate\Support\Facades\DB;
@@ -52,13 +55,54 @@ class CourseController extends Controller
         return view('admin.course.create', $data);
     }
 
+
+    private function uploadImage($image, $path)
+    {
+        if ($image) {
+            $img = Image::make($image->getRealPath());
+            $img->resize(800, 800, function ($constraint) {
+                $constraint->aspectRatio();
+            });
+            $img->stream();
+
+            $filename = time() . '_' . $image->getClientOriginalName();
+
+            Storage::disk('do_spaces')->put(
+                "$path/$filename",
+                $img->__toString(),
+                'public'
+            );
+
+            return "https://kimspace2.sgp1.cdn.digitaloceanspaces.com/$path/$filename";
+        }
+
+        return null;
+    }
+
+    private function uploadFile($file, $path)
+    {
+        if ($file) {
+            $filename = time() . '_' . $file->getClientOriginalName();
+            Storage::disk('do_spaces')->put(
+                "$path/$filename",
+                file_get_contents($file->getRealPath()),
+                'public'
+            );
+
+            return "https://kimspace2.sgp1.cdn.digitaloceanspaces.com/$path/$filename";
+        }
+
+        return null;
+    }
+
+
     /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
     {
         //
-      //  dd($request->all());
+       // dd($request->all());
 
         $this->validate($request, [
             'course_title' => 'required|string|max:255',
@@ -70,75 +114,88 @@ class CourseController extends Controller
             'id_quiz' => 'required',
             'choice' => 'nullable|array', // Validate choice as an array
             'choice.*' => 'nullable|string|max:255', // Validate each choice
+            'reference_img' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:4048',
+            'file_product' => 'nullable|file|max:5048',
+            'speaker_img' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:4048',
+            'file_speaker' => 'nullable|file|max:5048',
         ]);
 
         $filename = null;
-
-        if ($request->hasFile('course_img')) {
-
-            $image = $request->file('course_img');
-
-            $img = Image::make($image->getRealPath());
-                    $img->resize(800, 800, function ($constraint) {
-                        $constraint->aspectRatio();
-                    });
-                    $img->stream(); // Prepare image for upload
-
-                    // Generate a unique filename
-                    $filename = time() . '_' . $image->getClientOriginalName();
-
-                    // Upload the image to DigitalOcean Spaces
-                    Storage::disk('do_spaces')->put(
-                        'elanco/course/' . $filename,
-                        $img->__toString(),  // Ensure the image is in string format
-                        'public' // Make the file publicly accessible
-                    );
-
-        }
 
         DB::beginTransaction();
 
         try {
 
-           $objs = new course();
-           $objs->course_title = $request->course_title;
-           $objs->course_img = $filename
+           $filename = $this->uploadImage($request->file('course_img'), 'elanco/course');
+           $course = new course();
+           $course->course_title = $request->course_title;
+           $course->course_img = $filename
             ? 'https://kimspace2.sgp1.cdn.digitaloceanspaces.com/elanco/course/' . $filename
             : null;
-           $objs->course_preview = $request->course_preview;
-           $objs->course_preview = $request->course_preview;
-           $objs->status = $request->status ?? 0;
-           $objs->duration = $request->duration;
-           $objs->url_video = $request->url_video;
-           $objs->id_quiz = $request->id_quiz;
-           $objs->save();
+           $course->course_preview = $request->course_preview;
+           $course->course_description = $request->course_description;
+           $course->status = $request->status ?? 0;
+           $course->duration = $request->duration;
+           $course->url_video = $request->url_video;
+           $course->id_quiz = $request->id_quiz;
+           $course->save();
 
            if ($request->has('choice')) {
             foreach ($request->choice as $choice) {
                 if (!is_null($choice)) {
                     $itemDes = new itemDes();
-                    $itemDes->course_id = $objs->id;
+                    $itemDes->course_id = $course->id;
                     $itemDes->detail = $choice;
                     $itemDes->save();
                 }
             }
+            }
+
+            // **3. บันทึก Speaker**
+        if ($request->has('speaker_name')) {
+            $speakerAvatar = $this->uploadImage($request->file('speaker_img'), 'elanco/speaker');
+            $speakerFile = $this->uploadFile($request->file('file_speaker'), 'elanco/speaker');
+
+            $speaker = new Speaker();
+            $speaker->course_id = $course->id;
+            $speaker->name = $request->speaker_name;
+            $speaker->avatar = $speakerAvatar;
+            $speaker->job_position = $request->speaker_job;
+            $speaker->country = $request->speaker_country;
+            $speaker->file = $speakerFile;
+            $speaker->description = $request->speaker_background;
+            $speaker->save();
+        }
+
+        // **4. บันทึก Referance**
+        if ($request->has('product_name')) {
+            $referenceImg = $this->uploadImage($request->file('reference_img'), 'elanco/Referance');
+            $referenceFile = $this->uploadFile($request->file('file_product'), 'elanco/Referance');
+
+            $referance = new Referance();
+            $referance->course_id = $course->id;
+            $referance->title = $request->product_name;
+            $referance->image = $referenceImg;
+            $referance->file = $referenceFile;
+            $referance->description = $request->reference_detail;
+            $referance->save();
         }
 
 
            if ($request->has('countries')) {
-            $objs->countries()->attach($request->countries);
+            $course->countries()->attach($request->countries);
         }
 
         if ($request->has('main_categories')) {
-            $objs->mainCategories()->attach($request->main_categories);
+            $course->mainCategories()->attach($request->main_categories);
         }
 
         if ($request->has('sub_categories')) {
-            $objs->subCategories()->attach($request->sub_categories);
+            $course->subCategories()->attach($request->sub_categories);
         }
 
         if ($request->has('animal_types')) {
-            $objs->animalTypes()->attach($request->animal_types);
+            $course->animalTypes()->attach($request->animal_types);
         }
 
         DB::commit();
