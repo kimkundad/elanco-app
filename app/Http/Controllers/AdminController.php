@@ -105,7 +105,6 @@ class AdminController extends Controller
             'avatar' => $filename
                 ? 'https://kimspace2.sgp1.cdn.digitaloceanspaces.com/elanco/avatar/' . $filename
                 : null,
-            'code_user' => Hash::make($request->password),
             'provider' => 'email',
             'email_verified_at' => now(),
             'country' => $request->country,

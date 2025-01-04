@@ -9,6 +9,11 @@ use Illuminate\Support\Facades\Auth;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Exceptions\TokenExpiredException;
 use Tymon\JWTAuth\Exceptions\TokenInvalidException;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
+use App\Models\User;
+use App\Models\Country;
+use App\Models\Role;
 
 class ApiAuthController extends Controller
 {
@@ -34,11 +39,69 @@ class ApiAuthController extends Controller
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
+                'firstName' => $user->firstName,
+                'lastName' => $user->lastName,
                 'email' => $user->email,
+                'position' => $user->position,
+                'vetId' => $user->vetId,
+                'clinic' => $user->clinic,
+                'userType' => $user->userType,
+                'terms' => $user->terms,
                 'flag' => $user->countryDetails ? $user->countryDetails->name : null, // ดึงชื่อประเทศ
             ],
             'verify' => 1,
             'refresh_token' => $this->createRefreshToken($request->email),
+        ]);
+    }
+
+    public function register(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'userType' => 'required|string',
+            'terms' => 'required|boolean',
+            'prefix' => 'nullable|string',
+            'firstName' => 'required|string|max:255',
+            'lastName' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:8|confirmed',
+            'position' => 'nullable|string',
+            'vetId' => 'nullable|string',
+            'clinic' => 'nullable|string',
+            'country' => 'required|string|exists:countries,flag', // ตรวจสอบ country
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        // หาค่า country_id จาก `countries` table
+        $country = Country::where('flag', $request->country)->first();
+
+        // สร้าง user
+        $user = User::create([
+            'name' => $request->firstName . ' ' . $request->lastName,
+            'firstName' => $request->firstName,
+            'lastName' => $request->lastName,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'prefix' => $request->prefix,
+            'userType' => $request->userType,
+            'terms' => $request->terms,
+            'position' => $request->position,
+            'vetId' => $request->vetId,
+            'clinic' => $request->clinic,
+            'country' => $country->id,
+        ]);
+
+        $role = Role::find(3); // ค้นหา Role ที่ id = 3
+        if ($role) {
+            $user->roles()->attach($role); // เพิ่มความสัมพันธ์
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User registered successfully',
+            'user' => $user,
         ]);
     }
 

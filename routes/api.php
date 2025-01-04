@@ -18,6 +18,7 @@ use App\Http\Controllers\ApiController;
 
 
 Route::post('/login', [ApiAuthController::class, 'login']);
+Route::post('/register', [ApiAuthController::class, 'register']);
 
 Route::post('/refresh-token', [ApiAuthController::class, 'refreshToken']);
 
