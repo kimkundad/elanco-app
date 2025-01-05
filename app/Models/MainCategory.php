@@ -10,4 +10,9 @@ class MainCategory extends Model
     use HasFactory;
 
     protected $fillable = ['name'];
+
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'main_category_user', 'main_category_id', 'user_id');
+    }
 }

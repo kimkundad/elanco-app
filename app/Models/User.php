@@ -98,4 +98,20 @@ class User extends Authenticatable implements JWTSubject
         return $this->belongsTo(Country::class, 'country', 'id'); // 'country' คือ foreign key
     }
 
+
+    public function mainCategories()
+    {
+        return $this->belongsToMany(MainCategory::class, 'main_category_user', 'user_id', 'main_category_id');
+    }
+
+    public function subCategories()
+    {
+        return $this->belongsToMany(SubCategory::class);
+    }
+
+    public function animalTypes()
+    {
+        return $this->belongsToMany(AnimalType::class);
+    }
+
 }

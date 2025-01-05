@@ -15,6 +15,10 @@ use App\Models\User;
 use App\Models\Country;
 use App\Models\Role;
 
+use App\Models\MainCategory;
+use App\Models\SubCategory;
+use App\Models\AnimalType;
+
 class ApiAuthController extends Controller
 {
     public function login(Request $request)
@@ -53,6 +57,60 @@ class ApiAuthController extends Controller
             'refresh_token' => $this->createRefreshToken($request->email),
         ]);
     }
+
+    public function resetPassword(Request $request)
+    {
+        try {
+            // ดึงข้อมูลผู้ใช้จาก JWT
+            $user = JWTAuth::parseToken()->authenticate();
+
+            // ตรวจสอบข้อมูลที่ส่งเข้ามา
+            $validated = $request->validate([
+                'current' => 'required|string',
+                'password' => 'required|string|min:8|confirmed', // ต้องมี password_confirmation
+            ]);
+
+            // ตรวจสอบว่ารหัสผ่านเดิมตรงกันหรือไม่
+            if (!Hash::check($validated['current'], $user->password)) {
+                return response()->json([
+                    'error' => 'Current password is incorrect',
+                ], 400);
+            }
+
+            // อัปเดตรหัสผ่านใหม่
+            $user->password = Hash::make($validated['password']);
+            $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Password updated successfully',
+            ], 200);
+
+        } catch (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e) {
+            return response()->json([
+                'error' => 'Token has expired',
+                'message' => 'Please refresh your token or login again.',
+            ], 401);
+
+        } catch (\Tymon\JWTAuth\Exceptions\TokenInvalidException $e) {
+            return response()->json([
+                'error' => 'Token is invalid',
+                'message' => 'The provided token is not valid.',
+            ], 401);
+
+        } catch (\Tymon\JWTAuth\Exceptions\JWTException $e) {
+            return response()->json([
+                'error' => 'Token not provided',
+                'message' => 'Authorization token is missing from your request.',
+            ], 400);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'An error occurred',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
 
     public function register(Request $request)
     {
@@ -112,22 +170,69 @@ class ApiAuthController extends Controller
         return response()->json(['message' => 'Successfully logged out']);
     }
 
-    public function user(Request $request)
+
+    public function users(Request $request)
     {
+
+
         try {
             // ตรวจสอบและดึงผู้ใช้จาก JWT
-            $user = JWTAuth::parseToken()->authenticate();
 
-            $user->load('countryDetails');
+        // Validate ข้อมูล
+        $validated = $request->validate([
+            'userType' => 'required|string',
+            'prefix' => 'nullable|string',
+            'firstName' => 'required|string|max:255',
+            'lastName' => 'required|string|max:255',
+            'position' => 'nullable|string',
+            'vetId' => 'nullable|string',
+            'clinic' => 'nullable|string',
+            'avatar' => 'nullable|string',
+            'category' => 'array',
+            'subCaregory' => 'array',
+            'petType' => 'array',
+        ]);
 
-            return response()->json([
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'flag' => $user->countryDetails ? $user->countryDetails->name : null, // แสดงชื่อประเทศ
-                ]
-            ], 200);
+        // ค้นหาผู้ใช้ที่ต้องการอัปเดต (สามารถเปลี่ยน logic ได้ เช่น ใช้ Auth::id())
+        $user = JWTAuth::parseToken()->authenticate();
+
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+
+        // อัปเดตข้อมูลทั่วไปของ User
+        $user->update([
+            'userType' => $validated['userType'],
+            'prefix' => $validated['prefix'],
+            'firstName' => $validated['firstName'],
+            'lastName' => $validated['lastName'],
+            'position' => $validated['position'],
+            'vetId' => $validated['vetId'],
+            'clinic' => $validated['clinic'],
+            'avatar' => $validated['avatar'],
+        ]);
+
+        // อัปเดต Many-to-Many Relationships
+        if (isset($validated['category'])) {
+            $categoryIds = MainCategory::whereIn('name', $validated['category'])->pluck('id')->toArray();
+            $user->mainCategories()->sync($categoryIds); // อัปเดตความสัมพันธ์ categories
+        }
+
+        if (isset($validated['subCaregory'])) {
+            $subCategoryIds = SubCategory::whereIn('name', $validated['subCaregory'])->pluck('id')->toArray();
+            $user->subCategories()->sync($subCategoryIds); // อัปเดตความสัมพันธ์ subCategories
+        }
+
+        if (isset($validated['petType'])) {
+            $animalTypeIds = AnimalType::whereIn('name', $validated['petType'])->pluck('id')->toArray();
+            $user->animalTypes()->sync($animalTypeIds); // อัปเดตความสัมพันธ์ animalTypes
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User updated successfully',
+            'user' => $user->load('mainCategories', 'subCategories', 'animalTypes'), // โหลดความสัมพันธ์
+        ]);
 
         } catch (TokenExpiredException $e) {
             // กรณี Token หมดอายุ
@@ -150,7 +255,109 @@ class ApiAuthController extends Controller
                 'message' => 'Authorization token is missing from your request.',
             ], 400);
         }
+
     }
+
+
+
+    public function deleteUser(Request $request)
+    {
+        try {
+            // ตรวจสอบและดึงผู้ใช้จาก JWT
+            $user = JWTAuth::parseToken()->authenticate();
+
+            if (!$user) {
+                return response()->json(['error' => 'User not found'], 404);
+            }
+
+            // ลบข้อมูลของผู้ใช้ (รวมถึง Pivot Relationships)
+            $user->roles()->detach(); // ลบความสัมพันธ์ roles
+            $user->mainCategories()->detach(); // ลบความสัมพันธ์ mainCategories
+            $user->subCategories()->detach(); // ลบความสัมพันธ์ subCategories
+            $user->animalTypes()->detach(); // ลบความสัมพันธ์ animalTypes
+
+            // ลบข้อมูลผู้ใช้
+            $user->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User deleted successfully',
+            ], 200);
+
+        } catch (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e) {
+            return response()->json([
+                'error' => 'Token has expired',
+                'message' => 'Please refresh your token or login again.',
+            ], 401);
+        } catch (\Tymon\JWTAuth\Exceptions\TokenInvalidException $e) {
+            return response()->json([
+                'error' => 'Token is invalid',
+                'message' => 'The provided token is not valid.',
+            ], 401);
+        } catch (\Tymon\JWTAuth\Exceptions\JWTException $e) {
+            return response()->json([
+                'error' => 'Token not provided',
+                'message' => 'Authorization token is missing from your request.',
+            ], 400);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'An error occurred',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+    public function user(Request $request)
+{
+    try {
+        // ตรวจสอบและดึงผู้ใช้จาก JWT
+        $user = JWTAuth::parseToken()->authenticate();
+
+        // โหลดข้อมูลความสัมพันธ์ที่จำเป็น
+        $user->load(['mainCategories', 'subCategories', 'animalTypes']);
+
+        // จัดรูปแบบข้อมูลสำหรับ Response
+        return response()->json([
+            'userType' => $user->userType,
+            'prefix' => $user->prefix,
+            'firstName' => $user->firstName,
+            'lastName' => $user->lastName,
+            'position' => $user->position,
+            'vetId' => $user->vetId,
+            'clinic' => $user->clinic,
+            'category' => $user->mainCategories->pluck('name'), // ดึงเฉพาะชื่อจาก mainCategories
+            'subCaregory' => $user->subCategories->pluck('name'), // ดึงเฉพาะชื่อจาก subCategories
+            'petType' => $user->animalTypes->pluck('name'), // ดึงเฉพาะชื่อจาก animalTypes
+            'avatar' => $user->avatar,
+        ], 200);
+
+    } catch (TokenExpiredException $e) {
+        // กรณี Token หมดอายุ
+        return response()->json([
+            'error' => 'Token has expired',
+            'message' => 'Please refresh your token or login again.',
+        ], 401);
+
+    } catch (TokenInvalidException $e) {
+        // กรณี Token ไม่ถูกต้อง
+        return response()->json([
+            'error' => 'Token is invalid',
+            'message' => 'The provided token is not valid.',
+        ], 401);
+
+    } catch (JWTException $e) {
+        // กรณีไม่มี Token ในคำขอ
+        return response()->json([
+            'error' => 'Token not provided',
+            'message' => 'Authorization token is missing from your request.',
+        ], 400);
+    }
+}
+
+
+
+
 
 
     // ฟังก์ชันสร้าง Refresh Token (บันทึกในฐานข้อมูลหรือที่อื่น)

@@ -10,5 +10,11 @@ class AnimalType extends Model
     use HasFactory;
 
     protected $fillable = ['name'];
+
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'animaltype_user', 'animal_type_id', 'user_id');
+    }
+
 }
 
