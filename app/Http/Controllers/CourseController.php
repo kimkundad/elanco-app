@@ -13,6 +13,7 @@ use App\Models\itemDes;
 
 use App\Models\Speaker;
 use App\Models\Referance;
+use App\Models\CourseAction;
 
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Facades\Image;
@@ -23,14 +24,94 @@ class CourseController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
-        $objs = course::with(['countries', 'mainCategories', 'subCategories', 'animalTypes'])->get();
-        $data['objs'] = $objs;
-      //  dd($objs);
-        return view('admin.course.index', $data);
+        // Retrieve search query
+        $search = $request->input('search');
+
+        // Query courses with search filter
+        $objs = course::with(['countries', 'mainCategories', 'subCategories', 'animalTypes', 'quiz'])
+            ->withCount(['courseActions as enrolled_count' => function ($query) {
+                $query->where('isFinishCourse', true);
+            }])
+            ->when($search, function ($query, $search) {
+                $query->where('course_title', 'like', '%' . $search . '%')
+                    ->orWhere('course_preview', 'like', '%' . $search . '%');
+            })
+            ->paginate(8);
+
+         //   dd($objs);
+
+        return view('admin.course.index', ['objs' => $objs, 'search' => $search]);
     }
+
+
+    public function getDetails($id)
+{
+    try {
+        $course = course::with(['quiz', 'countries', 'mainCategories', 'referances', 'Speaker'])
+            ->findOrFail($id);
+
+        // ดึงจำนวนผู้ที่ลงทะเบียนทั้งหมด
+        $totalEnrolled = CourseAction::where('course_id', $id)->count();
+
+        // ดึงจำนวนผู้ที่สำเร็จคอร์ส (isFinishCourse = 1)
+        $totalCompleted = CourseAction::where('course_id', $id)
+            ->where('isFinishCourse', 1)
+            ->count();
+
+        // คิดเป็นเปอร์เซ็นต์การสำเร็จ
+        $completionPercentage = $totalEnrolled > 0
+            ? round(($totalCompleted / $totalEnrolled) * 100, 2)
+            : 0;
+
+        // ดึงข้อมูลสำหรับกราฟหรือรายงานเพิ่มเติม (เช่น สถิติการลงทะเบียนรายเดือน)
+        $enrolledStats = [
+            'oct' => 80,
+            'mar' => 60,
+            'aug' => 40,
+        ];
+
+        return response()->json([
+            'success' => true,
+            'course' => $course,
+            'enrolledStats' => $enrolledStats,
+            'totalEnrolled' => $totalEnrolled,
+            'totalCompleted' => $totalCompleted,
+            'completionPercentage' => $completionPercentage,
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Course not found!',
+        ], 404);
+    }
+}
+
+
+
+    public function toggleStatus(Request $request, $id)
+{
+    try {
+        // ค้นหาคอร์สจาก id
+        $course = course::findOrFail($id);
+
+        // อัปเดตสถานะ
+        $course->status = $request->input('status') ? 1 : 0;
+        $course->save();
+
+        return response()->json([
+            'success' => true,
+            'status' => $course->status,
+            'message' => 'Course status updated successfully.'
+        ], 200);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error updating course status: ' . $e->getMessage()
+        ], 500);
+    }
+}
 
     /**
      * Show the form for creating a new resource.
@@ -224,7 +305,7 @@ class CourseController extends Controller
     public function edit(string $id)
     {
         // ค้นหาคอร์สที่ต้องการแก้ไข
-        $course = course::with(['countries', 'mainCategories', 'subCategories', 'animalTypes'])->findOrFail($id);
+        $course = course::with(['countries', 'mainCategories', 'subCategories', 'animalTypes', 'itemDes', 'referances'])->findOrFail($id);
 
         // เตรียมข้อมูลที่จำเป็นสำหรับการแสดงผล
         $data['course'] = $course;
@@ -247,6 +328,8 @@ class CourseController extends Controller
      */
     public function update(Request $request, string $id)
 {
+
+  //  dd($request->all());
     // Validation
     $this->validate($request, [
         'course_title' => 'required|string|max:255',
@@ -255,7 +338,13 @@ class CourseController extends Controller
         'duration' => 'nullable|string',
         'url_video' => 'nullable|url',
         'id_quiz' => 'required',
-        'course_img' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:4048', // ไม่บังคับ
+        'course_img' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:4048',
+        'choice' => 'nullable|array',
+        'choice.*' => 'nullable|string|max:255',
+        'reference_img' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:4048',
+        'file_product' => 'nullable|file|max:5048',
+        'speaker_img' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:4048',
+        'file_speaker' => 'nullable|file|max:5048',
     ]);
 
     $filename = null;
@@ -303,7 +392,94 @@ class CourseController extends Controller
         $course->duration = $request->duration;
         $course->url_video = $request->url_video;
         $course->id_quiz = $request->id_quiz;
+        $course->course_description = $request->course_description;
         $course->save();
+
+        $course->itemDes()->delete(); // ลบรายการเดิม
+        if ($request->has('choice')) {
+            foreach ($request->choice as $choice) {
+                if (!is_null($choice)) {
+                    $itemDes = new ItemDes();
+                    $itemDes->course_id = $course->id;
+                    $itemDes->detail = $choice;
+                    $itemDes->save();
+                }
+            }
+        }
+
+
+
+        // **อัปเดต Speaker**
+        if ($request->has('speaker_name')) {
+            $speaker = $course->Speaker()->first() ?? new Speaker();
+
+            // ตรวจสอบและอัปโหลดรูปภาพ (ถ้ามี)
+            $speakerAvatar = $speaker->avatar; // ใช้ค่าปัจจุบันก่อน
+            if ($request->hasFile('speaker_img')) {
+                $speakerAvatar = $this->uploadImage($request->file('speaker_img'), 'elanco/speaker');
+
+                // ลบรูปภาพเก่า (ถ้ามี)
+                if ($speaker->avatar) {
+                    $this->deleteOldFile($speaker->avatar, 'elanco/speaker');
+                }
+            }
+
+            // ตรวจสอบและอัปโหลดไฟล์ (ถ้ามี)
+            $speakerFile = $speaker->file; // ใช้ค่าปัจจุบันก่อน
+            if ($request->hasFile('file_speaker')) {
+                $speakerFile = $this->uploadFile($request->file('file_speaker'), 'elanco/speaker');
+
+                // ลบไฟล์เก่า (ถ้ามี)
+                if ($speaker->file) {
+                    $this->deleteOldFile($speaker->file, 'elanco/speaker');
+                }
+            }
+
+            $speaker->course_id = $course->id;
+            $speaker->name = $request->speaker_name;
+            $speaker->avatar = $speakerAvatar;
+            $speaker->job_position = $request->speaker_job;
+            $speaker->country = $request->speaker_country;
+            $speaker->file = $speakerFile;
+            $speaker->description = $request->speaker_background;
+            $speaker->save();
+        }
+
+        // **อัปเดต Referance**
+        if ($request->has('product_name')) {
+            $referance = $course->referances()->first() ?? new Referance();
+
+            // ตรวจสอบและอัปโหลดรูปภาพ (ถ้ามี)
+            $referenceImg = $referance->image; // ใช้ค่าปัจจุบันก่อน
+            if ($request->hasFile('reference_img')) {
+                $referenceImg = $this->uploadImage($request->file('reference_img'), 'elanco/Referance');
+
+                // ลบรูปภาพเก่า (ถ้ามี)
+                if ($referance->image) {
+                    $this->deleteOldFile($referance->image, 'elanco/Referance');
+                }
+            }
+
+            // ตรวจสอบและอัปโหลดไฟล์ (ถ้ามี)
+            $referenceFile = $referance->file; // ใช้ค่าปัจจุบันก่อน
+            if ($request->hasFile('file_product')) {
+                $referenceFile = $this->uploadFile($request->file('file_product'), 'elanco/Referance');
+
+                // ลบไฟล์เก่า (ถ้ามี)
+                if ($referance->file) {
+                    $this->deleteOldFile($referance->file, 'elanco/Referance');
+                }
+            }
+
+            // อัปเดตข้อมูล Referance
+            $referance->course_id = $course->id;
+            $referance->title = $request->product_name;
+            $referance->image = $referenceImg;
+            $referance->file = $referenceFile;
+            $referance->description = $request->reference_detail;
+            $referance->save();
+        }
+
 
         // อัปเดตความสัมพันธ์ใน Pivot Tables
         $course->countries()->sync($request->countries ?? []);
@@ -321,7 +497,11 @@ class CourseController extends Controller
     }
 }
 
-
+private function deleteOldFile($fileUrl, $path)
+{
+    $relativePath = str_replace('https://kimspace2.sgp1.cdn.digitaloceanspaces.com/', '', $fileUrl);
+    Storage::disk('do_spaces')->delete($relativePath);
+}
 
     /**
      * Remove the specified resource from storage.

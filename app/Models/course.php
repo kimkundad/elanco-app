@@ -36,22 +36,29 @@ class course extends Model
 
     public function itemDes()
     {
-        return $this->hasMany(itemDes::class, 'course_id');
+        return $this->hasMany(ItemDes::class, 'course_id', 'id');
     }
 
     public function Speaker()
     {
-        return $this->hasMany(Speaker::class, 'course_id');
+        return $this->hasMany(Speaker::class, 'course_id', 'id');
     }
 
     public function referances()
     {
-        return $this->hasMany(Referance::class, 'course_id');
+        return $this->hasMany(Referance::class, 'course_id', 'id');
     }
 
     public function courseActions()
     {
         return $this->hasMany(CourseAction::class, 'course_id');
     }
+
+    public function quiz()
+    {
+        return $this->belongsTo(quiz::class, 'id_quiz', 'id');
+    }
+
+
 
 }

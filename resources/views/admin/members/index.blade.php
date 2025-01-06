@@ -88,29 +88,30 @@
 
 
                         <div class="sorting__col">
+
+
                             <div class="sorting__dropdowns">
-                                <div class="sorting__search">
-                                    <button class="sorting__open">
-                                        <svg class="icon icon-search">
-                                            <use xlink:href="#icon-search"></use>
-                                        </svg>
-                                    </button>
-                                    <input class="sorting__input" type="text" placeholder="Search">
-                                </div>
-                                <div class="dropdown js-dropdown">
-                                    <div class="dropdown__head js-dropdown-head">Select Type</div>
-                                    <div class="dropdown__body js-dropdown-body"><a class="dropdown__item" href="#">
-                                            <div class="dropdown__title title">VET </div>
-                                        </a><a class="dropdown__item" href="#">
-                                            <div class="dropdown__title title">NON VET </div>
-                                        </a><a class="dropdown__item" href="#">
-                                            <div class="dropdown__title title">Admin </div>
-                                        </a>
+                                <form method="GET" action="{{ url('admin/members') }}" style="display: flex">
+                                    <div class="sorting__search">
+                                        <button class="sorting__open" type="submit">
+                                            <svg class="icon icon-search">
+                                                <use xlink:href="#icon-search"></use>
+                                            </svg>
+                                        </button>
+                                        <input class="sorting__input" type="text" name="search"
+                                            placeholder="Search" value="{{ request('search') }}">
                                     </div>
-                                </div>
 
+                                    <div class="field__wrap" style="margin-left: 10px;">
+                                        <select class="field__input" name="userType">
+                                            <option value="" {{ request('userType') == '' ? 'selected' : '' }}>All</option>
+                                            <option value="VET" {{ request('userType') == 'VET' ? 'selected' : '' }}>VET</option>
+                                            <option value="NON VET" {{ request('userType') == 'NON VET' ? 'selected' : '' }}>NON VET</option>
+                                            <option value="Admin" {{ request('userType') == 'Admin' ? 'selected' : '' }}>Admin</option>
+                                        </select>
+                                    </div>
+                                </form>
                             </div>
-
 
 
                         </div>
@@ -129,191 +130,85 @@
                             <div class="products__cell"></div>
                         </div>
 
-                        <div class="products__row">
-                            <div class="products__cell">
-                                <div class="products__payment">1</div>
-                            </div>
-                            <div class="products__cell">
-                                <a class="products__item" href="#">
-                                    <div class="products__details">
-                                        <div class="products__title title">Jacqueline Asong</div>
-                                    </div>
-                                </a>
-                            </div>
-                            <div class="products__cell">
-                                <a class="products__item" href="#">
-                                    <div class="products__details">
-                                        <div class="products__title title">mail@mail.com</div>
-                                    </div>
-                                </a>
-                            </div>
-                            <div class="products__cell">
-                                <div class="products__status caption bg-green">VET</div>
-                            </div>
-                            <div class="products__cell">
-                                <div class="products__payment">Nova Medical Center</div>
-                            </div>
-                            <div class="products__cell">
-                                <img src="{{ url('img/philippines.svg') }}" class="Flag_icon" />
-                            </div>
-                            <div class="products__cell">
-                                <div class="products__payment">17 Aug 2024</div>
-                            </div>
-                            <div class="products__cell">
-
-                                <div class="dropdown actions__btn">
-                                    <button class="dropdown-toggle">
-                                        <svg class="icon icon-more">
-                                        <use xlink:href="#icon-more"></use>
-                                    </svg>
-                                    </button>
-                                    <div class="dropdown-menu">
-                                        <a href="#" class="dropdown-item">
-                                            <img src="{{ url('img/eye.svg') }}" class="eye_icon" />
-                                            Preview
-                                        </a>
-                                        <a href="#" class="dropdown-item">
-                                            <svg class="icon icon-edit">
-                                                <use xlink:href="#icon-edit"></use>
-                                            </svg>
-                                            Edit Member
-                                        </a>
-                                        <a href="#" class="dropdown-item delete">
-                                            <img src="{{ url('img/bin.svg') }}" class="eye_icon" />
-                                            Delete
-                                        </a>
+                        @foreach ($objs as $key => $user)
+                            <div class="products__row">
+                                <div class="products__cell">
+                                    <div class="products__payment">{{ $objs->firstItem() + $key }}</div>
+                                </div>
+                                <div class="products__cell">
+                                    <a class="products__item" href="#">
+                                        <div class="products__details">
+                                            <div class="products__title title">{{ $user->name }}</div>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="products__cell">
+                                    <a class="products__item" href="#">
+                                        <div class="products__details">
+                                            <div class="products__title title">{{ $user->email }}</div>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="products__cell">
+                                    <!-- แสดงชื่อ Role userType -->
+                                    <div class="products__status caption bg-green">
+                                        {{ $user->userType }}
                                     </div>
                                 </div>
-
-                            </div>
-                        </div>
-
-
-                        <div class="products__row">
-                            <div class="products__cell">
-                                <div class="products__payment">1</div>
-                            </div>
-                            <div class="products__cell">
-                                <a class="products__item" href="#">
-                                    <div class="products__details">
-                                        <div class="products__title title">Jacqueline Asong</div>
-                                    </div>
-                                </a>
-                            </div>
-                            <div class="products__cell">
-                                <a class="products__item" href="#">
-                                    <div class="products__details">
-                                        <div class="products__title title">mail@mail.com</div>
-                                    </div>
-                                </a>
-                            </div>
-                            <div class="products__cell">
-                                <div class="products__status caption bg-green">VET</div>
-                            </div>
-                            <div class="products__cell">
-                                <div class="products__payment">Nova Medical Center</div>
-                            </div>
-                            <div class="products__cell">
-                                <img src="{{ url('img/philippines.svg') }}" class="Flag_icon" />
-                            </div>
-                            <div class="products__cell">
-                                <div class="products__payment">17 Aug 2024</div>
-                            </div>
-                            <div class="products__cell">
-
-                                <div class="dropdown actions__btn">
-                                    <button class="dropdown-toggle">
-                                        <svg class="icon icon-more">
-                                        <use xlink:href="#icon-more"></use>
-                                    </svg>
-                                    </button>
-                                    <div class="dropdown-menu">
-                                        <a href="#" class="dropdown-item">
-                                            <img src="{{ url('img/eye.svg') }}" class="eye_icon" />
-                                            Preview
-                                        </a>
-                                        <a href="#" class="dropdown-item">
-                                            <svg class="icon icon-edit">
-                                                <use xlink:href="#icon-edit"></use>
+                                <div class="products__cell">
+                                    <div class="products__payment">{{ $user->clinic ?? 'N/A' }}</div>
+                                </div>
+                                <div class="products__cell">
+                                    <!-- แสดงข้อมูล Country -->
+                                    @if ($user->country)
+                                        <img src="{{ $user->countryDetails->img }}" class="Flag_icon" alt="{{ $user->countryDetails->name }}" />
+                                    @else
+                                        <span>No Country</span>
+                                    @endif
+                                </div>
+                                <div class="products__cell">
+                                    <div class="products__payment">{{ $user->updated_at ?? 'N/A' }}</div>
+                                </div>
+                                <div class="products__cell">
+                                    <div class="dropdown actions__btn">
+                                        <button class="dropdown-toggle">
+                                            <svg class="icon icon-more">
+                                                <use xlink:href="#icon-more"></use>
                                             </svg>
-                                            Edit Member
-                                        </a>
-                                        <a href="#" class="dropdown-item delete">
-                                            <img src="{{ url('img/bin.svg') }}" class="eye_icon" />
-                                            Delete
-                                        </a>
+                                        </button>
+                                        <div class="dropdown-menu">
+                                            <a href="#" class="dropdown-item">
+                                                <img src="{{ url('img/eye.svg') }}" class="eye_icon" />
+                                                Preview
+                                            </a>
+                                            <a href="{{ url('admin/members/' . $user->id . '/edit') }}" class="dropdown-item">
+                                                <svg class="icon icon-edit">
+                                                    <use xlink:href="#icon-edit"></use>
+                                                </svg>
+                                                Edit Member
+                                            </a>
+                                            <a href="#" class="dropdown-item delete">
+                                                <img src="{{ url('img/bin.svg') }}" class="eye_icon" />
+                                                Delete
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
-
                             </div>
-                        </div>
-
-
-                        <div class="products__row">
-                            <div class="products__cell">
-                                <div class="products__payment">1</div>
-                            </div>
-                            <div class="products__cell">
-                                <a class="products__item" href="#">
-                                    <div class="products__details">
-                                        <div class="products__title title">Jacqueline Asong</div>
-                                    </div>
-                                </a>
-                            </div>
-                            <div class="products__cell">
-                                <a class="products__item" href="#">
-                                    <div class="products__details">
-                                        <div class="products__title title">mail@mail.com</div>
-                                    </div>
-                                </a>
-                            </div>
-                            <div class="products__cell">
-                                <div class="products__status caption bg-green">VET</div>
-                            </div>
-                            <div class="products__cell">
-                                <div class="products__payment">Nova Medical Center</div>
-                            </div>
-                            <div class="products__cell">
-                                <img src="{{ url('img/philippines.svg') }}" class="Flag_icon" />
-                            </div>
-                            <div class="products__cell">
-                                <div class="products__payment">17 Aug 2024</div>
-                            </div>
-                            <div class="products__cell">
-
-                                <div class="dropdown actions__btn">
-                                    <button class="dropdown-toggle">
-                                        <svg class="icon icon-more">
-                                        <use xlink:href="#icon-more"></use>
-                                    </svg>
-                                    </button>
-                                    <div class="dropdown-menu">
-                                        <a href="#" class="dropdown-item">
-                                            <img src="{{ url('img/eye.svg') }}" class="eye_icon" />
-                                            Preview
-                                        </a>
-                                        <a href="#" class="dropdown-item">
-                                            <svg class="icon icon-edit">
-                                                <use xlink:href="#icon-edit"></use>
-                                            </svg>
-                                            Edit Member
-                                        </a>
-                                        <a href="#" class="dropdown-item delete">
-                                            <img src="{{ url('img/bin.svg') }}" class="eye_icon" />
-                                            Delete
-                                        </a>
-                                    </div>
-                                </div>
-
-                            </div>
-                        </div>
+                        @endforeach
 
 
 
                     </div>
-                    <div class="products__more">
-                        <button class="products__btn btn btn_black">Load More</button>
+
+                    <br>
+                    <div class="d-flex justify-content-between align-items-center">
+
+                        <div>
+                            {{ $objs->appends(['search' => request('search')])->links('admin.pagination.custom') }}
+                        </div>
                     </div>
+
                 </div>
             </div>
 

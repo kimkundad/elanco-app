@@ -213,3 +213,34 @@
     border: 1px solid  #a2e8ba;
     margin-bottom: 15px;
 }
+
+
+.pagination {
+    display: flex;
+    justify-content: right;
+    margin-top: 20px;
+}
+
+.page-item {
+    margin: 0 5px;
+}
+
+.page-item .page-link {
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    text-decoration: none;
+    color: #333;
+}
+
+.page-item.active .page-link {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: #fff;
+}
+
+.page-item.disabled .page-link {
+    color: #ccc;
+    pointer-events: none;
+    background-color: #f9f9f9;
+}

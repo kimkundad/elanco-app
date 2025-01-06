@@ -667,9 +667,10 @@ Apex.chart = {
 })();
 
 // chart circle yellow
+let chartYellow;
 (function () {
   var options = {
-    series: [35],
+    series: [0],
     chart: {
       height: '100%',
       type: 'radialBar'
@@ -694,7 +695,8 @@ Apex.chart = {
   };
   var chart = document.querySelector('#chart-circle-yellow');
   if (chart != null) {
-    new ApexCharts(chart, options).render();
+    chartYellow = new ApexCharts(chart, options); // บันทึก instance ลงในตัวแปร global
+    chartYellow.render(); // แสดงกราฟ
   }
 })();
 

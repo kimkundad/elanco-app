@@ -14,7 +14,9 @@ use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use App\Models\Country;
 use App\Models\Role;
-
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Intervention\Image\Facades\Image;
 use App\Models\MainCategory;
 use App\Models\SubCategory;
 use App\Models\AnimalType;
@@ -259,6 +261,37 @@ class ApiAuthController extends Controller
     }
 
 
+    private function uploadImage($image, $path)
+    {
+        if ($image) {
+            $img = Image::make($image->getRealPath());
+            $img->resize(800, 800, function ($constraint) {
+                $constraint->aspectRatio();
+            });
+            $img->stream();
+
+            $filename = time() . '_' . $image->getClientOriginalName();
+
+            Storage::disk('do_spaces')->put(
+                "$path/$filename",
+                $img->__toString(),
+                'public'
+            );
+
+            return "https://kimspace2.sgp1.cdn.digitaloceanspaces.com/$path/$filename";
+        }
+
+        return null;
+    }
+
+
+    private function deleteOldFile($fileUrl, $path)
+    {
+        $relativePath = str_replace('https://kimspace2.sgp1.cdn.digitaloceanspaces.com/', '', $fileUrl);
+        Storage::disk('do_spaces')->delete($relativePath);
+    }
+
+
 
     public function deleteUser(Request $request)
     {
@@ -315,8 +348,9 @@ class ApiAuthController extends Controller
         $user = JWTAuth::parseToken()->authenticate();
 
         // โหลดข้อมูลความสัมพันธ์ที่จำเป็น
-        $user->load(['mainCategories', 'subCategories', 'animalTypes']);
+        $user->load(['mainCategories', 'subCategories', 'animalTypes', 'countryDetails']);
 
+        // จัดรูปแบบข้อมูลสำหรับ Response
         // จัดรูปแบบข้อมูลสำหรับ Response
         return response()->json([
             'userType' => $user->userType,
@@ -330,6 +364,8 @@ class ApiAuthController extends Controller
             'subCaregory' => $user->subCategories->pluck('name'), // ดึงเฉพาะชื่อจาก subCategories
             'petType' => $user->animalTypes->pluck('name'), // ดึงเฉพาะชื่อจาก animalTypes
             'avatar' => $user->avatar,
+            'country' => $user->countryDetails ? $user->countryDetails->name : null, // ดึงชื่อประเทศ ถ้ามี
+            'flag' => $user->countryDetails ? $user->countryDetails->flag : null,
         ], 200);
 
     } catch (TokenExpiredException $e) {

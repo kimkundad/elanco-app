@@ -132,7 +132,7 @@
                                 <a class="products__item" href="#">
                                 <img src="{{ $item->avatar }}" class="user_icon" />
                                     <div class="products__details">
-                                        <div class="products__title title pl-5" >{{ $item->name }} {{ $item->surname }}</div>
+                                        <div class="products__title title pl-5" >{{ $item->name }} {{ $item->lastName }}</div>
                                     </div>
                                 </a>
                             </div>
