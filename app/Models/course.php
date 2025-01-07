@@ -36,7 +36,7 @@ class course extends Model
 
     public function itemDes()
     {
-        return $this->hasMany(ItemDes::class, 'course_id', 'id');
+        return $this->hasMany(itemDes::class, 'course_id', 'id');
     }
 
     public function Speaker()
