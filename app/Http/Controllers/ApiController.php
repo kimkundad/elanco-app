@@ -384,7 +384,7 @@ class ApiController extends Controller
             $userCountryId = $user->country;
 
             // ดึง courses ที่เกี่ยวข้องกับ country ของผู้ใช้
-            $courses = Course::whereHas('countries', function ($query) use ($userCountryId) {
+            $courses = course::whereHas('countries', function ($query) use ($userCountryId) {
                 $query->where('country_id', $userCountryId);
             })
             ->orderBy('created_at', 'desc') // เรียงลำดับจากใหม่ล่าสุด
@@ -505,7 +505,7 @@ class ApiController extends Controller
         }
 
         // ดึงข้อมูลคอร์สที่มี featured == 1 และเชื่อมโยงกับประเทศที่ระบุ
-        $courses = Course::where('featured', 1)
+        $courses = course::where('featured', 1)
             ->whereHas('countries', function ($query) use ($country) {
                 $query->where('country_id', $country->id);
             })
@@ -598,7 +598,7 @@ public function courseDetail($id)
         $user = JWTAuth::parseToken()->authenticate();
 
         // ค้นหา Course โดย ID พร้อมโหลดความสัมพันธ์
-        $course = Course::with([
+        $course = course::with([
             'countries',
             'mainCategories',
             'subCategories',
@@ -614,7 +614,7 @@ public function courseDetail($id)
             ->value('isFinishCourse') == 1;
 
         // ดึง Related Courses
-        $relatedCourses = Course::whereHas('countries', function ($query) use ($course) {
+        $relatedCourses = course::whereHas('countries', function ($query) use ($course) {
             $query->whereIn('countries.id', $course->countries->pluck('id'));
         })
             ->whereHas('subCategories', function ($query) use ($course) {
@@ -710,7 +710,7 @@ public function courseDetail($id)
     {
         try {
             // ค้นหา course
-            $course = Course::findOrFail($id);
+            $course = course::findOrFail($id);
 
             // ดึง quiz_id จาก course
             $quizId = $course->id_quiz;
@@ -782,7 +782,7 @@ public function courseDetail($id)
         }
 
         // ค้นหา Course ที่สัมพันธ์กับ Quiz
-        $course = Course::where('id_quiz', $quiz->id)->first();
+        $course = course::where('id_quiz', $quiz->id)->first();
         if (!$course) {
             return response()->json([
                 'error' => 'Invalid Quiz',
