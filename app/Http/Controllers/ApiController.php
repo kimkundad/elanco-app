@@ -61,7 +61,7 @@ class ApiController extends Controller
                 // ตรวจสอบและดึงผู้ใช้จาก JWT
                 $user = JWTAuth::parseToken()->authenticate();
 
-                $course = Course::with('quiz')->findOrFail($id);
+                $course = course::with('quiz')->findOrFail($id);
 
                 $data = [
                     'recipientName' => $user->firstName . ' ' . $user->lastName,
