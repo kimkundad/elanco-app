@@ -1041,12 +1041,13 @@ public function upProgress(Request $request, $id)
         $user = User::findOrFail($id);
 
         if ($user->email_verified_at) {
-            return response()->json(['message' => 'Email already verified.'], 200);
+            return redirect('https://elanco-fe.vercel.app/login');
         }
 
         $user->update(['email_verified_at' => now()]);
 
-        return response()->json(['message' => 'Email successfully verified.'], 200);
+        return redirect('https://elanco-fe.vercel.app/login');
+
     }
 
 
