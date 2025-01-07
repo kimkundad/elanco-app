@@ -8,7 +8,7 @@
 <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5; color: #333;">
   <div style="max-width: 600px; margin: 20px auto; background: #ffffff; border: 1px solid #dddddd; border-radius: 8px; overflow: hidden;">
     <div style="text-align: center; padding: 20px; background-color: #005eb8; color: white;">
-      <img src="{{ url('img/1732202759709.jpg') }}" alt="Elanco Logo" style="max-width: 100px;">
+      <img src="{{ url('img/elanco-logo.svg') }}" alt="Elanco Logo" style="max-width: 100px;">
     </div>
     <div style="padding: 40px; text-align: center;">
       <h1 style="font-size: 24px; font-weight: 600;">Hi {{ $user->firstName }}</h1>
