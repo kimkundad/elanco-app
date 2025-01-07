@@ -67,7 +67,7 @@ class ApiController extends Controller
                 $data = [
                     'recipientName' => $user->firstName . ' ' . $user->lastName,
                     'programTitle' => $course->course_title,
-                    'codeNumber' => 'CE' . str_pad($course->quiz_id, 6, '0', STR_PAD_LEFT), // ใช้ quiz_id แทน course_id
+                    'codeNumber' => $course->quiz->quiz_id, // ใช้ quiz_id แทน course_id
                     'points' => $course->ce_points ?? '0', // หากไม่มี CE Points ให้ใช้ 0
                 ];
 
