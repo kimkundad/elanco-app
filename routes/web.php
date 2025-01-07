@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApiController;
 use Illuminate\Support\Facades\Mail;
+use App\Http\Controllers\HomeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -20,6 +21,8 @@ use Illuminate\Support\Facades\Mail;
 Route::get('logout', '\App\Http\Controllers\Auth\LoginController@logout');
 
 Auth::routes();
+
+Route::get('/getPdf', [HomeController::class, 'generateCertificate']);
 
 Route::get('/email/verify/{id}', [ApiController::class, 'verifyEmail'])
     ->name('verification.verify');

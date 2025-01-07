@@ -18,6 +18,7 @@ use App\Models\CourseAction;
 use App\Models\Country;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Hash;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 
 
@@ -60,21 +61,19 @@ class ApiController extends Controller
                 // ตรวจสอบและดึงผู้ใช้จาก JWT
                 $user = JWTAuth::parseToken()->authenticate();
 
-                // URL ของไฟล์ PDF
-                $pdfUrl = 'https://kimspace2.sgp1.cdn.digitaloceanspaces.com/elanco/certificate_pdf.pdf';
+                $course = Course::with('quiz')->findOrFail($id);
 
-                // ดาวน์โหลดไฟล์ PDF
-                $pdfContent = file_get_contents($pdfUrl);
-
-                if (!$pdfContent) {
-                    return response()->json([
-                        'error' => 'File not found',
-                        'message' => 'Unable to download the certificate file.',
-                    ], 404);
-                }
+                $data = [
+                    'recipientName' => $user->firstName . ' ' . $user->lastName,
+                    'programTitle' => $course->course_title,
+                    'codeNumber' => 'CE' . str_pad($course->quiz_id, 6, '0', STR_PAD_LEFT), // ใช้ quiz_id แทน course_id
+                    'points' => $course->ce_points ?? '0', // หากไม่มี CE Points ให้ใช้ 0
+                ];
 
                 // แปลงไฟล์ PDF เป็น Base64
-                $pdfBase64 = base64_encode($pdfContent);
+                // สร้าง PDF
+                $pdf = Pdf::loadView('certificate-template', $data)
+                ->setPaper('a4', 'landscape'); // ตั้งค่าเป็น A4 แนวนอน
 
                 // อัปเดตสถานะ isDownloadCertificate เป็น true
                 $courseAction = CourseAction::updateOrCreate(
@@ -87,6 +86,10 @@ class ApiController extends Controller
                         'isFinishCourse' => true,
                     ]
                 );
+
+                // แปลง PDF เป็น Base64
+                $pdfContent = $pdf->output(); // ดึงเนื้อหา PDF
+                $pdfBase64 = base64_encode($pdfContent);
 
                 // ส่งข้อมูล Base64 กลับใน response
                 return response()->json([
