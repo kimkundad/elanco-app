@@ -20,6 +20,7 @@ use App\Http\Controllers\HomeController;
 
 Route::get('logout', '\App\Http\Controllers\Auth\LoginController@logout');
 
+
 Auth::routes();
 
 Route::get('/getPdf', [HomeController::class, 'generateCertificate']);
