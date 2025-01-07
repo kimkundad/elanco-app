@@ -21,4 +21,9 @@ class CourseAction extends Model
         'isReview',
         'rating',
     ];
+
+    public function course()
+    {
+        return $this->belongsTo(Course::class, 'course_id');
+    }
 }

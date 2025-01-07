@@ -20,6 +20,9 @@ use Intervention\Image\Facades\Image;
 use App\Models\MainCategory;
 use App\Models\SubCategory;
 use App\Models\AnimalType;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
+use App\Mail\UserVerificationMail;
 
 class ApiAuthController extends Controller
 {
@@ -37,6 +40,14 @@ class ApiAuthController extends Controller
 
         // ดึงข้อมูลผู้ใช้และโหลด countryDetails
         $user = Auth::user();
+
+        if (!$user->email_verified_at) {
+            return response()->json([
+                'error' => 'Your email is not verified.',
+                'message' => 'Please verify your email before logging in.',
+            ], 403);
+        }
+
         $user->load('countryDetails');
 
         return response()->json([
@@ -137,32 +148,65 @@ class ApiAuthController extends Controller
         // หาค่า country_id จาก `countries` table
         $country = Country::where('flag', $request->country)->first();
 
-        // สร้าง user
-        $user = User::create([
-            'name' => $request->firstName . ' ' . $request->lastName,
-            'firstName' => $request->firstName,
-            'lastName' => $request->lastName,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'prefix' => $request->prefix,
-            'userType' => $request->userType,
-            'terms' => $request->terms,
-            'position' => $request->position,
-            'vetId' => $request->vetId,
-            'clinic' => $request->clinic,
-            'country' => $country->id,
-        ]);
+        // เริ่มต้น Transaction
+        DB::beginTransaction();
 
-        $role = Role::find(3); // ค้นหา Role ที่ id = 3
-        if ($role) {
-            $user->roles()->attach($role); // เพิ่มความสัมพันธ์
+        try {
+            // สร้าง user
+            $user = User::create([
+                'name' => $request->firstName . ' ' . $request->lastName,
+                'firstName' => $request->firstName,
+                'lastName' => $request->lastName,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'prefix' => $request->prefix,
+                'userType' => $request->userType,
+                'terms' => $request->terms,
+                'position' => $request->position,
+                'vetId' => $request->vetId,
+                'clinic' => $request->clinic,
+                'country' => $country->id,
+                'email_verified_at' => null, // ยังไม่ได้ยืนยัน
+            ]);
+
+            $role = Role::find(3); // ค้นหา Role ที่ id = 3
+            if ($role) {
+                $user->roles()->attach($role); // เพิ่มความสัมพันธ์
+            }
+
+            // สร้างลิงก์ยืนยัน
+            $verificationUrl = URL::temporarySignedRoute(
+                'verification.verify', // Route ที่จะใช้ตรวจสอบ
+                now()->addMinutes(60), // ลิงก์ใช้ได้ 60 นาที
+                ['id' => $user->id] // พารามิเตอร์ที่ต้องการ
+            );
+
+            // ส่งอีเมลยืนยัน
+            Mail::to($user->email)->send(new UserVerificationMail($user, $verificationUrl));
+
+            // ยืนยันการทำงาน
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User registered successfully',
+                'user' => $user,
+            ]);
+        } catch (\Exception $e) {
+            // ยกเลิกการทำงานในกรณีเกิดข้อผิดพลาด
+            DB::rollback();
+
+            // ลบข้อมูลผู้ใช้ที่สร้างไว้
+            if (isset($user)) {
+                $user->roles()->detach(); // ลบความสัมพันธ์ Role
+                $user->delete(); // ลบข้อมูลผู้ใช้
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Registration failed: ' . $e->getMessage(),
+            ], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'User registered successfully',
-            'user' => $user,
-        ]);
     }
 
 
@@ -182,10 +226,10 @@ class ApiAuthController extends Controller
 
         // Validate ข้อมูล
         $validated = $request->validate([
-            'userType' => 'required|string',
+            'userType' => 'nullable|string',
             'prefix' => 'nullable|string',
-            'firstName' => 'required|string|max:255',
-            'lastName' => 'required|string|max:255',
+            'firstName' => 'nullable|string|max:255',
+            'lastName' => 'nullable|string|max:255',
             'position' => 'nullable|string',
             'vetId' => 'nullable|string',
             'clinic' => 'nullable|string',
@@ -303,18 +347,23 @@ class ApiAuthController extends Controller
                 return response()->json(['error' => 'User not found'], 404);
             }
 
-            // ลบข้อมูลของผู้ใช้ (รวมถึง Pivot Relationships)
-            $user->roles()->detach(); // ลบความสัมพันธ์ roles
-            $user->mainCategories()->detach(); // ลบความสัมพันธ์ mainCategories
-            $user->subCategories()->detach(); // ลบความสัมพันธ์ subCategories
-            $user->animalTypes()->detach(); // ลบความสัมพันธ์ animalTypes
+            // // ลบข้อมูลของผู้ใช้ (รวมถึง Pivot Relationships)
+            // $user->roles()->detach(); // ลบความสัมพันธ์ roles
+            // $user->mainCategories()->detach(); // ลบความสัมพันธ์ mainCategories
+            // $user->subCategories()->detach(); // ลบความสัมพันธ์ subCategories
+            // $user->animalTypes()->detach(); // ลบความสัมพันธ์ animalTypes
 
             // ลบข้อมูลผู้ใช้
-            $user->delete();
+            //$user->delete();
+
+            $timestamp = now()->timestamp;
+            $newEmail = $user->email . "Delete{$timestamp}";
+
+            $user->update(['email' => $newEmail]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'User deleted successfully',
+                'message' => 'User email updated and relationships cleared successfully',
             ], 200);
 
         } catch (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e) {

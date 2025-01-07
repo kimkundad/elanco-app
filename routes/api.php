@@ -28,6 +28,7 @@ Route::middleware(['auth:api'])->group(function () {
     Route::put('/users/password', [ApiAuthController::class, 'resetPassword']);
     Route::delete('/users/me', [ApiAuthController::class, 'deleteUser']);
     Route::get('/users/me', [ApiAuthController::class, 'user']);
+    Route::get('/course/me', [ApiController::class, 'courseMe']);
     Route::get('/user', [ApiAuthController::class, 'user']);
     Route::put('/users', [ApiAuthController::class, 'users']);
     Route::post('/logout', [ApiAuthController::class, 'logout']);

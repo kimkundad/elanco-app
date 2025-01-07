@@ -12,9 +12,13 @@ use Illuminate\Database\Eloquent\ModelNotFoundException as ModelNotFoundExceptio
 
 use App\Models\course;
 use App\Models\quiz;
+use App\Models\User;
 use App\Models\QuizAttempt;
 use App\Models\CourseAction;
 use App\Models\Country;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Hash;
+
 
 
 class ApiController extends Controller
@@ -974,6 +978,76 @@ public function upProgress(Request $request, $id)
 }
 
 
+    public function courseMe(Request $request)
+    {
+        try {
+            // ดึงผู้ใช้ที่เข้าสู่ระบบ
+            $user = JWTAuth::parseToken()->authenticate();
+
+            // ดึงข้อมูลคอร์สที่ผู้ใช้งานอยู่พร้อมสถานะ
+            $courses = CourseAction::with(['course'])
+                ->where('user_id', $user->id) // เฉพาะคอร์สของผู้ใช้ปัจจุบัน
+                ->get();
+
+            // แปลงข้อมูลให้อยู่ในรูปแบบ Response
+            $response = $courses->map(function ($courseAction) {
+                return [
+                    'course_id' => $courseAction->course_id,
+                    'course_title' => $courseAction->course->course_title,
+                    'course_preview' => $courseAction->course->course_preview,
+                    'course_img' => $courseAction->course->course_img,
+                    'isFinishCourse' => $courseAction->isFinishCourse,
+                    'isFinishVideo' => $courseAction->isFinishVideo,
+                    'isFinishQuiz' => $courseAction->isFinishQuiz,
+                    'isDownloadCertificate' => $courseAction->isDownloadCertificate,
+                    'isReview' => $courseAction->isReview,
+                    'rating' => $courseAction->rating,
+                    'lastTimestamp' => $courseAction->lastTimestamp,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $response,
+            ], 200);
+
+        } catch (TokenExpiredException $e) {
+            return response()->json([
+                'error' => 'Token has expired',
+                'message' => 'Please refresh your token or login again.',
+            ], 401);
+
+        } catch (TokenInvalidException $e) {
+            return response()->json([
+                'error' => 'Token is invalid',
+                'message' => 'The provided token is not valid.',
+            ], 401);
+
+        } catch (JWTException $e) {
+            return response()->json([
+                'error' => 'Token not provided',
+                'message' => 'Authorization token is missing from your request.',
+            ], 400);
+        }
+    }
+
+
+    public function verifyEmail(Request $request, $id)
+    {
+        if (!URL::hasValidSignature($request)) {
+            return response()->json(['message' => 'Invalid or expired verification link.'], 403);
+        }
+
+        $user = User::findOrFail($id);
+
+        if ($user->email_verified_at) {
+            return response()->json(['message' => 'Email already verified.'], 200);
+        }
+
+        $user->update(['email_verified_at' => now()]);
+
+        return response()->json(['message' => 'Email successfully verified.'], 200);
+    }
 
 
 

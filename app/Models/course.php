@@ -59,6 +59,11 @@ class course extends Model
         return $this->belongsTo(quiz::class, 'id_quiz', 'id');
     }
 
+    public function actions()
+    {
+        return $this->hasMany(CourseAction::class, 'course_id');
+    }
+
 
 
 }
