@@ -9,6 +9,7 @@ use App\Models\answer;
 use App\Models\question;
 
 
+
 class QuizController extends Controller
 {
     /**
@@ -17,9 +18,24 @@ class QuizController extends Controller
     public function index()
     {
         //
-        $objs = quiz::all();
-        $data['objs'] = $objs;
-        return view('admin.quiz.index', $data);
+        $objs = Quiz::with([
+            'courses' => function ($query) {
+                $query->withCount([
+                    'actions as total_users' => function ($query) {
+                        $query->where('isFinishQuiz', 1); // นับเฉพาะคนที่ทำ quiz สำเร็จ
+                    }
+                ])
+                ->with('countries'); // ดึงข้อมูล Country
+            }
+        ])
+        ->withCount('courses as total_courses') // นับจำนวนคอร์สทั้งหมดที่ใช้ quiz นี้
+        ->get();
+
+      //  dd($objs);
+
+        return view('admin.quiz.index', [
+            'objs' => $objs,
+        ]);
     }
 
     /**

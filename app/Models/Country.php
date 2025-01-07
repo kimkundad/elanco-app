@@ -14,5 +14,12 @@ class Country extends Model
         'flag',
         'img',
     ];
+
+    public function courses()
+    {
+        return $this->belongsToMany(Course::class, 'course_country', 'country_id', 'course_id');
+    }
 }
+
+
 

@@ -13,4 +13,9 @@ class quiz extends Model
     {
         return $this->hasMany(question::class, 'quiz_id');
     }
+
+    public function courses()
+    {
+        return $this->hasMany(Course::class, 'id_quiz', 'id'); // เชื่อมโยงกับ courses ผ่าน id_quiz
+    }
 }

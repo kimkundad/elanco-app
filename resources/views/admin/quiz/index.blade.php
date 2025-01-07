@@ -99,6 +99,7 @@
                         </div>
                     </div>
                 </div>
+
                 <div class="products products_main">
                     <div class="products__table">
                         <div class="products__row products__row_head">
@@ -132,13 +133,17 @@
                                             </div>
                                     </div>
                                     <div class="products__cell">
-                                        <div class="products__payment">0</div>
+                                        <div class="products__payment">{{ $u->total_courses }}</div>
                                     </div>
                                     <div class="products__cell">
-                                        <div class="products__payment">0</div>
+                                        <div class="products__payment">{{ $u->total_courses }}</div>
                                     </div>
                                     <div class="products__cell">
-                                        <img src="{{ url('img/philippines.svg') }}" class="Flag_icon" />
+                                        <div style="display: flex;">
+                                            @foreach($u->courses->flatMap->countries->unique('id') as $country)
+                                                <img src="{{ $country->img }}" class="Flag_icon" alt="{{ $country->name }}" />
+                                            @endforeach
+                                        </div>
                                     </div>
 
                                     <div class="products__cell">

@@ -51,7 +51,7 @@ class course extends Model
 
     public function courseActions()
     {
-        return $this->hasMany(CourseAction::class, 'course_id');
+        return $this->hasMany(CourseAction::class, 'course_id', 'id');
     }
 
     public function quiz()
@@ -61,7 +61,7 @@ class course extends Model
 
     public function actions()
     {
-        return $this->hasMany(CourseAction::class, 'course_id');
+        return $this->hasMany(CourseAction::class, 'course_id', 'id');
     }
 
 
