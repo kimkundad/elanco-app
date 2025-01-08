@@ -988,8 +988,8 @@ public function upProgress(Request $request, $id)
             // ดึงผู้ใช้ที่เข้าสู่ระบบ
             $user = JWTAuth::parseToken()->authenticate();
 
-            // ดึงข้อมูลคอร์สที่ผู้ใช้งานอยู่พร้อมสถานะ
-            $courses = CourseAction::with(['course'])
+            // ดึงข้อมูลคอร์สที่ผู้ใช้งานอยู่พร้อมสถานะและ quiz
+            $courses = CourseAction::with(['course.quiz']) // โหลดข้อมูล Quiz ด้วย
                 ->where('user_id', $user->id) // เฉพาะคอร์สของผู้ใช้ปัจจุบัน
                 ->get();
 
@@ -1000,6 +1000,7 @@ public function upProgress(Request $request, $id)
                     'course_title' => $courseAction->course->course_title,
                     'course_preview' => $courseAction->course->course_preview,
                     'course_img' => $courseAction->course->course_img,
+                    'expire_date' => optional($courseAction->course->quiz)->expire_date, // ดึง expire_date จาก Quiz
                     'isFinishCourse' => $courseAction->isFinishCourse,
                     'isFinishVideo' => $courseAction->isFinishVideo,
                     'isFinishQuiz' => $courseAction->isFinishQuiz,
@@ -1034,6 +1035,7 @@ public function upProgress(Request $request, $id)
             ], 400);
         }
     }
+
 
 
     public function verifyEmail(Request $request, $id)

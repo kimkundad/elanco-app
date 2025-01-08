@@ -10,6 +10,8 @@
         href="https://fonts.googleapis.com/css2?family=Prompt:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap"
         rel="stylesheet">
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet" />
+    <!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
 
     <style>
         body,
@@ -411,11 +413,12 @@
                     <div class="widget__title pb-10" style="border-bottom: 2px solid #E4E4E4;"> Question list</div>
 
                         <div style="width: 100%; padding: 10px">
-                            <div class="showFlex ">
+                            <div class="row ">
 
                                 @if($quiz)
                                     @foreach($quiz as $u)
-                                        <div  class="p-10" style="border-right: 0.5px solid #f1f1f1;">
+                                        <div  class="col-6" style="border-bottom: 0.5px solid #f1f1f1;">
+                                            <br>
                                             <h3 style="margin-bottom: 15px; font-weight: 400; font-size: 14px; display: flex"> {{ $loop->iteration }}. {!! $u->detail !!}</h3>
                                             <div class="filters__variants" >
 
