@@ -64,11 +64,16 @@ class ApiController extends Controller
 
                 $course = course::with('quiz')->findOrFail($id);
 
+                // ดึงคะแนน (score) จาก QuizAttempt
+                $quizAttempt = QuizAttempt::where('user_id', $user->id)
+                ->where('quiz_id', $course->quiz->id ?? null) // ตรวจสอบว่ามี quiz_id ใน course หรือไม่
+                ->first();
+
                 $data = [
                     'recipientName' => $user->firstName . ' ' . $user->lastName,
                     'programTitle' => $course->course_title,
-                    'codeNumber' => $course->quiz->quiz_id, // ใช้ quiz_id แทน course_id
-                    'points' => $course->ce_points ?? '0', // หากไม่มี CE Points ให้ใช้ 0
+                    'codeNumber' => $course->quiz->code_number, // ใช้ quiz_id แทน course_id
+                    'points' => $quizAttempt->score ?? '0', // หากไม่มี CE Points ให้ใช้ 0
                 ];
 
                 // แปลงไฟล์ PDF เป็น Base64

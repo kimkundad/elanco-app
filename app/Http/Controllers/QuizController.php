@@ -74,6 +74,7 @@ class QuizController extends Controller
            $objs->pass_percentage = $request->pass_percentage;
            $objs->certificate = $request->certificate === 'Yes' ? true : false;
            $objs->point_cpd = $request->point_cpd;
+           $objs->code_number = $request->code_number;
            $objs->save();
 
            return redirect(url('admin/quiz'))->with('add_success','เพิ่ม เสร็จเรียบร้อยแล้ว');
@@ -137,6 +138,7 @@ class QuizController extends Controller
            $objs->pass_percentage = $request->pass_percentage;
            $objs->certificate = $request->certificate == '1' ? true : false;
            $objs->point_cpd = $request->point_cpd;
+           $objs->code_number = $request->code_number;
            $objs->save();
 
            return redirect(url('admin/quiz/'.$id.'/edit'))->with('edit_success','แก้ไข เสร็จเรียบร้อยแล้ว');
