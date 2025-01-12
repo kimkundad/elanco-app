@@ -18,7 +18,7 @@
       <p style="font-size: 16px; color: #555555; margin: 10px 0;">
         We received a request to reset your password. Click the button below to set a new password. This link is valid for 24 hours.
       </p>
-      <a href="https://elanco-fe.vercel.app/password/reset?token={{$token) }}" style="display: inline-block; padding: 10px 20px; margin: 20px 0; background-color: #005EB8; color: white; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 4px;">
+      <a href="https://elanco-fe.vercel.app/password/reset?token={{$token}}" style="display: inline-block; padding: 10px 20px; margin: 20px 0; background-color: #005EB8; color: white; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 4px;">
         Reset Password
       </a>
       <p style="font-size: 16px; color: #555555; margin: 10px 0;">
