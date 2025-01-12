@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApiController;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\HomeController;
+use App\Models\Quiz;
 
 /*
 |--------------------------------------------------------------------------
@@ -30,13 +31,11 @@ Route::get('/email/verify/{id}', [ApiController::class, 'verifyEmail'])
 
 
     Route::get('/test-email', function () {
-        Mail::raw('This is a test email from Laravel.', function ($message) {
-            $message->to('recipient@example.com')
-                    ->subject('Test Email')
-                    ->from('ighostzaa@gmail.com', 'Your App Name');
-        });
 
-        return 'Email sent!';
+        $id = 4;
+        $quiz = Quiz::with('questions.answers')->findOrFail($id);
+        dd(count($quiz->questions));
+
     });
 
 Route::group(['middleware' => ['UserRole:superadmin|admin']], function() {

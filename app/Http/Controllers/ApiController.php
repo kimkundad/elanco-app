@@ -21,12 +21,9 @@ use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Hash;
 use Barryvdh\DomPDF\Facade\Pdf;
 
-
-
 class ApiController extends Controller
 {
     //
-
 
     public function getCourseAction($id)
 {
@@ -70,10 +67,10 @@ class ApiController extends Controller
                 ->first();
 
                 $data = [
-                    'recipientName' => $user->firstName . ' ' . $user->lastName,
+                    'recipientName' => $request->name,
                     'programTitle' => $course->course_title,
                     'codeNumber' => $course->quiz->code_number, // ใช้ quiz_id แทน course_id
-                    'points' => $quizAttempt->score ?? '0', // หากไม่มี CE Points ให้ใช้ 0
+                    'points' => $course->quiz->point_cpd ?? '0', // หากไม่มี CE Points ให้ใช้ 0
                 ];
 
                 // แปลงไฟล์ PDF เป็น Base64
@@ -800,7 +797,7 @@ public function courseDetail($id)
             ], 400);
         }
 
-        $totalPoints = $quiz->point_cpd; // คะแนนเต็มจาก point_cpd
+        $totalPoints = count($quiz->questions);  // คะแนนเต็มจาก point_cpd
         $passPercentage = $quiz->pass_percentage; // เปอร์เซ็นต์ที่ต้องผ่าน
         $correctPoints = 0;
 
