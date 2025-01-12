@@ -12,9 +12,7 @@
     </div>
     <div style="padding: 40px; text-align: center;">
       <h1 style="font-size: 24px; font-weight: 600;">Reset Your Password</h1>
-      <p style="font-size: 16px; color: #555555; margin: 10px 0;">
-        Hi {{ $user->firstName }},
-      </p>
+
       <p style="font-size: 16px; color: #555555; margin: 10px 0;">
         We received a request to reset your password. Click the button below to set a new password. This link is valid for 24 hours.
       </p>
