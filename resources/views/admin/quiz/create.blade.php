@@ -174,6 +174,13 @@
                                 </div>
 
 
+                                <div class="field__label mt-10">CPD Code number</div>
+                                <div class="field__wrap">
+                                    <input class="field__input" name="code_number" type="text" placeholder="xxx"
+                                        >
+                                </div>
+
+
                                  <div class="products__more">
                             <button class=" btn btn_green" type="submit">Save</button>
                         </div>

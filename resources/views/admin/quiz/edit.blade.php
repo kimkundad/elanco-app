@@ -103,6 +103,9 @@
         .checkbox{
                 margin-bottom: 15px;
         }
+        .form-control[disabled], .form-control[readonly], fieldset[disabled] .form-control {
+    height: 56px;
+}
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
@@ -157,7 +160,7 @@
                                     <div style="width: 50%;" class="p-10">
                                         <div class="field__label mt-10">Expire date</div>
                                         <div class="field__wrap">
-                                            <input class="field__input" id="expire_date" name="expire_date" type="text"
+                                            <input class="field__input" style="height: 56px;" id="expire_date" name="expire_date" type="text"
                                                 placeholder="Choose the date" value="{{ $objs->expire_date }}">
                                         </div>
                                     </div>

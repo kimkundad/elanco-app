@@ -744,6 +744,7 @@ public function courseDetail($id)
                             return [
                                 'id' => $answer->id,
                                 'text' => $answer->answers,
+                                'correct_ans' => $answer->answers_status
                             ];
                         }),
                     ];
