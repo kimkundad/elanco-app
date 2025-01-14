@@ -1055,7 +1055,7 @@ public function upProgress(Request $request, $id)
             'parameters' => $request->all(),
             'expected_signature' => URL::signedRoute(
                 'verification.verify',
-                ['id' => $id, 'expires' => $request->query('expires')]
+                ['id' => $id, 'expires' => $expires]
             ),
         ]);
 
