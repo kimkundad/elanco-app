@@ -1068,7 +1068,7 @@ public function upProgress(Request $request, $id)
         // สร้าง access token และ refresh token
         $accessToken = auth()->login($user);
         $refreshToken = $this->generateRefreshToken($user);
-
+        dd($accessToken);
         // ลบโทเค็นยืนยัน
      //   DB::table('email_verifications')->where('token', $verificationToken)->delete();
 
@@ -1081,6 +1081,7 @@ public function upProgress(Request $request, $id)
     // สร้าง access token และ refresh token
     $accessToken = auth()->login($user);
     $refreshToken = $this->generateRefreshToken($user);
+    dd($accessToken);
 
     // ลบโทเค็นยืนยัน
   //  DB::table('email_verifications')->where('token', $verificationToken)->delete();
