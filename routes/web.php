@@ -26,8 +26,8 @@ Auth::routes();
 
 Route::get('/getPdf', [HomeController::class, 'generateCertificate']);
 
-Route::get('/email/verify/{id}', [ApiController::class, 'verifyEmail'])
-    ->name('verification.verify');
+
+    Route::get('/email/verify', [ApiController::class, 'verifyEmail'])->name('verification.verify');
 
 
     Route::get('/test-email', function () {
