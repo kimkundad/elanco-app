@@ -1046,6 +1046,9 @@ public function upProgress(Request $request, $id)
     public function verifyEmail(Request $request, $id)
     {
         // ตรวจสอบความถูกต้องของลิงก์
+
+        dd($request->all());
+
         if (!URL::hasValidSignature($request)) {
             return response()->json(['message' => 'Invalid or expired verification link.'], 403);
         }

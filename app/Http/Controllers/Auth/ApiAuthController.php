@@ -177,7 +177,7 @@ class ApiAuthController extends Controller
             // สร้างลิงก์ยืนยัน
             $verificationUrl = URL::temporarySignedRoute(
                 'verification.verify', // Route ที่จะใช้ตรวจสอบ
-                now()->addHours(24), // ลิงก์ใช้ได้ 60 นาที
+                now()->addHours(24),
                 ['id' => $user->id] // พารามิเตอร์ที่ต้องการ
             );
 
