@@ -1045,7 +1045,7 @@ public function upProgress(Request $request, $id)
 
     public function verifyEmail(Request $request, $id)
     {
-        $expires = (int) $request->query('expires'); // ใช้ 'expires'
+        $expiry = (int) $request->query('expiry'); // ใช้ 'expiry' แทน 'expires'
         $currentTime = now()->timestamp;
 
         \Log::info('Debug Verification Request:', [
@@ -1053,11 +1053,11 @@ public function upProgress(Request $request, $id)
             'parameters' => $request->all(),
             'expected_signature' => URL::signedRoute(
                 'verification.verify',
-                ['id' => $id, 'expires' => $expires] // ใช้ 'expires' ในการตรวจสอบ
+                ['id' => $id, 'expiry' => $expiry] // ใช้ 'expiry' ในการตรวจสอบ
             ),
         ]);
 
-        if ($expires < $currentTime) {
+        if ($expiry < $currentTime) {
             return response()->json(['message' => 'Expired verification link.'], 403);
         }
 

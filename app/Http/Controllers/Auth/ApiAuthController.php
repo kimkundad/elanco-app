@@ -180,7 +180,7 @@ class ApiAuthController extends Controller
                 now()->addHours(24), // เวลาหมดอายุ 24 ชั่วโมง
                 [
                     'id' => $user->id,
-                    'expires' => now()->addHours(24)->timestamp // ใช้ 'expires' เพียงตัวเดียว
+                    'expiry' => now()->addHours(24)->timestamp // ใช้ 'expires' เพียงตัวเดียว
                 ]
             );
 
