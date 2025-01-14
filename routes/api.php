@@ -26,6 +26,12 @@ Route::post('/refresh-token', [ApiAuthController::class, 'refreshToken']);
 Route::post('password/forgot', [PasswordResetController::class, 'forgotPassword']);
 Route::post('passwords/PostReset', [PasswordResetController::class, 'PostresetPasswords']);
 
+Route::get('/1test', function () {
+
+    dd("test");
+
+});
+
 Route::middleware(['auth:api'])->group(function () {
 
     Route::put('/users/password', [ApiAuthController::class, 'resetPassword']);
