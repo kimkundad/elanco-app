@@ -1047,19 +1047,19 @@ public function upProgress(Request $request, $id)
     {
         // ตรวจสอบความถูกต้องของลิงก์
 
-        $expires = (int) $request->query('expires'); // แปลง expires เป็นตัวเลข
-        $currentTime = now()->timestamp; // เวลาปัจจุบันในรูปแบบ Unix Timestamp
+        $expiry = (int) $request->query('expiry'); // เปลี่ยนจาก 'expires' เป็น 'expiry'
+        $currentTime = now()->timestamp;
 
         \Log::info('Debug Verification Request:', [
             'full_url' => $request->fullUrl(),
             'parameters' => $request->all(),
             'expected_signature' => URL::signedRoute(
                 'verification.verify',
-                ['id' => $id, 'expires' => $expires]
+                ['id' => $id, 'expiry' => $expiry] // ใช้ 'expiry' ในการสร้างลิงก์ที่คาดหวัง
             ),
         ]);
 
-        if ($expires < $currentTime) {
+        if ($expiry < $currentTime) {
             return response()->json(['message' => 'Expired verification link.'], 403);
         }
 
