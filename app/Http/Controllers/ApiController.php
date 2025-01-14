@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Hash;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Str; // เพิ่มบรรทัดนี้สำหรับใช้ Str
+use Illuminate\Support\Facades\DB;
 
 class ApiController extends Controller
 {
@@ -1040,25 +1041,36 @@ public function upProgress(Request $request, $id)
         }
     }
 
-
-
-
     public function verifyEmail(Request $request, $id)
     {
         // ตรวจสอบความถูกต้องของลิงก์
 
-        if (!URL::hasValidSignature($request)) {
-            return response()->json(['message' => 'Invalid or expired verification link.'], 403);
+        $token = $request->query('token');
+        $record = DB::table('email_verifications')->where('token', $token)->first();
+
+        if (!$record) {
+            return response()->json(['message' => 'Invalid verification link.'], 403);
+        }
+
+        if (now()->greaterThan($record->expires_at)) {
+            return response()->json(['message' => 'Expired verification link.'], 403);
+        }
+
+
+        // ค้นหาผู้ใช้
+        $user = User::find($record->user_id);
+        if (!$user) {
+            return response()->json(['message' => 'User not found.'], 404);
         }
 
         // ค้นหาผู้ใช้ด้วย id
-        $user = User::findOrFail($id);
 
         // ตรวจสอบว่าอีเมลได้รับการยืนยันแล้วหรือไม่
         if ($user->email_verified_at) {
             // สร้าง access token
             $token = auth()->login($user);
             $refreshToken = $this->generateRefreshToken($user);
+            DB::table('email_verifications')->where('token', $token)->delete();
             return redirect("https://elanco-fe.vercel.app/login?accToken={$token}&refreshToken={$refreshToken}");
         }else{
 
@@ -1070,7 +1082,7 @@ public function upProgress(Request $request, $id)
         // สร้าง access token และ refresh token
         $token = auth()->login($user);
         $refreshToken = $this->generateRefreshToken($user);
-
+        DB::table('email_verifications')->where('token', $token)->delete();
         // Redirect พร้อม access token และ refresh token
         return redirect("https://elanco-fe.vercel.app/login?accToken={$token}&refreshToken={$refreshToken}");
     }

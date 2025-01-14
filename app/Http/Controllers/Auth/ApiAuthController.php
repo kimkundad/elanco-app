@@ -23,6 +23,7 @@ use App\Models\AnimalType;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 use App\Mail\UserVerificationMail;
+use Illuminate\Support\Str;
 
 class ApiAuthController extends Controller
 {
@@ -174,12 +175,29 @@ class ApiAuthController extends Controller
                 $user->roles()->attach($role); // เพิ่มความสัมพันธ์
             }
 
-            // สร้างลิงก์ยืนยัน
-            $verificationUrl = URL::temporarySignedRoute(
-                'verification.verify', // Route ที่จะใช้ตรวจสอบ
-                now()->addMinutes(60), // ลิงก์ใช้ได้ 60 นาที
-                ['id' => $user->id] // พารามิเตอร์ที่ต้องการ
-            );
+            $token = Str::random(64);
+
+            DB::table('email_verifications')->insert([
+                'user_id' => $user->id,
+                'token' => $token,
+                'expires_at' => now()->addHours(24),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $verificationUrl = route('verification.verify', ['token' => $token]);
+
+            \Log::info('Generated Verification Link:', [
+                'url' => $verificationUrl,
+                'user_id' => $user->id,
+            ]);
+
+            // // สร้างลิงก์ยืนยัน
+            // $verificationUrl = URL::temporarySignedRoute(
+            //     'verification.verify', // Route ที่จะใช้ตรวจสอบ
+            //     now()->addMinutes(60), // ลิงก์ใช้ได้ 60 นาที
+            //     ['id' => $user->id] // พารามิเตอร์ที่ต้องการ
+            // );
 
             // ส่งอีเมลยืนยัน
             Mail::to($user->email)->send(new UserVerificationMail($user, $verificationUrl));
