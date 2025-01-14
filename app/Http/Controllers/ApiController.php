@@ -1047,25 +1047,28 @@ public function upProgress(Request $request, $id)
     {
         // ตรวจสอบความถูกต้องของลิงก์
 
-        $expires = (int) $request->query('expires'); // ใช้ 'expires' เป็นพารามิเตอร์
-        $currentTime = now()->timestamp;
+        // ดึงพารามิเตอร์ 'expiry' แทน 'expires'
+            $expiry = (int) $request->query('expiry');
+            $currentTime = now()->timestamp;
 
-        \Log::info('Debug Verification Request:', [
-            'full_url' => $request->fullUrl(),
-            'parameters' => $request->all(),
-            'expected_signature' => URL::signedRoute(
-                'verification.verify',
-                ['id' => $id, 'expires' => $expires] // ใช้ 'expires' ในการสร้างลิงก์ที่คาดหวัง
-            ),
-        ]);
+            \Log::info('Debug Verification Request:', [
+                'full_url' => $request->fullUrl(),
+                'parameters' => $request->all(),
+                'expected_signature' => URL::signedRoute(
+                    'verification.verify',
+                    ['id' => $id, 'expiry' => $expiry]
+                ),
+            ]);
 
-        if ($expires < $currentTime) {
-            return response()->json(['message' => 'Expired verification link.'], 403);
-        }
+            // ตรวจสอบเวลาหมดอายุ
+            if ($expiry < $currentTime) {
+                return response()->json(['message' => 'Expired verification link.'], 403);
+            }
 
-        if (!URL::hasValidSignature($request)) {
-            return response()->json(['message' => 'Invalid verification link.'], 403);
-        }
+            // ตรวจสอบลายเซ็น
+            if (!URL::hasValidSignature($request)) {
+                return response()->json(['message' => 'Invalid verification link.'], 403);
+            }
 
         // ค้นหาผู้ใช้ด้วย id
         $user = User::findOrFail($id);
