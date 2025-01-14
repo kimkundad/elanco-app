@@ -1041,7 +1041,7 @@ public function upProgress(Request $request, $id)
         }
     }
 
-    public function verifyEmail(Request $request, $id)
+    public function verifyEmail(Request $request)
     {
         // ตรวจสอบความถูกต้องของลิงก์
 
