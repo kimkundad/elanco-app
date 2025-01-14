@@ -1047,7 +1047,7 @@ public function upProgress(Request $request, $id)
     {
         // ตรวจสอบความถูกต้องของลิงก์
 
-        $expiry = (int) $request->query('expiry'); // เปลี่ยนจาก 'expires' เป็น 'expiry'
+        $expires = (int) $request->query('expires'); // ใช้ 'expires' เป็นพารามิเตอร์
         $currentTime = now()->timestamp;
 
         \Log::info('Debug Verification Request:', [
@@ -1055,11 +1055,11 @@ public function upProgress(Request $request, $id)
             'parameters' => $request->all(),
             'expected_signature' => URL::signedRoute(
                 'verification.verify',
-                ['id' => $id, 'expiry' => $expiry] // ใช้ 'expiry' ในการสร้างลิงก์ที่คาดหวัง
+                ['id' => $id, 'expires' => $expires] // ใช้ 'expires' ในการสร้างลิงก์ที่คาดหวัง
             ),
         ]);
 
-        if ($expiry < $currentTime) {
+        if ($expires < $currentTime) {
             return response()->json(['message' => 'Expired verification link.'], 403);
         }
 
