@@ -1052,7 +1052,7 @@ public function upProgress(Request $request, $id)
             'parameters' => $request->all(),  // พารามิเตอร์ในลิงก์
             'expected_signature' => URL::signedRoute(
                 'verification.verify',
-                ['id' => $id, 'expires' => $request->query('expires')] // ลิงก์ที่ Laravel คาดหวัง
+                ['id' => $id] // ลิงก์ที่ Laravel คาดหวัง
             ),
         ]);
 
