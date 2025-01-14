@@ -1050,9 +1050,13 @@ public function upProgress(Request $request, $id)
         $expires = (int) $request->query('expires'); // แปลง expires เป็นตัวเลข
         $currentTime = now()->timestamp; // เวลาปัจจุบันในรูปแบบ Unix Timestamp
 
-        \Log::info('Debug Verification:', [
-            'expires' => $expires,
-            'currentTime' => $currentTime,
+        \Log::info('Debug Verification Request:', [
+            'full_url' => $request->fullUrl(),
+            'parameters' => $request->all(),
+            'expected_signature' => URL::signedRoute(
+                'verification.verify',
+                ['id' => $id, 'expires' => $request->query('expires')]
+            ),
         ]);
 
         if ($expires < $currentTime) {
