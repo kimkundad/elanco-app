@@ -1042,50 +1042,53 @@ public function upProgress(Request $request, $id)
     }
 
     public function verifyEmail(Request $request)
-    {
-        // ตรวจสอบความถูกต้องของลิงก์
+{
+    // รับโทเค็นจาก Query String
+    $verificationToken = $request->query('token');
 
-        $token = $request->query('token');
-        $record = DB::table('email_verifications')->where('token', $token)->first();
+    // ค้นหาโทเค็นในฐานข้อมูล
+    $record = DB::table('email_verifications')->where('token', $verificationToken)->first();
 
-        if (!$record) {
-            return response()->json(['message' => 'Invalid verification link.'], 403);
-        }
-
-        if (now()->greaterThan($record->expires_at)) {
-            return response()->json(['message' => 'Expired verification link.'], 403);
-        }
-
-
-        // ค้นหาผู้ใช้
-        $user = User::find($record->user_id);
-        if (!$user) {
-            return response()->json(['message' => 'User not found.'], 404);
-        }
-
-        // ค้นหาผู้ใช้ด้วย id
-
-        // ตรวจสอบว่าอีเมลได้รับการยืนยันแล้วหรือไม่
-        if ($user->email_verified_at) {
-            // สร้าง access token
-            $token = auth()->login($user);
-            $refreshToken = $this->generateRefreshToken($user);
-            DB::table('email_verifications')->where('token', $token)->delete();
-            return redirect("https://elanco-fe.vercel.app/login?accToken={$token}&refreshToken={$refreshToken}");
-        }else{
-
-            // อัปเดตสถานะอีเมลว่าได้รับการยืนยัน
-        $user->update(['email_verified_at' => now()]);
-
-        }
-
-        // สร้าง access token และ refresh token
-        $token = auth()->login($user);
-        $refreshToken = $this->generateRefreshToken($user);
-        DB::table('email_verifications')->where('token', $token)->delete();
-        // Redirect พร้อม access token และ refresh token
-        return redirect("https://elanco-fe.vercel.app/login?accToken={$token}&refreshToken={$refreshToken}");
+    if (!$record) {
+        return response()->json(['message' => 'Invalid verification link.'], 403);
     }
+
+    if (now()->greaterThan($record->expires_at)) {
+        return response()->json(['message' => 'Expired verification link.'], 403);
+    }
+
+    // ค้นหาผู้ใช้
+    $user = User::find($record->user_id);
+    if (!$user) {
+        return response()->json(['message' => 'User not found.'], 404);
+    }
+
+    // ตรวจสอบว่าอีเมลได้รับการยืนยันแล้วหรือไม่
+    if ($user->email_verified_at) {
+        // สร้าง access token และ refresh token
+        $accessToken = auth()->login($user);
+        $refreshToken = $this->generateRefreshToken($user);
+
+        // ลบโทเค็นยืนยัน
+        DB::table('email_verifications')->where('token', $verificationToken)->delete();
+
+        return redirect("https://elanco-fe.vercel.app/login?accToken={$accessToken}&refreshToken={$refreshToken}");
+    }
+
+    // อัปเดตสถานะอีเมลว่าได้รับการยืนยัน
+    $user->update(['email_verified_at' => now()]);
+
+    // สร้าง access token และ refresh token
+    $accessToken = auth()->login($user);
+    $refreshToken = $this->generateRefreshToken($user);
+
+    // ลบโทเค็นยืนยัน
+    DB::table('email_verifications')->where('token', $verificationToken)->delete();
+
+    // Redirect พร้อม access token และ refresh token
+    return redirect("https://elanco-fe.vercel.app/login?accToken={$accessToken}&refreshToken={$refreshToken}");
+}
+
 
     /**
      * Generate a refresh token for the user.
