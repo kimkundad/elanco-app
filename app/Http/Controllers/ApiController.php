@@ -1066,7 +1066,7 @@ public function upProgress(Request $request, $id)
     // ตรวจสอบว่าอีเมลได้รับการยืนยันแล้วหรือไม่
     if ($user->email_verified_at) {
         // สร้าง access token และ refresh token
-        $accessToken = auth()->login($user);
+        $accessToken = JWTAuth::fromUser($user);
         $refreshToken = $this->generateRefreshToken($user);
         dd($accessToken);
         // ลบโทเค็นยืนยัน
@@ -1079,7 +1079,7 @@ public function upProgress(Request $request, $id)
     $user->update(['email_verified_at' => now()]);
 
     // สร้าง access token และ refresh token
-    $accessToken = auth()->login($user);
+    $accessToken = JWTAuth::fromUser($user);
     $refreshToken = $this->generateRefreshToken($user);
     dd($accessToken);
 
