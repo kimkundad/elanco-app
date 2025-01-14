@@ -1047,6 +1047,15 @@ public function upProgress(Request $request, $id)
     {
         // ตรวจสอบความถูกต้องของลิงก์
 
+        \Log::info('Debug Verification Request:', [
+            'full_url' => $request->fullUrl(), // ลิงก์ที่ถูกตรวจสอบ
+            'parameters' => $request->all(),  // พารามิเตอร์ในลิงก์
+            'expected_signature' => URL::signedRoute(
+                'verification.verify',
+                ['id' => $id, 'expires' => $request->query('expires')] // ลิงก์ที่ Laravel คาดหวัง
+            ),
+        ]);
+
         if (!URL::hasValidSignature($request)) {
             return response()->json(['message' => 'Invalid or expired verification link.'], 403);
         }
