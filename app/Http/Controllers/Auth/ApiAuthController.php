@@ -181,6 +181,11 @@ class ApiAuthController extends Controller
                 ['id' => $user->id] // พารามิเตอร์ที่ต้องการ
             );
 
+            \Log::info('Generated Verification Link:', [
+                'url' => $verificationUrl,
+                'user_id' => $user->id
+            ]);
+
             // ส่งอีเมลยืนยัน
             Mail::to($user->email)->send(new UserVerificationMail($user, $verificationUrl));
 
