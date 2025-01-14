@@ -1045,24 +1045,10 @@ public function upProgress(Request $request, $id)
 
     public function verifyEmail(Request $request, $id)
     {
-        $expiry = (int) $request->query('expiry'); // ใช้ 'expiry' แทน 'expires'
-        $currentTime = now()->timestamp;
-
-        \Log::info('Debug Verification Request:', [
-            'full_url' => $request->fullUrl(),
-            'parameters' => $request->all(),
-            'expected_signature' => URL::signedRoute(
-                'verification.verify',
-                ['id' => $id, 'expiry' => $expiry] // ใช้ 'expiry' ในการตรวจสอบ
-            ),
-        ]);
-
-        if ($expiry < $currentTime) {
-            return response()->json(['message' => 'Expired verification link.'], 403);
-        }
+        // ตรวจสอบความถูกต้องของลิงก์
 
         if (!URL::hasValidSignature($request)) {
-            return response()->json(['message' => 'Invalid verification link.'], 403);
+            return response()->json(['message' => 'Invalid or expired verification link.'], 403);
         }
 
         // ค้นหาผู้ใช้ด้วย id
