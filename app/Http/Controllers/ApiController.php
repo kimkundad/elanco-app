@@ -1047,10 +1047,20 @@ public function upProgress(Request $request, $id)
     {
         // ตรวจสอบความถูกต้องของลิงก์
 
-        dd($request->all());
+        $expires = (int) $request->query('expires'); // แปลง expires เป็นตัวเลข
+        $currentTime = now()->timestamp; // เวลาปัจจุบันในรูปแบบ Unix Timestamp
+
+        \Log::info('Debug Verification:', [
+            'expires' => $expires,
+            'currentTime' => $currentTime,
+        ]);
+
+        if ($expires < $currentTime) {
+            return response()->json(['message' => 'Expired verification link.'], 403);
+        }
 
         if (!URL::hasValidSignature($request)) {
-            return response()->json(['message' => 'Invalid or expired verification link.'], 403);
+            return response()->json(['message' => 'Invalid verification link.'], 403);
         }
 
         // ค้นหาผู้ใช้ด้วย id
