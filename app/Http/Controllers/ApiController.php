@@ -1068,7 +1068,7 @@ public function upProgress(Request $request, $id)
         // สร้าง access token และ refresh token
         $accessToken = JWTAuth::fromUser($user);
         $refreshToken = $this->generateRefreshToken($user);
-        dd($accessToken);
+      //  dd($accessToken);
         // ลบโทเค็นยืนยัน
      //   DB::table('email_verifications')->where('token', $verificationToken)->delete();
 
@@ -1081,7 +1081,7 @@ public function upProgress(Request $request, $id)
     // สร้าง access token และ refresh token
     $accessToken = JWTAuth::fromUser($user);
     $refreshToken = $this->generateRefreshToken($user);
-    dd($accessToken);
+ //   dd($accessToken);
 
     // ลบโทเค็นยืนยัน
   //  DB::table('email_verifications')->where('token', $verificationToken)->delete();
