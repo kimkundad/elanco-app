@@ -12,6 +12,13 @@ use Illuminate\Support\Carbon;
 
 class PasswordResetController extends Controller
 {
+
+    public function __construct()
+    {
+        $this->middleware('api'); // บังคับให้ใช้ API middleware
+    }
+
+
     public function forgotPassword(Request $request)
     {
         $request->validate([
@@ -35,13 +42,31 @@ class PasswordResetController extends Controller
         return response()->json(['message' => 'อีเมลรีเซ็ตรหัสผ่านถูกส่งไปแล้ว']);
     }
 
-    public function resetPassword(Request $request)
+    public function PostresetPasswordx(Request $request)
     {
-        $request->validate([
-            'token' => 'required',
-            'email' => 'required|email|exists:users,email',
-            'password' => 'required|min:8|confirmed',
-        ]);
+
+
+        dd($request->all());
+
+    }
+
+
+    public function PostresetPasswords(Request $request)
+    {
+
+      //  dd($request->all());
+
+      $validator = \Validator::make($request->all(), [
+        'token' => 'required',
+        'email' => 'required|email',
+        'password' => 'required|min:8|confirmed',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json(['errors' => $validator->errors()], 422);
+    }
+
+    //    dd($request->all());
 
         // ตรวจสอบ token
         $record = DB::table('password_resets')->where([

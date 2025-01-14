@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Country;
 use App\Models\Role;
+use App\Models\CourseAction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Facades\Image;
@@ -41,6 +42,42 @@ class MemberController extends Controller
             'objs' => $objs,
             'search' => $search,
             'userType' => $userType
+        ]);
+    }
+
+    public function getUserCourses($userId)
+    {
+        // ดึงข้อมูล CourseAction และความสัมพันธ์กับ Course
+        $courses = CourseAction::where('user_id', $userId)
+        ->with('course')
+        ->get()
+        ->map(function ($course) {
+            // ถ้า isFinishCourse = 1 ให้ Pass Rate = 100%
+            if ($course->isFinishCourse) {
+                $course->pass_rate = 100; // ตั้งค่าเป็น 100%
+            } else {
+                // คำนวณ Pass Rate ปกติ
+                $totalItems = 2; // จำนวนกิจกรรมทั้งหมด (เปลี่ยนได้ตามจริง)
+                $completedItems = 0;
+
+                if ($course->isFinishVideo) $completedItems++;
+                if ($course->isFinishQuiz) $completedItems++;
+
+                $course->pass_rate = ($completedItems / $totalItems) * 100; // คำนวณเปอร์เซ็นต์
+            }
+
+            return $course;
+        });
+
+        $user = User::with(['countryDetails', 'mainCategories', 'subCategories', 'animalTypes'])
+        ->findOrFail($userId);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'user' => $user,
+                'courses' => $courses
+            ]
         ]);
     }
 

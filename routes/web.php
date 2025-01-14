@@ -51,6 +51,8 @@ Route::group(['middleware' => ['UserRole:superadmin|admin']], function() {
     Route::post('/admin/course/toggle-status/{id}', [App\Http\Controllers\CourseController::class, 'toggleStatus']);
     Route::get('/admin/course/{id}/details', [App\Http\Controllers\CourseController::class, 'getDetails']);
 
+    Route::get('/admin/user/{userId}/courses', [App\Http\Controllers\MemberController::class, 'getUserCourses']);
+
     Route::get('/admin/survey', [App\Http\Controllers\SurvayController::class, 'index']);
     Route::resource('/admin/members', App\Http\Controllers\MemberController::class);
     Route::resource('/admin/adminUser', App\Http\Controllers\AdminController::class);
