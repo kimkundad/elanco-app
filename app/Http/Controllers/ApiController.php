@@ -1070,7 +1070,7 @@ public function upProgress(Request $request, $id)
         $refreshToken = $this->generateRefreshToken($user);
 
         // ลบโทเค็นยืนยัน
-        DB::table('email_verifications')->where('token', $verificationToken)->delete();
+     //   DB::table('email_verifications')->where('token', $verificationToken)->delete();
 
         return redirect("https://elanco-fe.vercel.app/login?accToken={$accessToken}&refreshToken={$refreshToken}");
     }
@@ -1083,7 +1083,7 @@ public function upProgress(Request $request, $id)
     $refreshToken = $this->generateRefreshToken($user);
 
     // ลบโทเค็นยืนยัน
-    DB::table('email_verifications')->where('token', $verificationToken)->delete();
+  //  DB::table('email_verifications')->where('token', $verificationToken)->delete();
 
     // Redirect พร้อม access token และ refresh token
     return redirect("https://elanco-fe.vercel.app/login?accToken={$accessToken}&refreshToken={$refreshToken}");
