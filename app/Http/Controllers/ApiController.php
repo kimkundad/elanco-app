@@ -20,6 +20,7 @@ use App\Models\itemDes;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Hash;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Str; // เพิ่มบรรทัดนี้สำหรับใช้ Str
 
 class ApiController extends Controller
 {
@@ -1041,23 +1042,52 @@ public function upProgress(Request $request, $id)
 
 
 
+
     public function verifyEmail(Request $request, $id)
     {
+        // ตรวจสอบความถูกต้องของลิงก์
         if (!URL::hasValidSignature($request)) {
             return response()->json(['message' => 'Invalid or expired verification link.'], 403);
         }
 
+        // ค้นหาผู้ใช้ด้วย id
         $user = User::findOrFail($id);
 
+        // ตรวจสอบว่าอีเมลได้รับการยืนยันแล้วหรือไม่
         if ($user->email_verified_at) {
-            return redirect('https://elanco-fe.vercel.app/login');
-        }
+            // สร้าง access token
+            $token = auth()->login($user);
+            $refreshToken = $this->generateRefreshToken($user);
+            return redirect("https://elanco-fe.vercel.app/login?accToken={$token}&refreshToken={$refreshToken}");
+        }else{
 
+            // อัปเดตสถานะอีเมลว่าได้รับการยืนยัน
         $user->update(['email_verified_at' => now()]);
 
-        return redirect('https://elanco-fe.vercel.app/login');
+        }
 
+        // สร้าง access token และ refresh token
+        $token = auth()->login($user);
+        $refreshToken = $this->generateRefreshToken($user);
+
+        // Redirect พร้อม access token และ refresh token
+        return redirect("https://elanco-fe.vercel.app/login?accToken={$token}&refreshToken={$refreshToken}");
     }
+
+    /**
+     * Generate a refresh token for the user.
+     */
+    protected function generateRefreshToken(User $user)
+    {
+        // ตัวอย่าง: ใช้ UUID เพื่อสร้าง refresh token
+        $refreshToken = Str::uuid();
+
+        // เก็บ refresh token ในฐานข้อมูลหรือ cache (ขึ้นกับการจัดการของคุณ)
+        $user->update(['refresh_token' => $refreshToken]);
+
+        return $refreshToken;
+    }
+
 
 
 
