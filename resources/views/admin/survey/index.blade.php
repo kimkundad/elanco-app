@@ -91,7 +91,10 @@
                                     <input class="sorting__input" type="text" placeholder="Search">
                                 </div>
                                 <div class="sorting__actions">
+                                    <a href="{{ url('admin/survey/create') }}">
                                     <img src={{ url('img/add.svg') }} style="width: 65px" />
+                                    </a>
+                                </div>
                                 </div>
                             </div>
                         </div>
@@ -110,36 +113,40 @@
                             <div class="products__cell">Create Date</div>
                             <div class="products__cell"></div>
                         </div>
+
+                        @foreach($objs as $key => $survey)
                         <div class="products__row">
                             <div class="products__cell">
-                                <div class="products__payment">1</div>
+                                <div class="products__payment">{{ $objs->firstItem() + $key }}</div>
                             </div>
                             <div class="products__cell"><a class="products__item" href="#">
 
                                     <div class="products__details">
-                                        <div class="products__title title">C001</div>
+                                        <div class="products__title title">{{ $survey->survey_id }}</div>
 
                                     </div>
                                 </a></div>
                             <div class="products__cell">
                                 <div class="products__details" style="max-width: 250px;">
-                                        <div class="products__info caption color-gray">A comprehensive course on
-                                            managing kidney and orthopedic
-                                            issues in animal care.</div>
+                                        <div class="products__info caption color-gray">{{ $survey->survey_title }}</div>
                                     </div>
                             </div>
                             <div class="products__cell">
-                                <div class="products__payment">3</div>
+                                <div class="products__payment">{{ $survey->total_courses }}</div>
                             </div>
                             <div class="products__cell">
-                                <div class="products__payment">552</div>
+                                <div class="products__payment">{{ $survey->total_responses }}</div>
                             </div>
                             <div class="products__cell">
-                                <img src="{{ url('img/philippines.svg') }}" class="Flag_icon" />
+                                <div style="display: flex;">
+                                    @foreach($survey->courses->flatMap->countries->unique('id') as $country)
+                                        <img src="{{ $country->img }}" class="Flag_icon" alt="{{ $country->name }}" />
+                                    @endforeach
+                                </div>
                             </div>
 
                             <div class="products__cell">
-                                <div class="products__payment">17 Aug 2024</div>
+                                <div class="products__payment">{{ $survey->created_at->format('Y-m-d') }}</div>
                             </div>
 
 
@@ -155,7 +162,7 @@
                                             <img src="{{ url('img/eye.svg') }}" class="eye_icon" />
                                             Preview
                                         </a>
-                                        <a href="#" class="dropdown-item">
+                                        <a href="{{url('admin/survey/'.$survey->id.'/edit')}}" class="dropdown-item">
                                             <svg class="icon icon-edit">
                                                 <use xlink:href="#icon-edit"></use>
                                             </svg>
@@ -169,14 +176,19 @@
                                 </div>
                             </div>
                         </div>
+                        @endforeach
 
 
 
 
 
                     </div>
-                    <div class="products__more">
-                        <button class="products__btn btn btn_black">Load More</button>
+                    <br>
+                    <div class="d-flex justify-content-between align-items-center">
+
+                        <div>
+                            {{ $objs->appends(['search' => request('search')])->links('admin.pagination.custom') }}
+                        </div>
                     </div>
                 </div>
             </div>

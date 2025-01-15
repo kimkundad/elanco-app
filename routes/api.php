@@ -53,6 +53,9 @@ Route::middleware(['auth:api'])->group(function () {
     Route::post('/courses/{id}/review', [ApiController::class, 'PostReview']);
     Route::get('/courses/{id}/certificate', [ApiController::class, 'getCertificate']);
 
+    Route::get('/courses/{id}/getSuevey', [ApiController::class, 'getSurveyByCourse']);
+    Route::post('/suevey/{id}/submit', [ApiController::class, 'submitSurvey']);
+
 });
 
 

@@ -16,7 +16,10 @@ use App\Models\User;
 use App\Models\QuizAttempt;
 use App\Models\CourseAction;
 use App\Models\Country;
-use App\Models\itemDes;
+use App\Models\Survey;
+use App\Models\SurveyResponse;
+use App\Models\SurveyResponseAnswer;
+
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Hash;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -712,6 +715,61 @@ public function courseDetail($id)
 
 
 
+    public function getSurveyByCourse($id)
+    {
+        try {
+            // ค้นหา Course และดึง survey_id
+            $course = Course::findOrFail($id);
+
+            if (!$course->survey_id) {
+                return response()->json([
+                    'error' => 'No Survey Found',
+                    'message' => 'This course does not have an associated survey.',
+                ], 404);
+            }
+
+            // ค้นหา Survey ที่เชื่อมโยงกับ survey_id
+            $survey = Survey::with(['questions.answers'])->findOrFail($course->survey_id);
+
+            // จัดรูปแบบข้อมูล Survey
+            $formattedSurvey = [
+                'id' => $survey->id,
+                'survey_id' => $survey->survey_id,
+                'title' => $survey->survey_title,
+                'detail' => $survey->survey_detail,
+                'expire_date' => $survey->expire_date,
+                'questions' => $survey->questions->map(function ($question) {
+                    return [
+                        'id' => $question->id,
+                        'detail' => $question->question_detail,
+                        'answers' => $question->answers->map(function ($answer) {
+                            return [
+                                'id' => $answer->id,
+                                'text' => $answer->answer_text,
+                            ];
+                        }),
+                    ];
+                }),
+            ];
+
+            return response()->json([
+                'survey' => $formattedSurvey,
+            ], 200);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'error' => 'Resource not found',
+                'message' => 'Course or Survey not found.',
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Internal Server Error',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
 
 
     public function getCourseQuiz($id)
@@ -863,6 +921,66 @@ public function courseDetail($id)
         ], 500);
     }
 }
+
+
+
+public function submitSurvey(Request $request, $id)
+{
+    $validatedData = $request->validate([
+        'answers' => 'required|array', // รับ array ของคำตอบ
+        'answers.*.question_id' => 'required|integer|exists:survey_questions,id', // ตรวจสอบว่า question_id มีอยู่ในฐานข้อมูล
+        'answers.*.answer_id' => 'nullable|integer|exists:survey_answers,id', // answer_id (ถ้ามี) ต้องมีอยู่ในฐานข้อมูล
+        'answers.*.custom_answer' => 'nullable|string', // custom_answer (ถ้ามี)
+    ]);
+
+    try {
+        // ตรวจสอบผู้ใช้
+        $user = JWTAuth::parseToken()->authenticate();
+
+        // ค้นหา Survey
+        $survey = Survey::findOrFail($id);
+
+        // ตรวจสอบว่า Survey หมดอายุหรือไม่
+        if ($survey->expire_date && now()->greaterThan($survey->expire_date)) {
+            return response()->json([
+                'error' => 'Survey Expired',
+                'message' => 'This survey has expired.',
+            ], 400);
+        }
+
+        // สร้าง SurveyResponse สำหรับผู้ใช้
+        $surveyResponse = SurveyResponse::create([
+            'survey_id' => $survey->id,
+            'user_id' => $user->id,
+        ]);
+
+        // บันทึกคำตอบของผู้ใช้
+        foreach ($validatedData['answers'] as $answerData) {
+            SurveyResponseAnswer::create([
+                'survey_response_id' => $surveyResponse->id,
+                'survey_question_id' => $answerData['question_id'],
+                'survey_answer_id' => $answerData['answer_id'] ?? null, // ถ้าเป็น null แปลว่าผู้ใช้กรอก custom_answer
+                'custom_answer' => $answerData['custom_answer'] ?? null,
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Survey submitted successfully',
+            'survey_id' => $survey->id,
+        ], 200);
+
+    } catch (ModelNotFoundException $e) {
+        return response()->json([
+            'error' => 'Survey not found',
+        ], 404);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => 'Internal Server Error',
+            'message' => $e->getMessage(),
+        ], 500);
+    }
+}
+
 
 
 public function PostReview(Request $request, $id)
@@ -1070,7 +1188,7 @@ public function upProgress(Request $request, $id)
         $refreshToken = $this->generateRefreshToken($user);
       //  dd($accessToken);
         // ลบโทเค็นยืนยัน
-     //   DB::table('email_verifications')->where('token', $verificationToken)->delete();
+        DB::table('email_verifications')->where('token', $verificationToken)->delete();
 
         return redirect("https://elanco-fe.vercel.app/login?accToken={$accessToken}&refreshToken={$refreshToken}");
     }
@@ -1084,7 +1202,7 @@ public function upProgress(Request $request, $id)
  //   dd($accessToken);
 
     // ลบโทเค็นยืนยัน
-  //  DB::table('email_verifications')->where('token', $verificationToken)->delete();
+    DB::table('email_verifications')->where('token', $verificationToken)->delete();
 
     // Redirect พร้อม access token และ refresh token
     return redirect("https://elanco-fe.vercel.app/login?accToken={$accessToken}&refreshToken={$refreshToken}");

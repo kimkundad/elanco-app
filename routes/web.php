@@ -53,7 +53,8 @@ Route::group(['middleware' => ['UserRole:superadmin|admin']], function() {
 
     Route::get('/admin/user/{userId}/courses', [App\Http\Controllers\MemberController::class, 'getUserCourses']);
 
-    Route::get('/admin/survey', [App\Http\Controllers\SurvayController::class, 'index']);
+    Route::resource('/admin/survey', App\Http\Controllers\SurvayController::class);
+
     Route::resource('/admin/members', App\Http\Controllers\MemberController::class);
     Route::resource('/admin/adminUser', App\Http\Controllers\AdminController::class);
     Route::get('/admin/setting', [App\Http\Controllers\SettingController::class, 'index']);

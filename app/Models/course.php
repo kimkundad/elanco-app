@@ -64,6 +64,11 @@ class course extends Model
         return $this->hasMany(CourseAction::class, 'course_id', 'id');
     }
 
+    public function survey()
+    {
+        return $this->belongsTo(Survey::class, 'survey_id');
+    }
+
 
 
 }

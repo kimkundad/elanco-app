@@ -422,12 +422,12 @@ document.addEventListener('DOMContentLoaded', () => {
         updateCategoryBadges('.category', user.mainCategories);
         updateCategoryBadges('.sub-category', user.subCategories);
         updateCategoryBadges('.animal-category', user.animalTypes);
-
+        console.log('courses', courses)
         // Update course list in the table
         const tableBody = document.querySelector('#course-table-body');
         tableBody.innerHTML = ''; // Clear existing rows
 
-        courses.forEach((course, index) => {
+        courses.forEach((courses, index) => {
             const row = `
                 <tr>
                     <td>${index + 1}</td>
