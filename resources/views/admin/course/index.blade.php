@@ -274,7 +274,13 @@
                                     </div>
                                     <div class="products__cell">
                                         <div style="display: flex">
+                                            @if($u->id_quiz)
                                             <img src="{{ url('img/quiz.png') }}" class="img-quiz" />
+                                            @endif
+                                            @if($u->survey_id)
+                                            <img src="{{ url('img/Edit@2x.png') }}" class="img-quiz"  />
+                                            @endif
+
                                             {{-- <img src="{{ url('img/Edit@2x.png') }}" class="img-quiz"  /> --}}
                                         </div>
                                     </div>
