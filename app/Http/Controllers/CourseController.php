@@ -341,8 +341,8 @@ class CourseController extends Controller
         'url_video' => 'nullable|url',
         'id_quiz' => 'required',
         'course_img' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:4048',
-        'choice' => 'nullable|array',
-        'choice.*' => 'nullable|string|max:255',
+        'item_des' => 'nullable|array',
+        'item_des.*' => 'nullable|string|max:255',
         'reference_img' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:4048',
         'file_product' => 'nullable|file|max:5048',
         'speaker_img' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:4048',
@@ -399,8 +399,8 @@ class CourseController extends Controller
         $course->save();
 
         $course->itemDes()->delete(); // ลบรายการเดิม
-        if ($request->has('choice')) {
-            foreach ($request->choice as $choice) {
+        if ($request->has('item_des')) {
+            foreach ($request->item_des as $choice) {
                 if (!is_null($choice)) {
                     $itemDes = new ItemDes();
                     $itemDes->course_id = $course->id;
