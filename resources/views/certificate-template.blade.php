@@ -32,7 +32,7 @@
 </head>
 <body>
     <div class="container">
-        <img src="{{ public_path('img/certificate_pdf_page-0001.jpg') }}" alt="Background" class="background">
+        <img src="{{ public_path('img/certificate_pdf_page-0001.png') }}" alt="Background" class="background">
         <!-- ชื่อผู้รับ -->
         <div class="recipient-name"
             style="position: absolute;
