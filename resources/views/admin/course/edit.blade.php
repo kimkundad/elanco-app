@@ -348,14 +348,13 @@
                                                 @endif
                                     </select>
                                 </div>
-
                             </div>
 
                             <div class="itemFlex">
 
                                 <div class="field__label">Survey</div>
                                 <div class="field__wrap">
-                                    <select class="field__input" name="id_quiz">
+                                    <select class="field__input" name="survey_id">
                                         <option value="" selected>Survey ID</option>
                                        @if($survey)
                                                     @foreach($survey as $u)
