@@ -242,7 +242,7 @@
                                             <div class="products__preview"><img class="products__pic"
                                                     src="{{ $u->course_img }}" alt=""></div>
                                             <div class="products__details" style="max-width: 250px;">
-                                                <div class="products__title title">{{ $u->quiz->quiz_id }}</div>
+                                                <div class="products__title title">{{ $u->quiz ? $u->quiz->quiz_id : 'No Quiz Available' }}</div>
                                                 <div class="products__info caption color-gray">{{ $u->course_title }}</div>
                                             </div>
                                         </a>

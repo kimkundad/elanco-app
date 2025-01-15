@@ -350,6 +350,27 @@
                                 </div>
 
                             </div>
+
+                            <div class="itemFlex">
+
+                                <div class="field__label">Survey</div>
+                                <div class="field__wrap">
+                                    <select class="field__input" name="id_quiz">
+                                        <option value="" selected>Survey ID</option>
+                                       @if($survey)
+                                                    @foreach($survey as $u)
+                                                        <option value="{{ $u->id }}"
+                                                        @if($u->id == $course->survey_id)
+                                                    selected
+                                                    @endif
+                                                    >{{ $u->survey_id }}</option>
+                                                    @endforeach
+                                                @endif
+                                    </select>
+                                </div>
+
+                            </div>
+
                         </div>
 
 

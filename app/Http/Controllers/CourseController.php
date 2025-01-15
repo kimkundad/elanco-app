@@ -10,7 +10,7 @@ use App\Models\SubCategory;
 use App\Models\AnimalType;
 use App\Models\quiz;
 use App\Models\itemDes;
-
+use App\Models\Survey;
 use App\Models\Speaker;
 use App\Models\Referance;
 use App\Models\CourseAction;
@@ -120,6 +120,7 @@ class CourseController extends Controller
     {
         //
         $quiz = Quiz::all();
+        $survey = Survey::all();
         $countries = Country::all();
         $mainCategories = MainCategory::all();
         $subCategories = SubCategory::all();
@@ -314,6 +315,7 @@ class CourseController extends Controller
         $data['subCategories'] = SubCategory::all(); // ดึงหมวดหมู่ย่อยทั้งหมด
         $data['animalTypes'] = AnimalType::all(); // ดึงประเภทสัตว์ทั้งหมด
         $data['quiz'] = Quiz::all();
+        $data['survey'] = Survey::all();
 
         // URL และ Method สำหรับฟอร์มแก้ไข
         $data['url'] = url('admin/course/'.$id);

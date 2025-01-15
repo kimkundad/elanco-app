@@ -89,6 +89,7 @@
     vertical-align: middle;
     background-color: #ffffff;
     border-radius: 10px;
+    margin-right:5px
 }
 .btn-secondary {
     color: #000;
@@ -294,10 +295,10 @@
                                                 </div>
                                             </div>
                                             <ul class="list-unstyled">
-                                                <li><strong>Type:</strong> VET</li>
-                                                <li><strong>VET ID:</strong> 54681544</li>
-                                                <li><strong>Job Info:</strong> Veterinarian</li>
-                                                <li><strong>Clinic / Hospital Name:</strong> Betagro Public Company Limited</li>
+                                                <li><strong>Type:</strong> <span class="vet">VET</span></li>
+                                                <li><strong>VET ID:</strong> <span class="vetId">54681544</span></li>
+                                                <li><strong>Job Info:</strong> </li>
+                                                <li><strong>Clinic / Hospital Name:</strong> </li>
                                                 <li><strong>Membership Date:</strong> 17 Aug 2024 | 05:90 AM</li>
                                                 <li><strong>Last Activity Date:</strong> 17 Aug 2024 | 05:90 AM</li>
                                             </ul>
@@ -314,13 +315,13 @@
                                             </div>
 
                                             <h6>Sub Category</h6>
-                                            <div class="mb-3">
+                                            <div class="mb-3 sub-category">
                                                 <span class="badge bg-light text-dark me-1">Diagnostic Imaging</span>
                                                 <span class="badge bg-light text-dark">Emergency Critical Care</span>
                                             </div>
 
                                             <h6>Animal Category</h6>
-                                            <div class="mb-3">
+                                            <div class="mb-3 animal-category">
                                                 <span class="badge bg-light text-dark">Cat</span>
                                             </div>
                                             <br>
@@ -418,16 +419,21 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('.stats .text-success').textContent = user.completedCourses || '0';
         document.querySelector('.stats .text-warning').textContent = user.ceCredits || '0';
 
+        console.log('main_categories', user.main_categories)
+
         // Update categories
-        updateCategoryBadges('.category', user.mainCategories);
-        updateCategoryBadges('.sub-category', user.subCategories);
-        updateCategoryBadges('.animal-category', user.animalTypes);
-        console.log('courses', courses)
+        updateCategoryBadges('.category', user.main_categories);
+        updateCategoryBadges('.sub-category', user.sub_categories);
+        updateCategoryBadges('.animal-category', user.animal_types);
+
+        document.querySelector('.vet').textContent = user.userType;
+        document.querySelector('.vetId').textContent = user.vetId;
+
         // Update course list in the table
         const tableBody = document.querySelector('#course-table-body');
         tableBody.innerHTML = ''; // Clear existing rows
 
-        courses.forEach((courses, index) => {
+        courses.forEach((course, index) => {
             const row = `
                 <tr>
                     <td>${index + 1}</td>
@@ -443,14 +449,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Utility function to update badges for categories
-    function updateCategoryBadges(selector, categories) {
-        const container = document.querySelector(selector);
-        container.innerHTML = ''; // Clear existing badges
-        categories.forEach(category => {
-            const badge = `<span class="badge bg-light text-dark me-1">${category.name}</span>`;
-            container.innerHTML += badge;
-        });
+   function updateCategoryBadges(selector, categories) {
+    const container = document.querySelector(selector);
+    container.innerHTML = ''; // ล้าง badge ที่มีอยู่เดิม
+
+    // ตรวจสอบว่าข้อมูล categories เป็น array ที่ถูกต้องหรือไม่
+    if (!Array.isArray(categories) || categories.length === 0) {
+        console.warn('ข้อมูล Categories ไม่ถูกต้องหรือว่าง:', categories);
+        return;
     }
+
+    categories.forEach(category => {
+        const badge = `<span class="badge bg-light text-dark me-1">${category.name}</span>`;
+        container.innerHTML += badge;
+    });
+}
 
     // Function to open popup
     function openPopup() {
