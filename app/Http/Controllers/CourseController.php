@@ -394,6 +394,7 @@ class CourseController extends Controller
         $course->duration = $request->duration;
         $course->url_video = $request->url_video;
         $course->id_quiz = $request->id_quiz;
+        $course->survey_id = $request->survey_id;
         $course->course_description = $request->course_description;
         $course->save();
 
