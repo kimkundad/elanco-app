@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\ApiAuthController;
 use App\Http\Controllers\ApiController;
 use App\Http\Controllers\PasswordResetController;
+use App\Http\Controllers\CourseController;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,9 +28,7 @@ Route::post('password/forgot', [PasswordResetController::class, 'forgotPassword'
 Route::post('passwords/PostReset', [PasswordResetController::class, 'PostresetPasswords']);
 
 Route::get('/1test', function () {
-
     dd("test");
-
 });
 
 Route::middleware(['auth:api'])->group(function () {
@@ -55,6 +54,8 @@ Route::middleware(['auth:api'])->group(function () {
 
     Route::get('/courses/{id}/getSuevey', [ApiController::class, 'getSurveyByCourse']);
     Route::post('/suevey/{id}/submit', [ApiController::class, 'submitSurvey']);
+
+    Route::get('/admin/course', [CourseController::class, 'index']);
 
 });
 

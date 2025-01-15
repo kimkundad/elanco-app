@@ -982,8 +982,6 @@
         this.style.display = 'none';
     });
 
-
-
     </script>
 
 @stop('scripts')

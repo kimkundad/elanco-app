@@ -42,7 +42,11 @@ class CourseController extends Controller
 
          //   dd($objs);
 
-        return view('admin.course.index', ['objs' => $objs, 'search' => $search]);
+         return response()->json([
+            'course' => $objs,
+        ]);
+
+      //  return view('admin2.course.index', ['objs' => $objs, 'search' => $search]);
     }
 
 
@@ -128,13 +132,14 @@ class CourseController extends Controller
 
         $data = [
             'quiz' => $quiz,
+            'survey' => $survey,
             'countries' => $countries,
             'mainCategories' => $mainCategories,
             'subCategories' => $subCategories,
             'animalTypes' => $animalTypes,
         ];
 
-        return view('admin.course.create', $data);
+        return view('admin2.course.create', $data);
     }
 
 
