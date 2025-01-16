@@ -44,20 +44,20 @@ Route::group(['middleware' => ['UserRole:superadmin|admin']], function() {
         return view('welcome');
     });
 
-    Route::get('/admin/dashboard', [App\Http\Controllers\DashboardController::class, 'index']);
-  //  Route::resource('/admin/course', App\Http\Controllers\CourseController::class);
-    Route::resource('/admin/quiz', App\Http\Controllers\QuizController::class);
-    Route::post('/admin/PostQuestion/{id}', [App\Http\Controllers\QuizController::class, 'PostQuestion']);
-    Route::post('/admin/course/toggle-status/{id}', [App\Http\Controllers\CourseController::class, 'toggleStatus']);
-    Route::get('/admin/course/{id}/details', [App\Http\Controllers\CourseController::class, 'getDetails']);
+//     Route::get('/admin/dashboard', [App\Http\Controllers\DashboardController::class, 'index']);
+//   //  Route::resource('/admin/course', App\Http\Controllers\CourseController::class);
+//     Route::resource('/admin/quiz', App\Http\Controllers\QuizController::class);
+//     Route::post('/admin/PostQuestion/{id}', [App\Http\Controllers\QuizController::class, 'PostQuestion']);
+//     Route::post('/admin/course/toggle-status/{id}', [App\Http\Controllers\CourseController::class, 'toggleStatus']);
+//     Route::get('/admin/course/{id}/details', [App\Http\Controllers\CourseController::class, 'getDetails']);
 
-    Route::get('/admin/user/{userId}/courses', [App\Http\Controllers\MemberController::class, 'getUserCourses']);
+//     Route::get('/admin/user/{userId}/courses', [App\Http\Controllers\MemberController::class, 'getUserCourses']);
 
-    Route::resource('/admin/survey', App\Http\Controllers\SurvayController::class);
+//     Route::resource('/admin/survey', App\Http\Controllers\SurvayController::class);
 
-    Route::resource('/admin/members', App\Http\Controllers\MemberController::class);
-    Route::resource('/admin/adminUser', App\Http\Controllers\AdminController::class);
-    Route::get('/admin/setting', [App\Http\Controllers\SettingController::class, 'index']);
-    Route::get('/admin/systemlogs', [App\Http\Controllers\DashboardController::class, 'systemlogs']);
+//     Route::resource('/admin/members', App\Http\Controllers\MemberController::class);
+//     Route::resource('/admin/adminUser', App\Http\Controllers\AdminController::class);
+//     Route::get('/admin/setting', [App\Http\Controllers\SettingController::class, 'index']);
+//     Route::get('/admin/systemlogs', [App\Http\Controllers\DashboardController::class, 'systemlogs']);
 
 });

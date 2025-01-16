@@ -108,6 +108,7 @@ class DatabaseSeeder extends Seeder
         //         ]
         // ]);
 
+
         // DB::table('settings')->insert([
         //     [
         //     'name_website' => 'wealthangels',

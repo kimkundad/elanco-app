@@ -42,13 +42,12 @@ class LoginController extends Controller
     public function authenticated(Request $request)
      {
      // Logic that determines where to send the user
-     if($request->user()->hasRole('superadmin')){
-     return redirect('/admin/dashboard');
-     }
-     if($request->user()->hasRole('admin')){
-     return redirect('/admin/dashboard');
-     }
-
+        if($request->user()->hasRole('superadmin')){
+        return redirect('/admin/dashboard');
+        }
+        if($request->user()->hasRole('admin')){
+        return redirect('/admin/dashboard');
+        }
 
      //return redirect('/');
      }

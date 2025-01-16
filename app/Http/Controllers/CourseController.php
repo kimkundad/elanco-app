@@ -18,6 +18,7 @@ use App\Models\CourseAction;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Facades\Image;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class CourseController extends Controller
 {
@@ -26,28 +27,38 @@ class CourseController extends Controller
      */
     public function index(Request $request)
     {
-        // Retrieve search query
-        $search = $request->input('search');
+        try {
+           // dd($request->all());
+            // Retrieve search query
+            $search = $request->input('search');
 
-        // Query courses with search filter
-        $objs = course::with(['countries', 'mainCategories', 'subCategories', 'animalTypes', 'quiz'])
-            ->withCount(['courseActions as enrolled_count' => function ($query) {
-                $query->where('isFinishCourse', true);
-            }])
-            ->when($search, function ($query, $search) {
-                $query->where('course_title', 'like', '%' . $search . '%')
-                    ->orWhere('course_preview', 'like', '%' . $search . '%');
-            })
-            ->paginate(8);
+            // Query courses with search filter
+            $objs = course::with(['countries', 'mainCategories', 'subCategories', 'animalTypes', 'quiz'])
+                ->withCount(['courseActions as enrolled_count' => function ($query) {
+                    $query->where('isFinishCourse', true);
+                }])
+                ->when($search, function ($query, $search) {
+                    $query->where('course_title', 'like', '%' . $search . '%')
+                        ->orWhere('course_preview', 'like', '%' . $search . '%');
+                })
+                ->paginate(8);
 
-         //   dd($objs);
-
-         return response()->json([
-            'course' => $objs,
-        ]);
-
-      //  return view('admin2.course.index', ['objs' => $objs, 'search' => $search]);
+            // Return JSON response with course data
+            return response()->json([
+                'success' => true,
+                'message' => 'Courses retrieved successfully',
+                'data' => $objs,
+            ], 200);
+        } catch (\Exception $e) {
+            // จัดการข้อผิดพลาดทั่วไป
+            return response()->json([
+                'success' => false,
+                'message' => 'Internal Server Error',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
+
 
 
     public function getDetails($id)
@@ -187,48 +198,63 @@ class CourseController extends Controller
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
-    {
-        //
-       // dd($request->all());
+{
 
-        $this->validate($request, [
-            'course_title' => 'required|string|max:255',
-            'course_img' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:4048',
-            'course_preview' => 'nullable|string',
-            'status' => 'nullable|integer',
-            'duration' => 'nullable|string',
-            'url_video' => 'nullable|url',
-            'id_quiz' => 'required',
-            'choice' => 'nullable|array', // Validate choice as an array
-            'choice.*' => 'nullable|string|max:255', // Validate each choice
-            'reference_img' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:4048',
-            'file_product' => 'nullable|file|max:5048',
-            'speaker_img' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:4048',
-            'file_speaker' => 'nullable|file|max:5048',
-        ]);
+    // $user = $request->user();
+    // return response()->json([
+    //     'user' => $user,
+    //     'roles' => $user ? $user->roles->pluck('name') : null,
+    // ], 200);
 
-        $filename = null;
 
-        DB::beginTransaction();
+   // dd($request->all());
+    // Validate Request Input
+    $validator = Validator::make($request->all(), [
+        'course_title' => 'required|string|max:255',
+        'course_img' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:4048',
+        'course_preview' => 'required|string',
+        'status' => 'nullable|integer',
+        'duration' => 'required|string',
+        'url_video' => 'required|url',
+        'id_quiz' => 'nullable|integer',
+        'survey_id' => 'nullable|integer',
+        'itemDes' => 'nullable|array',
+        'itemDes.*' => 'nullable|string|max:255',
+        'reference_img' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:4048',
+        'file_product' => 'nullable|file|max:5048',
+        'speaker_img' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:4048',
+        'file_speaker' => 'nullable|file|max:5048',
+    ]);
 
-        try {
+    if ($validator->fails()) {
+        return response()->json([
+            'message' => 'Validation failed',
+            'errors' => $validator->errors()
+        ], 422);
+    }
 
-           $filename = $this->uploadImage($request->file('course_img'), 'elanco/course');
-           $course = new course();
-           $course->course_title = $request->course_title;
-           $course->course_img = $filename
+    DB::beginTransaction();
+
+    try {
+        // Save Course
+        $filename = $this->uploadImage($request->file('course_img'), 'elanco/course');
+        $course = new course();
+        $course->course_title = $request->course_title;
+        $course->course_img = $filename
             ? 'https://kimspace2.sgp1.cdn.digitaloceanspaces.com/elanco/course/' . $filename
             : null;
-           $course->course_preview = $request->course_preview;
-           $course->course_description = $request->course_description;
-           $course->status = $request->status ?? 0;
-           $course->duration = $request->duration;
-           $course->url_video = $request->url_video;
-           $course->id_quiz = $request->id_quiz;
-           $course->save();
+        $course->course_preview = $request->course_preview;
+        $course->course_description = $request->course_description;
+        $course->status = $request->status ?? 0;
+        $course->duration = $request->duration;
+        $course->url_video = $request->url_video;
+        $course->id_quiz = $request->id_quiz;
+        $course->survey_id = $request->survey_id;
+        $course->save();
 
-           if ($request->has('choice')) {
-            foreach ($request->choice as $choice) {
+        // Save ItemDes
+        if ($request->has('itemDes')) {
+            foreach ($request->itemDes as $choice) {
                 if (!is_null($choice)) {
                     $itemDes = new itemDes();
                     $itemDes->course_id = $course->id;
@@ -236,9 +262,9 @@ class CourseController extends Controller
                     $itemDes->save();
                 }
             }
-            }
+        }
 
-            // **3. บันทึก Speaker**
+        // Save Speaker
         if ($request->has('speaker_name')) {
             $speakerAvatar = $this->uploadImage($request->file('speaker_img'), 'elanco/speaker');
             $speakerFile = $this->uploadFile($request->file('file_speaker'), 'elanco/speaker');
@@ -254,7 +280,7 @@ class CourseController extends Controller
             $speaker->save();
         }
 
-        // **4. บันทึก Referance**
+        // Save Reference
         if ($request->has('product_name')) {
             $referenceImg = $this->uploadImage($request->file('reference_img'), 'elanco/Referance');
             $referenceFile = $this->uploadFile($request->file('file_product'), 'elanco/Referance');
@@ -268,8 +294,8 @@ class CourseController extends Controller
             $referance->save();
         }
 
-
-           if ($request->has('countries')) {
+        // Save Relations
+        if ($request->has('countries')) {
             $course->countries()->attach($request->countries);
         }
 
@@ -287,15 +313,25 @@ class CourseController extends Controller
 
         DB::commit();
 
-        return redirect(url('admin/course'))->with('add_success','เพิ่ม เสร็จเรียบร้อยแล้ว');
+        // Response
+        return response()->json([
+            'status' => true,
+            'message' => 'Course created successfully.',
+            'data' => $course
+        ], 201);
 
-        } catch (\Exception $e) {
+    } catch (\Exception $e) {
+        DB::rollback();
 
-            DB::rollback();
-
-            return redirect()->back()->withErrors(['database' => 'Failed to save course data: ' . $e->getMessage()]);
-        }
+        // Error Response
+        return response()->json([
+            'status' => false,
+            'message' => 'Failed to create course.',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
+
 
     /**
      * Display the specified resource.
@@ -303,6 +339,46 @@ class CourseController extends Controller
     public function show(string $id)
     {
         //
+        try {
+            // ดึงข้อมูลคอร์สและความสัมพันธ์ที่เกี่ยวข้อง
+            $course = course::with([
+                'countries',
+                'mainCategories',
+                'subCategories',
+                'animalTypes',
+                'itemDes',
+                'referances',
+                'Speaker',
+                'Speaker.countryDetails'
+            ])->findOrFail($id);
+
+            // สร้าง Response Data
+            $response = [
+                'course' => $course
+            ];
+
+            // ส่งออกข้อมูลในรูปแบบ JSON
+            return response()->json([
+                'success' => true,
+                'message' => 'Course data retrieved successfully.',
+                'data' => $response
+            ], 200);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            // กรณีไม่พบคอร์ส
+            return response()->json([
+                'success' => false,
+                'message' => 'Course not found.',
+                'error' => $e->getMessage()
+            ], 404);
+        } catch (\Exception $e) {
+            // กรณีเกิดข้อผิดพลาดอื่น ๆ
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving course data.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -336,23 +412,31 @@ class CourseController extends Controller
     public function update(Request $request, string $id)
 {
 
-  //  dd($request->all());
+    //dd($request->all());
     // Validation
-    $this->validate($request, [
-        'course_title' => 'required|string|max:255',
+
+    $validator = Validator::make($request->all(), [
+        'course_title' => 'nullable|string|max:255',
         'course_preview' => 'nullable|string',
         'status' => 'nullable|integer',
         'duration' => 'nullable|string',
         'url_video' => 'nullable|url',
-        'id_quiz' => 'required',
-        'course_img' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:4048',
-        'item_des' => 'nullable|array',
-        'item_des.*' => 'nullable|string|max:255',
+        'id_quiz' => 'nullable|integer',
+        'survey_id' => 'nullable|integer',
+        'itemDes' => 'nullable|array',
+        'itemDes.*' => 'nullable|string|max:255',
         'reference_img' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:4048',
         'file_product' => 'nullable|file|max:5048',
         'speaker_img' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:4048',
         'file_speaker' => 'nullable|file|max:5048',
     ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'message' => 'Validation failed',
+            'errors' => $validator->errors()
+        ], 422);
+    }
 
     $filename = null;
   //  dd($request->all());
@@ -497,7 +581,13 @@ class CourseController extends Controller
 
         DB::commit();
 
-        return redirect(url('admin/course/'.$id.'/edit'))->with('update_success', 'แก้ไขข้อมูลสำเร็จ');
+        return response()->json([
+            'status' => true,
+            'message' => 'Course Update successfully.',
+            'data' => $course
+        ], 201);
+
+
     } catch (\Exception $e) {
         DB::rollback();
 
@@ -516,6 +606,41 @@ private function deleteOldFile($fileUrl, $path)
      */
     public function destroy(string $id)
     {
-        //
+        try {
+            // ค้นหา Course จาก ID
+            $course = course::findOrFail($id);
+
+            // ลบไฟล์รูปภาพที่เกี่ยวข้อง (หากมี)
+            if ($course->course_img) {
+                $imagePath = str_replace('https://kimspace2.sgp1.cdn.digitaloceanspaces.com/', '', $course->course_img);
+                Storage::disk('s3')->delete($imagePath);
+            }
+
+            // ลบความสัมพันธ์ในตาราง Pivot
+            $course->countries()->detach();
+            $course->mainCategories()->detach();
+            $course->subCategories()->detach();
+            $course->animalTypes()->detach();
+
+            // ลบข้อมูลในตารางที่เกี่ยวข้อง (เช่น itemDes, Speaker, Referance)
+            $course->itemDes()->delete();
+            $course->Speaker()->delete();
+            $course->referances()->delete();
+
+            // ลบ Course
+            $course->delete();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Course deleted successfully.',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to delete course.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
+
 }
