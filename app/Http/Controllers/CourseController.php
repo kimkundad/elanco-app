@@ -41,7 +41,7 @@ class CourseController extends Controller
                     $query->where('course_title', 'like', '%' . $search . '%')
                         ->orWhere('course_preview', 'like', '%' . $search . '%');
                 })
-                ->paginate(8);
+                ->paginate(10);
 
             // Return JSON response with course data
             return response()->json([

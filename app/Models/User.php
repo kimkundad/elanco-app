@@ -112,4 +112,9 @@ class User extends Authenticatable implements JWTSubject
         return $this->belongsToMany(AnimalType::class);
     }
 
+    public function surveys()
+    {
+        return $this->hasMany(Survey::class, 'created_by');
+    }
+
 }

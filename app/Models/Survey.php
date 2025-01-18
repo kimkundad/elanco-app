@@ -9,7 +9,7 @@ class Survey extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['survey_id', 'survey_title', 'survey_detail', 'expire_date'];
+    protected $fillable = ['survey_id', 'survey_title', 'survey_detail', 'expire_date', 'created_by'];
 
     public function questions()
     {
@@ -25,5 +25,10 @@ class Survey extends Model
     public function responses()
     {
         return $this->hasMany(SurveyResponse::class, 'survey_id');
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 }

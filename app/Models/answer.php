@@ -9,6 +9,10 @@ class answer extends Model
 {
     use HasFactory;
 
+    protected $fillable = [
+        'questions_id', 'answers', 'answers_status'
+    ];
+
 
     public function question()
     {

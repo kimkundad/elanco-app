@@ -17,7 +17,7 @@ class Country extends Model
 
     public function courses()
     {
-        return $this->belongsToMany(Course::class, 'course_country', 'country_id', 'course_id');
+        return $this->belongsToMany(course::class, 'course_country', 'country_id', 'course_id');
     }
 }
 

@@ -10,6 +10,9 @@ use App\Models\CourseAction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Facades\Image;
+use Illuminate\Support\Facades\Validator;
+use App\Exports\MembersExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 use Illuminate\Support\Facades\Hash;
 
@@ -23,27 +26,52 @@ class MemberController extends Controller
         $search = $request->input('search');
         $userType = $request->input('userType');
 
-        $objs = User::with(['roles', 'countryDetails'])
-            ->whereHas('roles', function ($query) {
-                $query->where('roles.id', 3); // เฉพาะ Role ID = 3
-            })
-            ->when($search, function ($query) use ($search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('name', 'LIKE', "%$search%")
-                      ->orWhere('email', 'LIKE', "%$search%");
-                });
-            })
-            ->when($userType, function ($query) use ($userType) {
-                $query->where('userType', $userType);
-            })
-            ->paginate(8);
+        try {
 
-        return view('admin.members.index', [
-            'objs' => $objs,
-            'search' => $search,
-            'userType' => $userType
-        ]);
+            $objs = User::with(['roles', 'countryDetails'])
+                ->whereHas('roles', function ($query) {
+                    $query->where('roles.id', 3); // เฉพาะ Role ID = 3
+                })
+                ->when($search, function ($query) use ($search) {
+                    $query->where(function ($q) use ($search) {
+                        $q->where('name', 'LIKE', "%$search%")
+                        ->orWhere('email', 'LIKE', "%$search%");
+                    });
+                })
+                ->when($userType, function ($query) use ($userType) {
+                    $query->where('userType', $userType);
+                })
+                ->paginate(8);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Surveys retrieved successfully.',
+                    'data' =>  [
+                        'members' => $objs,
+                        'search' => $search,
+                        'userType' => $userType
+                    ]
+                ], 200);
+
+
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Internal Server Error',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
+
+
+    public function exportMembers()
+    {
+        $fileName = 'members_' . now()->format('Y_m_d_H_i_s') . '.xlsx'; // ตั้งชื่อไฟล์
+        return Excel::download(new MembersExport, $fileName);
+    }
+
+
 
     public function getUserCourses($userId)
     {
@@ -136,14 +164,14 @@ class MemberController extends Controller
      */
     public function update(Request $request, $id)
     {
+        // Validate ข้อมูลที่ส่งเข้ามา
         $validated = $request->validate([
             'firstName' => 'required|string|max:255',
             'lastName' => 'required|string|max:255',
-            'email' => 'required|email|exists:users,email',
             'password' => 'nullable|confirmed|min:8',
-            'role' => 'required|exists:roles,id',
-            'country' => 'required|exists:countries,id',
-            'avatar_img' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:4048',
+            'country' => 'required|exists:countries,id', // ตรวจสอบว่า country มีอยู่ใน database
+            'userType' => 'required|string|max:255',
+            'avatar_img' => 'nullable|url', // ต้องเป็น URL
         ]);
 
         DB::beginTransaction();
@@ -151,40 +179,48 @@ class MemberController extends Controller
             // ค้นหา User
             $user = User::findOrFail($id);
 
-            // อัปโหลดไฟล์ Avatar ใหม่ถ้ามี
-            if ($request->hasFile('avatar_img')) {
-                // ลบไฟล์เก่าถ้ามี
-                if ($user->avatar) {
-                    $this->deleteOldFile($user->avatar, 'elanco/avatar');
-                }
+            // อัปเดตข้อมูลทั่วไป
+            $user->firstName = $validated['firstName'];
+            $user->lastName = $validated['lastName'];
 
-                // อัปโหลดไฟล์ใหม่
-                $filename = $this->uploadImage($request->file('avatar_img'), 'elanco/avatar');
-                $user->avatar = $filename; // เก็บ URL ของไฟล์ใหม่ในฟิลด์ avatar
+            // อัปเดตรหัสผ่านถ้าส่งมา
+            if (!empty($validated['password'])) {
+                $user->password = bcrypt($validated['password']);
             }
 
-        // อัปเดตข้อมูลทั่วไป
-        $user->firstName = $validated['firstName'];
-        $user->lastName = $validated['lastName'];
-        if (!empty($validated['password'])) {
-            $user->password = bcrypt($validated['password']);
-        }
-        $user->country = $validated['country'];
+            // อัปเดตข้อมูล country, userType และ avatar
+            $user->country = $validated['country'];
+            $user->userType = $validated['userType'];
 
-        // อัปเดต Role
-        $user->roles()->sync([$validated['role']]);
+            // กำหนดค่า avatar เป็น Full URL
+            if (!empty($validated['avatar_img'])) {
+                $user->avatar = $validated['avatar_img'];
+            }
 
-        $user->save();
+            // บันทึกข้อมูลลง Database
+            $user->save();
 
-      //  dd($user);
+            DB::commit();
 
-        DB::commit();
-        return redirect()->back()->with('success', 'User updated successfully.');
+            // Response สำเร็จ
+            return response()->json([
+                'success' => true,
+                'message' => 'Member updated successfully.',
+                'data' => $user,
+            ], 200);
+
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->withErrors(['error' => $e->getMessage()]);
+
+            // Response เมื่อเกิดข้อผิดพลาด
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update member.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
+
 
     private function uploadImage($image, $path)
     {
