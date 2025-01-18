@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\SystemLog\SystemLogController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\ApiAuthController;
 use App\Http\Controllers\ApiController;
@@ -110,6 +111,8 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
     Route::get('/admin/getAnimalType', [SettingController::class, 'getAnimalType']);
     Route::get('/admin/getQuiz', [SettingController::class, 'getQuiz']);
     Route::get('/admin/getSurvey', [SettingController::class, 'getSurvey']);
+
+    Route::get('/admin/system-logs', [SystemLogController::class, 'index']);
 });
 
 

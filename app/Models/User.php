@@ -122,4 +122,30 @@ class User extends Authenticatable implements JWTSubject
     {
         return $this->hasMany(SystemLog::class);
     }
+
+    public function formatForSystemLog()
+    {
+        return [
+            'id' => $this->id,
+            'firstName' => $this->firstName,
+            'lastName' => $this->lastName,
+            'email' => $this->email,
+            'position' => $this->position,
+            'userType' => $this->userType,
+            'terms' => $this->terms,
+            'prefix' => $this->prefix,
+            'vetId' => $this->vetId,
+            'clinic' => $this->clinic,
+            'avatar' => $this->avatar,
+            'phone' => $this->phone,
+            'address' => $this->address,
+            'birthday' => $this->birthday,
+            'zipcode' => $this->zipcode,
+            'point' => $this->point,
+            'idcard' => $this->idcard,
+            'codeUser' => $this->code_user,
+            'shopId' => $this->shop_id,
+            'country' => $this->countryDetails ? $this->countryDetails->format() : null,
+        ];
+    }
 }

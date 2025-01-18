@@ -15,4 +15,17 @@ class SystemLog extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function format()
+    {
+        return [
+            'id' => $this->id,
+            'ipAddress' => $this->ip_address,
+            'action' => $this->action,
+            'status' => $this->status,
+            'errorReason' => $this->error_reason,
+            'createAt' => $this->created_at,
+            'user' => $this->user ? $this->user->formatForSystemLog() : null,
+        ];
+    }
 }

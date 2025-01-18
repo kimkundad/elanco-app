@@ -15,6 +15,11 @@ class SystemLogService
         $this->systemLogRepository = $systemLogRepository;
     }
 
+    public function findAll()
+    {
+        return $this->systemLogRepository->findAll()->map->format();
+    }
+
     public function saveAction(Request $request, string $status = 'access', string $errorReason = null)
     {
         $data = [
