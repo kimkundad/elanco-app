@@ -31,7 +31,6 @@ Route::post('/refresh-token', [ApiAuthController::class, 'refreshToken']);
 Route::post('password/forgot', [PasswordResetController::class, 'forgotPassword']);
 Route::post('passwords/PostReset', [PasswordResetController::class, 'PostresetPasswords']);
 
-
 Route::get('/1test', function () {
     dd("test");
 });
@@ -44,7 +43,7 @@ Route::middleware(['auth:api'])->group(function () {
     Route::get('/course/me', [ApiController::class, 'courseMe']);
     Route::get('/user', [ApiAuthController::class, 'user']);
     Route::put('/users', [ApiAuthController::class, 'users']);
-    Route::post('/logout', [ApiAuthController::class, 'logout']);
+    Route::get('/logout', [ApiAuthController::class, 'logout']);
     Route::get('/courses', [ApiController::class, 'courses']);
     Route::get('/courses/highlight', [ApiController::class, 'highlightCourses']);
     Route::get('/courses/explore', [ApiController::class, 'exploreCourses']);
