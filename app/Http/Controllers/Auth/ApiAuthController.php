@@ -125,7 +125,6 @@ class ApiAuthController extends Controller
         }
     }
 
-
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -227,76 +226,72 @@ class ApiAuthController extends Controller
         }
     }
 
-
     public function logout()
     {
         JWTAuth::invalidate(JWTAuth::getToken());
         return response()->json(['message' => 'Successfully logged out']);
     }
 
-
     public function users(Request $request)
     {
-
-
         try {
             // ตรวจสอบและดึงผู้ใช้จาก JWT
 
-        // Validate ข้อมูล
-        $validated = $request->validate([
-            'userType' => 'nullable|string',
-            'prefix' => 'nullable|string',
-            'firstName' => 'nullable|string|max:255',
-            'lastName' => 'nullable|string|max:255',
-            'position' => 'nullable|string',
-            'vetId' => 'nullable|string',
-            'clinic' => 'nullable|string',
-            'avatar' => 'nullable|string',
-            'category' => 'array',
-            'subCaregory' => 'array',
-            'petType' => 'array',
-        ]);
+            // Validate ข้อมูล
+            $validated = $request->validate([
+                'userType' => 'nullable|string',
+                'prefix' => 'nullable|string',
+                'firstName' => 'nullable|string|max:255',
+                'lastName' => 'nullable|string|max:255',
+                'position' => 'nullable|string',
+                'vetId' => 'nullable|string',
+                'clinic' => 'nullable|string',
+                'avatar' => 'nullable|string',
+                'category' => 'array',
+                'subCaregory' => 'array',
+                'petType' => 'array',
+            ]);
 
-        // ค้นหาผู้ใช้ที่ต้องการอัปเดต (สามารถเปลี่ยน logic ได้ เช่น ใช้ Auth::id())
-        $user = JWTAuth::parseToken()->authenticate();
+            // ค้นหาผู้ใช้ที่ต้องการอัปเดต (สามารถเปลี่ยน logic ได้ เช่น ใช้ Auth::id())
+            $user = JWTAuth::parseToken()->authenticate();
 
-        if (!$user) {
-            return response()->json(['error' => 'User not found'], 404);
-        }
+            if (!$user) {
+                return response()->json(['error' => 'User not found'], 404);
+            }
 
-        // อัปเดตข้อมูลทั่วไปของ User
-        $user->update([
-            'userType' => $validated['userType'],
-            'prefix' => $validated['prefix'],
-            'firstName' => $validated['firstName'],
-            'lastName' => $validated['lastName'],
-            'position' => $validated['position'],
-            'vetId' => $validated['vetId'],
-            'clinic' => $validated['clinic'],
-            'avatar' => $validated['avatar'],
-        ]);
+            // อัปเดตข้อมูลทั่วไปของ User
+            $user->update([
+                'userType' => $validated['userType'],
+                'prefix' => $validated['prefix'],
+                'firstName' => $validated['firstName'],
+                'lastName' => $validated['lastName'],
+                'position' => $validated['position'],
+                'vetId' => $validated['vetId'],
+                'clinic' => $validated['clinic'],
+                'avatar' => $validated['avatar'],
+            ]);
 
-        // อัปเดต Many-to-Many Relationships
-        if (isset($validated['category'])) {
-            $categoryIds = MainCategory::whereIn('name', $validated['category'])->pluck('id')->toArray();
-            $user->mainCategories()->sync($categoryIds); // อัปเดตความสัมพันธ์ categories
-        }
+            // อัปเดต Many-to-Many Relationships
+            if (isset($validated['category'])) {
+                $categoryIds = MainCategory::whereIn('name', $validated['category'])->pluck('id')->toArray();
+                $user->mainCategories()->sync($categoryIds); // อัปเดตความสัมพันธ์ categories
+            }
 
-        if (isset($validated['subCaregory'])) {
-            $subCategoryIds = SubCategory::whereIn('name', $validated['subCaregory'])->pluck('id')->toArray();
-            $user->subCategories()->sync($subCategoryIds); // อัปเดตความสัมพันธ์ subCategories
-        }
+            if (isset($validated['subCaregory'])) {
+                $subCategoryIds = SubCategory::whereIn('name', $validated['subCaregory'])->pluck('id')->toArray();
+                $user->subCategories()->sync($subCategoryIds); // อัปเดตความสัมพันธ์ subCategories
+            }
 
-        if (isset($validated['petType'])) {
-            $animalTypeIds = AnimalType::whereIn('name', $validated['petType'])->pluck('id')->toArray();
-            $user->animalTypes()->sync($animalTypeIds); // อัปเดตความสัมพันธ์ animalTypes
-        }
+            if (isset($validated['petType'])) {
+                $animalTypeIds = AnimalType::whereIn('name', $validated['petType'])->pluck('id')->toArray();
+                $user->animalTypes()->sync($animalTypeIds); // อัปเดตความสัมพันธ์ animalTypes
+            }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'User updated successfully',
-            'user' => $user->load('mainCategories', 'subCategories', 'animalTypes'), // โหลดความสัมพันธ์
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'User updated successfully',
+                'user' => $user->load('mainCategories', 'subCategories', 'animalTypes'), // โหลดความสัมพันธ์
+            ]);
 
         } catch (TokenExpiredException $e) {
             // กรณี Token หมดอายุ
@@ -319,9 +314,7 @@ class ApiAuthController extends Controller
                 'message' => 'Authorization token is missing from your request.',
             ], 400);
         }
-
     }
-
 
     private function uploadImage($image, $path)
     {
@@ -346,14 +339,11 @@ class ApiAuthController extends Controller
         return null;
     }
 
-
     private function deleteOldFile($fileUrl, $path)
     {
         $relativePath = str_replace('https://kimspace2.sgp1.cdn.digitaloceanspaces.com/', '', $fileUrl);
         Storage::disk('do_spaces')->delete($relativePath);
     }
-
-
 
     public function deleteUser(Request $request)
     {
@@ -407,61 +397,55 @@ class ApiAuthController extends Controller
         }
     }
 
-
     public function user(Request $request)
-{
-    try {
-        // ตรวจสอบและดึงผู้ใช้จาก JWT
-        $user = JWTAuth::parseToken()->authenticate();
+    {
+        try {
+            // ตรวจสอบและดึงผู้ใช้จาก JWT
+            $user = JWTAuth::parseToken()->authenticate();
 
-        // โหลดข้อมูลความสัมพันธ์ที่จำเป็น
-        $user->load(['mainCategories', 'subCategories', 'animalTypes', 'countryDetails']);
+            // โหลดข้อมูลความสัมพันธ์ที่จำเป็น
+            $user->load(['mainCategories', 'subCategories', 'animalTypes', 'countryDetails']);
 
-        // จัดรูปแบบข้อมูลสำหรับ Response
-        // จัดรูปแบบข้อมูลสำหรับ Response
-        return response()->json([
-            'userType' => $user->userType,
-            'prefix' => $user->prefix,
-            'firstName' => $user->firstName,
-            'lastName' => $user->lastName,
-            'position' => $user->position,
-            'vetId' => $user->vetId,
-            'clinic' => $user->clinic,
-            'category' => $user->mainCategories->pluck('name'), // ดึงเฉพาะชื่อจาก mainCategories
-            'subCaregory' => $user->subCategories->pluck('name'), // ดึงเฉพาะชื่อจาก subCategories
-            'petType' => $user->animalTypes->pluck('name'), // ดึงเฉพาะชื่อจาก animalTypes
-            'avatar' => $user->avatar,
-            'country' => $user->countryDetails ? $user->countryDetails->name : null, // ดึงชื่อประเทศ ถ้ามี
-            'flag' => $user->countryDetails ? $user->countryDetails->flag : null,
-        ], 200);
+            // จัดรูปแบบข้อมูลสำหรับ Response
+            // จัดรูปแบบข้อมูลสำหรับ Response
+            return response()->json([
+                'userType' => $user->userType,
+                'prefix' => $user->prefix,
+                'firstName' => $user->firstName,
+                'lastName' => $user->lastName,
+                'position' => $user->position,
+                'vetId' => $user->vetId,
+                'clinic' => $user->clinic,
+                'category' => $user->mainCategories->pluck('name'), // ดึงเฉพาะชื่อจาก mainCategories
+                'subCaregory' => $user->subCategories->pluck('name'), // ดึงเฉพาะชื่อจาก subCategories
+                'petType' => $user->animalTypes->pluck('name'), // ดึงเฉพาะชื่อจาก animalTypes
+                'avatar' => $user->avatar,
+                'country' => $user->countryDetails ? $user->countryDetails->name : null, // ดึงชื่อประเทศ ถ้ามี
+                'flag' => $user->countryDetails ? $user->countryDetails->flag : null,
+            ], 200);
 
-    } catch (TokenExpiredException $e) {
-        // กรณี Token หมดอายุ
-        return response()->json([
-            'error' => 'Token has expired',
-            'message' => 'Please refresh your token or login again.',
-        ], 401);
+        } catch (TokenExpiredException $e) {
+            // กรณี Token หมดอายุ
+            return response()->json([
+                'error' => 'Token has expired',
+                'message' => 'Please refresh your token or login again.',
+            ], 401);
 
-    } catch (TokenInvalidException $e) {
-        // กรณี Token ไม่ถูกต้อง
-        return response()->json([
-            'error' => 'Token is invalid',
-            'message' => 'The provided token is not valid.',
-        ], 401);
+        } catch (TokenInvalidException $e) {
+            // กรณี Token ไม่ถูกต้อง
+            return response()->json([
+                'error' => 'Token is invalid',
+                'message' => 'The provided token is not valid.',
+            ], 401);
 
-    } catch (JWTException $e) {
-        // กรณีไม่มี Token ในคำขอ
-        return response()->json([
-            'error' => 'Token not provided',
-            'message' => 'Authorization token is missing from your request.',
-        ], 400);
+        } catch (JWTException $e) {
+            // กรณีไม่มี Token ในคำขอ
+            return response()->json([
+                'error' => 'Token not provided',
+                'message' => 'Authorization token is missing from your request.',
+            ], 400);
+        }
     }
-}
-
-
-
-
-
 
     // ฟังก์ชันสร้าง Refresh Token (บันทึกในฐานข้อมูลหรือที่อื่น)
     private function createRefreshToken($email)
@@ -498,6 +482,4 @@ class ApiAuthController extends Controller
             'access_token' => $newToken
         ]);
     }
-
-
 }
