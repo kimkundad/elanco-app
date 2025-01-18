@@ -26,7 +26,7 @@ class SystemLog extends Model
             'status' => $this->status,
             'errorReason' => $this->error_reason,
             'createAt' => $this->created_at,
-            'user' => $this->user ? $this->user->formatForSystemLog() : null,
+            'user' => $this->user ? $this->user->formatIncludingCountry() : null,
         ];
     }
 }

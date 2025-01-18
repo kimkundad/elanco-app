@@ -124,7 +124,7 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasMany(SystemLog::class);
     }
 
-    public function formatForSystemLog()
+    public function formatIncludingCountry()
     {
         return [
             'id' => $this->id,
