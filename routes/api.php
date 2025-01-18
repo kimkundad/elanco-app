@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\SystemLog\SystemLogController;
+use App\Http\Controllers\SystemLogs\SystemLogController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\ApiAuthController;
 use App\Http\Controllers\ApiController;

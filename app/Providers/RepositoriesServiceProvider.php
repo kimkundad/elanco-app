@@ -2,8 +2,8 @@
 
 namespace App\Providers;
 
-use App\Http\Repositories\SystemLog\SystemLogRepository;
-use App\Http\Repositories\SystemLog\SystemLogRepositoryImpl;
+use App\Http\Repositories\SystemLogs\SystemLogRepository;
+use App\Http\Repositories\SystemLogs\SystemLogRepositoryImpl;
 use Illuminate\Support\ServiceProvider;
 
 class RepositoriesServiceProvider extends ServiceProvider

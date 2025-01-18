@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Http\Repositories\SystemLog;
+namespace App\Http\Repositories\SystemLogs;
 
-use App\Models\SystemLog\SystemLog;
+use App\Models\SystemLogs\SystemLog;
 
 class SystemLogRepositoryImpl implements SystemLogRepository
 {

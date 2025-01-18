@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Http\Controllers\SystemLog;
+namespace App\Http\Controllers\SystemLogs;
 
 use App\Http\Controllers\Controller;
-use App\Http\Services\SystemLog\SystemLogService;
+use App\Http\Services\SystemLogs\SystemLogService;
 use Illuminate\Http\Request;
 
 class SystemLogController extends Controller
@@ -21,7 +21,7 @@ class SystemLogController extends Controller
     public function index()
     {
         $systemLogs = $this->systemLogService->findAll();
-        return response()->json(['error' => false, 'data' => $systemLogs]);
+        return response()->json(['status' => ['status' => 'success', 'message' => null], 'data' => $systemLogs]);
     }
 
     /**
