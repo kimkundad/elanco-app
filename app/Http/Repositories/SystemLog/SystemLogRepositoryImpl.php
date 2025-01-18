@@ -2,7 +2,7 @@
 
 namespace App\Http\Repositories\SystemLog;
 
-use App\Models\SystemLog;
+use App\Models\SystemLog\SystemLog;
 
 class SystemLogRepositoryImpl implements SystemLogRepository
 {
