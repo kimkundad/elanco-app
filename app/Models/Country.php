@@ -19,6 +19,15 @@ class Country extends Model
     {
         return $this->belongsToMany(course::class, 'course_country', 'country_id', 'course_id');
     }
+
+    public function format()
+    {
+        return [
+            'name' => $this->name,
+            'flag' => $this->flag,
+            'img' => $this->img,
+        ];
+    }
 }
 
 

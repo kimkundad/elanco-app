@@ -10,11 +10,8 @@ use App\Models\CourseAction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Facades\Image;
-use Illuminate\Support\Facades\Validator;
 use App\Exports\MembersExport;
 use Maatwebsite\Excel\Facades\Excel;
-
-use Illuminate\Support\Facades\Hash;
 
 class MemberController extends Controller
 {
@@ -35,7 +32,7 @@ class MemberController extends Controller
                 ->when($search, function ($query) use ($search) {
                     $query->where(function ($q) use ($search) {
                         $q->where('name', 'LIKE', "%$search%")
-                        ->orWhere('email', 'LIKE', "%$search%");
+                            ->orWhere('email', 'LIKE', "%$search%");
                     });
                 })
                 ->when($userType, function ($query) use ($userType) {
@@ -43,17 +40,15 @@ class MemberController extends Controller
                 })
                 ->paginate(8);
 
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Surveys retrieved successfully.',
-                    'data' =>  [
-                        'members' => $objs,
-                        'search' => $search,
-                        'userType' => $userType
-                    ]
-                ], 200);
-
-
+            return response()->json([
+                'success' => true,
+                'message' => 'Surveys retrieved successfully.',
+                'data' => [
+                    'members' => $objs,
+                    'search' => $search,
+                    'userType' => $userType
+                ]
+            ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
@@ -64,41 +59,38 @@ class MemberController extends Controller
         }
     }
 
-
     public function exportMembers()
     {
         $fileName = 'members_' . now()->format('Y_m_d_H_i_s') . '.xlsx'; // ตั้งชื่อไฟล์
         return Excel::download(new MembersExport, $fileName);
     }
 
-
-
     public function getUserCourses($userId)
     {
         // ดึงข้อมูล CourseAction และความสัมพันธ์กับ Course
         $courses = CourseAction::where('user_id', $userId)
-        ->with('course')
-        ->get()
-        ->map(function ($course) {
-            // ถ้า isFinishCourse = 1 ให้ Pass Rate = 100%
-            if ($course->isFinishCourse) {
-                $course->pass_rate = 100; // ตั้งค่าเป็น 100%
-            } else {
-                // คำนวณ Pass Rate ปกติ
-                $totalItems = 2; // จำนวนกิจกรรมทั้งหมด (เปลี่ยนได้ตามจริง)
-                $completedItems = 0;
+            ->with('course')
+            ->get()
+            ->map(function ($course) {
+                // ถ้า isFinishCourse = 1 ให้ Pass Rate = 100%
+                if ($course->isFinishCourse) {
+                    $course->pass_rate = 100; // ตั้งค่าเป็น 100%
+                } else {
+                    // คำนวณ Pass Rate ปกติ
+                    $totalItems = 2; // จำนวนกิจกรรมทั้งหมด (เปลี่ยนได้ตามจริง)
+                    $completedItems = 0;
 
-                if ($course->isFinishVideo) $completedItems++;
-                if ($course->isFinishQuiz) $completedItems++;
+                    if ($course->isFinishVideo) $completedItems++;
+                    if ($course->isFinishQuiz) $completedItems++;
 
-                $course->pass_rate = ($completedItems / $totalItems) * 100; // คำนวณเปอร์เซ็นต์
-            }
+                    $course->pass_rate = ($completedItems / $totalItems) * 100; // คำนวณเปอร์เซ็นต์
+                }
 
-            return $course;
-        });
+                return $course;
+            });
 
         $user = User::with(['countryDetails', 'mainCategories', 'subCategories', 'animalTypes'])
-        ->findOrFail($userId);
+            ->findOrFail($userId);
 
         return response()->json([
             'success' => true,
@@ -108,7 +100,6 @@ class MemberController extends Controller
             ]
         ]);
     }
-
 
     /**
      * Show the form for creating a new resource.
@@ -221,7 +212,6 @@ class MemberController extends Controller
         }
     }
 
-
     private function uploadImage($image, $path)
     {
         if ($image) {
@@ -251,7 +241,6 @@ class MemberController extends Controller
         $relativePath = str_replace('https://kimspace2.sgp1.cdn.digitaloceanspaces.com/', '', $fileUrl);
         Storage::disk('do_spaces')->delete($relativePath);
     }
-
 
     /**
      * Remove the specified resource from storage.
