@@ -133,137 +133,129 @@ class ApiController extends Controller
     }
 
     public function courses(Request $request)
-    {
-        try {
-            $user = JWTAuth::parseToken()->authenticate();
-            $userCountryId = $user->country;
+{
+    try {
+        $user = JWTAuth::parseToken()->authenticate();
+        $userCountryId = $user->country;
 
-            // Get filter inputs
-            $search = $request->input('search');
-            $topic = $request->input('topic');
-            $animalType = $request->input('animalType');
-            $uploadDate = $request->input('uploadDate', 'desc');
-            $ratingOrder = $request->input('rating', 'desc');
-            $durationOrder = $request->input('duration', 'asc');
-            $date = $request->input('date');
+        // Get filter inputs
+        $search = $request->input('search');
+        $topic = $request->input('topic');
+        $animalType = $request->input('animalType');
+        $uploadDate = $request->input('uploadDate', 'desc');
+        $ratingOrder = $request->input('rating', 'desc');
+        $durationOrder = $request->input('duration', 'asc');
+        $date = $request->input('date');
 
-          //  dd($uploadDate);
-
-            $courses = course::whereHas('countries', function ($query) use ($userCountryId) {
-                $query->where('country_id', $userCountryId);
+        $courses = course::whereHas('countries', function ($query) use ($userCountryId) {
+            $query->where('country_id', $userCountryId);
+        })
+            ->when($search, function ($query, $search) {
+                $query->where('course_title', 'LIKE', "%$search%")
+                    ->orWhere('course_id', 'LIKE', "%$search%");
             })
-                ->when($search, function ($query, $search) {
-                    $query->where('course_title', 'LIKE', "%$search%")
-                        ->orWhere('course_id', 'LIKE', "%$search%");
-                })
-                ->when($topic, function ($query, $topic) {
-                    $query->whereHas('mainCategories', function ($subQuery) use ($topic) {
-                        $subQuery->where('name', 'LIKE', "%$topic%");
-                    });
-                })
-                ->when($animalType, function ($query, $animalType) {
-                    $query->whereHas('animalTypes', function ($subQuery) use ($animalType) {
-                        $subQuery->where('name', 'LIKE', "%$animalType%");
-                    });
-                })
-                // ->when($date, function ($query, $date) {
-                //     // Filter by quiz.expire_date ที่ยังไม่หมดอายุ และตรงกับวันที่ที่ส่งมา
-                //     $query->whereHas('quiz', function ($subQuery) use ($date) {
-                //         $subQuery->whereDate('expire_date', '>=', now()) // ไม่หมดอายุ
-                //                 ->whereDate('expire_date', $date); // ตรงกับวันที่ที่ส่งมา
-                //     });
-                // }, function ($query) {
-                //     // Default: กรองเฉพาะ quiz.expire_date ที่ยังไม่หมดอายุ
-                //     $query->whereHas('quiz', function ($subQuery) {
-                //         $subQuery->whereDate('expire_date', '>=', now());
-                //     });
-                // })
-                ->with([
-                    'countries:id,name',
-                    'mainCategories:id,name',
-                    'subCategories:id,name',
-                    'animalTypes:id,name',
-                    'itemDes',
-                    'Speaker.countryDetails',
-                    'referances',
-                    'courseActions' => function ($query) use ($user) {
-                        $query->where('user_id', $user->id)->select('course_id', 'isFinishCourse');
-                    },
-                ])
-                ->orderBy('updated_at', $uploadDate)
-                ->orderBy('ratting', $ratingOrder)
-                ->orderBy('duration', $durationOrder)
-                ->get()
-                ->map(function ($course) {
-                    $isFinishCourse = $course->courseActions->first()
-                        ? $course->courseActions->first()->isFinishCourse == 1
-                        : false;
-
-                    $course->thumbnail = $course->course_img;
-                    unset($course->course_img);
-
-                    return [
-                        'id' => $course->id,
-                        'course_title' => $course->course_title,
-                        'course_description' => $course->course_description,
-                        'course_preview' => $course->course_preview,
-                        'duration' => $course->duration,
-                        'url_video' => $course->url_video,
-                        'status' => $course->status,
-                        'ratting' => number_format($course->ratting, 1),
-                        'created_at' => $course->created_at,
-                        'updated_at' => $course->updated_at,
-                        'id_quiz' => $course->id_quiz,
-                        'thumbnail' => $course->thumbnail,
-                        'isFinishCourse' => $isFinishCourse,
-                        'countries' => $course->countries->map(function ($country) {
-                            return ['name' => $country->name];
-                        }),
-                        'main_categories' => $course->mainCategories->map(function ($category) {
-                            return ['name' => $category->name];
-                        }),
-                        'sub_categories' => $course->subCategories->map(function ($subcategory) {
-                            return ['name' => $subcategory->name];
-                        }),
-                        'animal_types' => $course->animalTypes->map(function ($animal) {
-                            return ['name' => $animal->name];
-                        }),
-                        'item_des' => $course->itemDes->map(function ($item) {
-                            return ['detail' => $item->detail];
-                        }),
-                        'speakers' => $course->Speaker->map(function ($speaker) {
-                            return [
-                                'id' => $speaker->id,
-                                'name' => $speaker->name,
-                                'avatar' => $speaker->avatar,
-                                'job_position' => $speaker->job_position,
-                                'country' => $speaker->countryDetails ? $speaker->countryDetails->name : null,
-                                'file' => $speaker->file,
-                                'description' => $speaker->description,
-                            ];
-                        }),
-                        'referances' => $course->referances->map(function ($referance) {
-                            return [
-                                'id' => $referance->id,
-                                'title' => $referance->title,
-                                'image' => $referance->image,
-                                'file' => $referance->file,
-                                'description' => $referance->description,
-                            ];
-                        }),
-                    ];
+            ->when($topic, function ($query, $topic) {
+                if ($topic === 'all') {
+                    // If topic is 'all', skip filtering by mainCategories
+                    return $query;
+                }
+                // Filter by specific topic
+                $query->whereHas('mainCategories', function ($subQuery) use ($topic) {
+                    $subQuery->where('name', 'LIKE', "%$topic%");
                 });
+            })
+            ->when($animalType, function ($query, $animalType) {
+                $query->whereHas('animalTypes', function ($subQuery) use ($animalType) {
+                    $subQuery->where('name', 'LIKE', "%$animalType%");
+                });
+            })
+            ->with([
+                'countries:id,name',
+                'mainCategories:id,name',
+                'subCategories:id,name',
+                'animalTypes:id,name',
+                'itemDes',
+                'Speaker.countryDetails',
+                'referances',
+                'courseActions' => function ($query) use ($user) {
+                    $query->where('user_id', $user->id)->select('course_id', 'isFinishCourse');
+                },
+            ])
+            ->orderBy('updated_at', $uploadDate)
+            ->orderBy('ratting', $ratingOrder)
+            ->orderBy('duration', $durationOrder)
+            ->get()
+            ->map(function ($course) {
+                $isFinishCourse = $course->courseActions->first()
+                    ? $course->courseActions->first()->isFinishCourse == 1
+                    : false;
 
-            return response()->json(['success' => true, 'courses' => $courses], 200);
+                $course->thumbnail = $course->course_img;
+                unset($course->course_img);
 
-        } catch (TokenExpiredException $e) {
-            return response()->json(['error' => 'Token has expired', 'message' => 'Please refresh your token or login again.'], 401);
-        } catch (TokenInvalidException $e) {
-            return response()->json(['error' => 'Token is invalid', 'message' => 'The provided token is not valid.'], 401);
-        } catch (JWTException $e) {
-            return response()->json(['error' => 'Token not provided', 'message' => 'Authorization token is missing from your request.'], 400);
-        }
+                return [
+                    'id' => $course->id,
+                    'course_title' => $course->course_title,
+                    'course_description' => $course->course_description,
+                    'course_preview' => $course->course_preview,
+                    'duration' => $course->duration,
+                    'url_video' => $course->url_video,
+                    'status' => $course->status,
+                    'ratting' => number_format($course->ratting, 1),
+                    'created_at' => $course->created_at,
+                    'updated_at' => $course->updated_at,
+                    'id_quiz' => $course->id_quiz,
+                    'thumbnail' => $course->thumbnail,
+                    'isFinishCourse' => $isFinishCourse,
+                    'countries' => $course->countries->map(function ($country) {
+                        return ['name' => $country->name];
+                    }),
+                    'main_categories' => $course->mainCategories->map(function ($category) {
+                        return ['name' => $category->name];
+                    }),
+                    'sub_categories' => $course->subCategories->map(function ($subcategory) {
+                        return ['name' => $subcategory->name];
+                    }),
+                    'animal_types' => $course->animalTypes->map(function ($animal) {
+                        return ['name' => $animal->name];
+                    }),
+                    'item_des' => $course->itemDes->map(function ($item) {
+                        return ['detail' => $item->detail];
+                    }),
+                    'speakers' => $course->Speaker->map(function ($speaker) {
+                        return [
+                            'id' => $speaker->id,
+                            'name' => $speaker->name,
+                            'avatar' => $speaker->avatar,
+                            'job_position' => $speaker->job_position,
+                            'country' => $speaker->countryDetails ? $speaker->countryDetails->name : null,
+                            'file' => $speaker->file,
+                            'description' => $speaker->description,
+                        ];
+                    }),
+                    'referances' => $course->referances->map(function ($referance) {
+                        return [
+                            'id' => $referance->id,
+                            'title' => $referance->title,
+                            'image' => $referance->image,
+                            'file' => $referance->file,
+                            'description' => $referance->description,
+                        ];
+                    }),
+                ];
+            });
+
+        return response()->json(['success' => true, 'courses' => $courses], 200);
+
+    } catch (TokenExpiredException $e) {
+        return response()->json(['error' => 'Token has expired', 'message' => 'Please refresh your token or login again.'], 401);
+    } catch (TokenInvalidException $e) {
+        return response()->json(['error' => 'Token is invalid', 'message' => 'The provided token is not valid.'], 401);
+    } catch (JWTException $e) {
+        return response()->json(['error' => 'Token not provided', 'message' => 'Authorization token is missing from your request.'], 400);
     }
+}
+
 
 
 
