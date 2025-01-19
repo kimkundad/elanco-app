@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Http\Macros\QueryBuilder\CustomPaginate;
 use App\Providers\Image\ImageUploadServiceProvider;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
@@ -26,6 +27,7 @@ class AppServiceProvider extends ServiceProvider
         }
         Schema::defaultStringLength(191);
 
+        (new CustomPaginate())->loadPagination();
     }
 
     /**

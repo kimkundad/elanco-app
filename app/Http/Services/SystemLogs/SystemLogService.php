@@ -17,7 +17,11 @@ class SystemLogService
 
     public function findAll()
     {
-        return $this->systemLogRepository->findAll()->map->format();
+        $queryParams = request()->query();
+        return $this->systemLogRepository->findPaginated()
+            ->customPaginate(function ($items) {
+                return collect($items)->map->format(); // ใช้ format จาก Model
+            }, $queryParams);
     }
 
     public function saveAction(Request $request, string $status = 'access', string $errorReason = null)

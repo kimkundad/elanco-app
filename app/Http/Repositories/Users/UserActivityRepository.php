@@ -6,5 +6,7 @@ interface UserActivityRepository
 {
     public function findAll();
 
+    public function findPaginated();
+
     public function save(array $data);
 }

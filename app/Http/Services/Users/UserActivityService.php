@@ -15,7 +15,11 @@ class UserActivityService
 
     public function findAll()
     {
-        return $this->userActivityRepository->findAll()->map->format();
+        $queryParams = request()->query();
+        return $this->userActivityRepository->findPaginated()
+            ->customPaginate(function ($items) {
+                return collect($items)->map->format(); // ใช้ format จาก Model
+            }, $queryParams);
     }
 
     public function logActivity($userId, $activity, $detail, $ipAddress, $device, $browser)
