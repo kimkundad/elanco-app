@@ -24,8 +24,7 @@ class MemberController extends Controller
         $userType = $request->input('userType');
 
         try {
-
-            $objs = User::with(['roles', 'countryDetails'])
+            $objs = User::with(['roles', 'countryDetails', 'latestLogin'])
                 ->whereHas('roles', function ($query) {
                     $query->where('roles.id', 3); // เฉพาะ Role ID = 3
                 })
@@ -155,7 +154,7 @@ class MemberController extends Controller
      */
 
 
-     public function getMemberDetail($id)
+    public function getMemberDetail($id)
     {
         try {
             // ดึงข้อมูลสมาชิกพร้อมความสัมพันธ์ที่เกี่ยวข้อง
@@ -183,69 +182,66 @@ class MemberController extends Controller
         }
     }
 
-
-
     public function update(Request $request, $id)
-{
-    // Validate ข้อมูลที่ส่งเข้ามา
-    $validated = $request->validate([
-        'firstName' => 'required|string|max:255',
-        'lastName' => 'required|string|max:255',
-        'email' => 'required|email|unique:users,email,' . $id, // ตรวจสอบอีเมลและต้องไม่ซ้ำกับ user อื่น
-        'password' => 'nullable|confirmed|min:8',
-        'country' => 'required|exists:countries,id', // ตรวจสอบว่า country มีอยู่ใน database
-        'userType' => 'required|string|max:255',
-        'avatar_img' => 'nullable|url', // ต้องเป็น URL
-    ]);
+    {
+        // Validate ข้อมูลที่ส่งเข้ามา
+        $validated = $request->validate([
+            'firstName' => 'required|string|max:255',
+            'lastName' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $id, // ตรวจสอบอีเมลและต้องไม่ซ้ำกับ user อื่น
+            'password' => 'nullable|confirmed|min:8',
+            'country' => 'required|exists:countries,id', // ตรวจสอบว่า country มีอยู่ใน database
+            'userType' => 'required|string|max:255',
+            'avatar_img' => 'nullable|url', // ต้องเป็น URL
+        ]);
 
-    DB::beginTransaction();
-    try {
-        // ค้นหา User
-        $user = User::findOrFail($id);
+        DB::beginTransaction();
+        try {
+            // ค้นหา User
+            $user = User::findOrFail($id);
 
-        // อัปเดตข้อมูลทั่วไป
-        $user->firstName = $validated['firstName'];
-        $user->lastName = $validated['lastName'];
-        $user->email = $validated['email']; // อัปเดตอีเมล
+            // อัปเดตข้อมูลทั่วไป
+            $user->firstName = $validated['firstName'];
+            $user->lastName = $validated['lastName'];
+            $user->email = $validated['email']; // อัปเดตอีเมล
 
-        // อัปเดตรหัสผ่านถ้าส่งมา
-        if (!empty($validated['password'])) {
-            $user->password = bcrypt($validated['password']);
+            // อัปเดตรหัสผ่านถ้าส่งมา
+            if (!empty($validated['password'])) {
+                $user->password = bcrypt($validated['password']);
+            }
+
+            // อัปเดตข้อมูล country, userType และ avatar
+            $user->country = $validated['country'];
+            $user->userType = $validated['userType'];
+
+            // กำหนดค่า avatar เป็น Full URL
+            if (!empty($validated['avatar_img'])) {
+                $user->avatar = $validated['avatar_img'];
+            }
+
+            // บันทึกข้อมูลลง Database
+            $user->save();
+
+            DB::commit();
+
+            // Response สำเร็จ
+            return response()->json([
+                'success' => true,
+                'message' => 'Member updated successfully.',
+                'data' => $user,
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            // Response เมื่อเกิดข้อผิดพลาด
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update member.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        // อัปเดตข้อมูล country, userType และ avatar
-        $user->country = $validated['country'];
-        $user->userType = $validated['userType'];
-
-        // กำหนดค่า avatar เป็น Full URL
-        if (!empty($validated['avatar_img'])) {
-            $user->avatar = $validated['avatar_img'];
-        }
-
-        // บันทึกข้อมูลลง Database
-        $user->save();
-
-        DB::commit();
-
-        // Response สำเร็จ
-        return response()->json([
-            'success' => true,
-            'message' => 'Member updated successfully.',
-            'data' => $user,
-        ], 200);
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-
-        // Response เมื่อเกิดข้อผิดพลาด
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to update member.',
-            'error' => $e->getMessage(),
-        ], 500);
     }
-}
-
 
     private function uploadImage($image, $path)
     {
@@ -270,7 +266,6 @@ class MemberController extends Controller
         return null;
     }
 
-
     private function deleteOldFile($fileUrl, $path)
     {
         $relativePath = str_replace('https://kimspace2.sgp1.cdn.digitaloceanspaces.com/', '', $fileUrl);
@@ -285,44 +280,42 @@ class MemberController extends Controller
         //
     }
 
-
     public function softDelete($id)
-{
-    DB::beginTransaction();
+    {
+        DB::beginTransaction();
 
-    try {
-        // ค้นหา User
-        $user = User::findOrFail($id);
+        try {
+            // ค้นหา User
+            $user = User::findOrFail($id);
 
-        // เปลี่ยนอีเมลของผู้ใช้
-        $timestamp = now()->timestamp;
-        $newEmail = $user->email . "Deleted{$timestamp}";
+            // เปลี่ยนอีเมลของผู้ใช้
+            $timestamp = now()->timestamp;
+            $newEmail = $user->email . "Deleted{$timestamp}";
 
-        $user->update(['email' => $newEmail]);
+            $user->update(['email' => $newEmail]);
 
-        // ตั้งสถานะเป็นลบหรือ Inactive (ถ้าต้องการ)
-        $user->update(['status' => 0]);
+            // ตั้งสถานะเป็นลบหรือ Inactive (ถ้าต้องการ)
+            $user->update(['status' => 0]);
 
-        DB::commit();
+            DB::commit();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Member soft-deleted successfully.',
-            'data' => [
-                'original_email' => $user->email,
-                'updated_email' => $newEmail,
-            ],
-        ], 200);
+            return response()->json([
+                'success' => true,
+                'message' => 'Member soft-deleted successfully.',
+                'data' => [
+                    'original_email' => $user->email,
+                    'updated_email' => $newEmail,
+                ],
+            ], 200);
 
-    } catch (\Exception $e) {
-        DB::rollBack();
+        } catch (\Exception $e) {
+            DB::rollBack();
 
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to soft-delete member.',
-            'error' => $e->getMessage(),
-        ], 500);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to soft-delete member.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
-}
-
 }

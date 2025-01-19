@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Models\SystemLogs\SystemLog;
+use App\Models\Users\UserLogin;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -122,6 +123,22 @@ class User extends Authenticatable implements JWTSubject
     public function systemLogs()
     {
         return $this->hasMany(SystemLog::class);
+    }
+
+    /**
+     * Get all login records for the user.
+     */
+    public function logins()
+    {
+        return $this->hasMany(UserLogin::class, 'user_id', 'id');
+    }
+
+    /**
+     * Get the latest login record for the user.
+     */
+    public function latestLogin()
+    {
+        return $this->hasOne(UserLogin::class, 'user_id', 'id')->latest('login_at');
     }
 
     public function formatIncludingCountry()
