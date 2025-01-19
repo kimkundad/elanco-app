@@ -13,7 +13,7 @@ use App\Models\Role;
 use App\Models\course;
 use App\Models\User;
 use App\Models\CourseAction;
-
+use Illuminate\Support\Carbon;
 
 use Intervention\Image\Facades\Image;
 use Illuminate\Support\Facades\Storage;
@@ -40,16 +40,41 @@ class SettingController extends Controller
 
     }
 
-    public function overView()
+    public function overView(Request $request)
     {
         try {
+
+
+            // รับพารามิเตอร์ start_date และ end_date
+            $startDate = $request->input('start_date', today()->subDays(7)->toDateString()); // ค่าเริ่มต้น: 7 วันที่ผ่านมา
+            $endDate = $request->input('end_date', today()->toDateString()); // ค่าเริ่มต้น: วันนี้
+
+            // ตรวจสอบรูปแบบวันที่ (optional)
+            if (!strtotime($startDate) || !strtotime($endDate)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid date format. Please use YYYY-MM-DD.',
+                ], 400);
+            }
+
+            // คำนวณจำนวน Active Users ในช่วง Date Range
+            $activeUsersByDate = collect(Carbon::parse($startDate)->daysUntil($endDate))->map(function ($date) {
+                return [
+                    'date' => $date->toDateString(),
+                    'count' => User::whereDate('last_active_at', $date->toDateString())->count(),
+                ];
+            });
+
+
             // Active Users Today
             $activeUsersToday = User::whereDate('last_active_at', today())->count();
 
             // Active Users Yesterday
-            $activeUsersYesterday = User::whereDate('last_active_at', today()->subDay())->count();
+            // จำนวนผู้ใช้งานวันนี้
+            $activeUsersToday = User::whereDate('last_active_at', today())->count();
 
-            // เปรียบเทียบเปอร์เซ็นต์ระหว่างวันนี้และเมื่อวาน
+            // เปรียบเทียบกับเมื่อวาน
+            $activeUsersYesterday = User::whereDate('last_active_at', today()->subDay())->count();
             $percentageChange = $activeUsersYesterday > 0
                 ? round((($activeUsersToday - $activeUsersYesterday) / $activeUsersYesterday) * 100, 2)
                 : ($activeUsersToday > 0 ? 100 : 0);
@@ -103,7 +128,7 @@ class SettingController extends Controller
                 'active_users_today' => $activeUsersToday,
                 'percentage_change' => $percentageChange,
                 'data_percentage_change' => 'data_percentage_change เปรียบเทียบเปอร์เซ็นต์ระหว่างวันนี้และเมื่อวาน ของยอดคนเข้าใช้งาน',
-                'active_users_last_7_days' => $activeUsersLast7Days,
+                'active_users_by_date' => $activeUsersByDate,
                 'stats' => [
                     'total_registrations' => $totalRegistrations,
                     'all_courses' => $totalCourses,
