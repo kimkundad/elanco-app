@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Http\Repositories\Settings\HomeBannerRepository;
+use App\Http\Repositories\Settings\HomeBannerRepositoryImpl;
 use App\Http\Repositories\Settings\PageBannerRepository;
 use App\Http\Repositories\Settings\PageBannerRepositoryImpl;
 use App\Http\Repositories\SystemLogs\SystemLogRepository;
@@ -18,6 +20,7 @@ class RepositoriesServiceProvider extends ServiceProvider
         //
         $this->app->bind(SystemLogRepository::class, SystemLogRepositoryImpl::class);
         $this->app->bind(PageBannerRepository::class, PageBannerRepositoryImpl::class);
+        $this->app->bind(HomeBannerRepository::class, HomeBannerRepositoryImpl::class);
     }
 
     /**

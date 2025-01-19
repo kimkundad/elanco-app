@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Settings\HomeBannerController;
 use App\Http\Controllers\Settings\PageBannerController;
 use App\Http\Controllers\SystemLogs\SystemLogController;
 use Illuminate\Support\Facades\Route;
@@ -132,6 +133,11 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
     Route::post('/admin/settings/page-banners', [PageBannerController::class, 'store']);
     Route::put('/admin/settings/page-banners', [PageBannerController::class, 'update']);
     Route::delete('/admin/settings/page-banners', [PageBannerController::class, 'destroy']);
+
+    Route::get('/admin/settings/home-banners', [HomeBannerController::class, 'index']);
+    Route::post('/admin/settings/home-banners', [HomeBannerController::class, 'store']);
+    Route::put('/admin/settings/home-banners', [HomeBannerController::class, 'update']);
+    Route::delete('/admin/settings/home-banners', [HomeBannerController::class, 'destroy']);
 });
 
 

@@ -2,7 +2,7 @@
 
 namespace App\Http\Services\Settings;
 
-use App\Http\Repositories\Settings\PageBannerRepository;
+use App\Http\Repositories\Settings\HomeBannerRepository;
 use App\Http\Utils\ArrayKeyConverter;
 use App\Providers\Image\ImageUploadService;
 use Exception;
@@ -11,18 +11,18 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
-class PageBannerService
+class HomeBannerService
 {
-    private PageBannerRepository $pageBannerRepository;
+    private HomeBannerRepository $homeBannerRepository;
 
-    public function __construct(PageBannerRepository $pageBannerRepository)
+    public function __construct(HomeBannerRepository $homeBannerRepository)
     {
-        $this->pageBannerRepository = $pageBannerRepository;
+        $this->homeBannerRepository = $homeBannerRepository;
     }
 
     public function findAll()
     {
-        return $this->pageBannerRepository->findAll()->map->formatIncludingCreatedUserAndUpdatedUserAndCountry();
+        return $this->homeBannerRepository->findAll()->map->formatIncludingCreatedUserAndUpdatedUserAndCountry();
     }
 
     public function create(Request $request)
@@ -38,25 +38,25 @@ class PageBannerService
             $user = $request->user();
             $data['country_id'] = $user->countryDetails->id;
 
-            $maxOrder = $this->pageBannerRepository->findMaxOrder();
+            $maxOrder = $this->homeBannerRepository->findMaxOrder();
             $data['order'] = $maxOrder ? $maxOrder + 1 : 1;
 
-            $banner = $this->pageBannerRepository->save($data);
+            $banner = $this->homeBannerRepository->save($data);
 
             $uploadedImages = $this->uploadImages($request, $banner->id);
             $data = array_merge($data, $uploadedImages);
 
-            $this->pageBannerRepository->update($banner->id, $data);
+            $this->homeBannerRepository->update($banner->id, $data);
 
             DB::commit();
 
             return [
-                'status' => ['status' => 'success', 'message' => 'Page banner created successfully.'],
+                'status' => ['status' => 'success', 'message' => 'Home banner created successfully.'],
                 'data' => $banner
             ];
         } catch (Exception $e) {
             DB::rollBack();
-            throw new Exception('Failed to create page banner: ' . $e->getMessage());
+            throw new Exception('Failed to create home banner: ' . $e->getMessage());
         }
     }
 
@@ -69,9 +69,9 @@ class PageBannerService
             $data = ArrayKeyConverter::convertToSnakeCase($request->all());
             $data['updated_by'] = Auth::id();
 
-            $banner = $this->pageBannerRepository->findById($id);
+            $banner = $this->homeBannerRepository->findById($id);
             if (!$banner) {
-                throw new Exception('Page banner not found.');
+                throw new Exception('Home banner not found.');
             }
 
             $user = $request->user();
@@ -82,14 +82,14 @@ class PageBannerService
 
             $newOrder = max(1, $newOrder);
 
-            $maxOrder = $this->pageBannerRepository->findMaxOrder();
+            $maxOrder = $this->homeBannerRepository->findMaxOrder();
             $newOrder = min($newOrder, $maxOrder + 1);
 
             if ($newOrder !== $currentOrder) {
                 if ($newOrder > $currentOrder) {
-                    $this->pageBannerRepository->shiftOrderRange($currentOrder + 1, $newOrder, -1);
+                    $this->homeBannerRepository->shiftOrderRange($currentOrder + 1, $newOrder, -1);
                 } elseif ($newOrder < $currentOrder) {
-                    $this->pageBannerRepository->shiftOrderRange($newOrder, $currentOrder - 1, 1);
+                    $this->homeBannerRepository->shiftOrderRange($newOrder, $currentOrder - 1, 1);
                 }
             }
 
@@ -101,7 +101,7 @@ class PageBannerService
             $uploadedImages = $this->uploadImages($request, $id);
             $data = array_merge($data, $uploadedImages);
 
-            $updatedBanner = $this->pageBannerRepository->update($id, $data);
+            $updatedBanner = $this->homeBannerRepository->update($id, $data);
 
             $filesToRemove = array_intersect_key($oldImages, $uploadedImages);
 
@@ -112,20 +112,20 @@ class PageBannerService
             DB::commit();
 
             return [
-                'status' => ['status' => 'success', 'message' => 'Page banner updated successfully.'],
+                'status' => ['status' => 'success', 'message' => 'Home banner updated successfully.'],
                 'data' => $updatedBanner
             ];
         } catch (Exception $e) {
             DB::rollBack();
 
-            foreach ($filesToRemove ?? [] as $key => $filePath) {
+            foreach ($filesToRemove ?? [] as $filePath) {
                 if (!Storage::disk('do_spaces')->exists($filePath)) {
                     $content = file_get_contents($filePath);
                     ImageUploadService::restoreImage($filePath, $content);
                 }
             }
 
-            throw new Exception('Failed to update page banner: ' . $e->getMessage());
+            throw new Exception('Failed to update home banner: ' . $e->getMessage());
         }
     }
 
@@ -133,10 +133,10 @@ class PageBannerService
     {
         DB::beginTransaction();
         try {
-            $banner = $this->pageBannerRepository->findById($id);
+            $banner = $this->homeBannerRepository->findById($id);
 
             if (!$banner) {
-                throw new Exception('Page banner not found.');
+                throw new Exception('Home banner not found.');
             }
 
             $filesToDelete = array_filter([
@@ -144,7 +144,7 @@ class PageBannerService
                 $banner->mobile_image,
             ]);
 
-            $this->pageBannerRepository->delete($id);
+            $this->homeBannerRepository->delete($id);
 
             $deletedFiles = [];
             if (!empty($filesToDelete)) {
@@ -154,7 +154,7 @@ class PageBannerService
             DB::commit();
 
             return [
-                'status' => ['status' => 'success', 'message' => 'Page banner and associated files deleted successfully.'],
+                'status' => ['status' => 'success', 'message' => 'Home banner and associated files deleted successfully.'],
                 'data' => null
             ];
         } catch (Exception $e) {
@@ -167,7 +167,7 @@ class PageBannerService
                 }
             }
 
-            throw new Exception('Failed to delete page banner: ' . $e->getMessage());
+            throw new Exception('Failed to delete home banner: ' . $e->getMessage());
         }
     }
 
@@ -175,19 +175,17 @@ class PageBannerService
     {
         $request->validate([
             'title' => 'required|string',
-            'description' => 'nullable|string',
-            'link' => 'nullable|url',
             'desktopImage' => 'nullable|file|image',
             'mobileImage' => 'nullable|file|image',
             'status' => 'required|in:public,private',
             'order' => 'nullable|integer',
-            'countryId' => 'nullable|exists:countries,id',
+            'country_id' => 'nullable|exists:countries,id',
         ]);
     }
 
     private function uploadImages(Request $request, $id)
     {
-        $basePath = 'elanco/page-banners/' . $id;
+        $basePath = 'home-banners/' . $id;
         $images = [
             'desktop_image' => $request->file('desktopImage'),
             'mobile_image' => $request->file('mobileImage'),
