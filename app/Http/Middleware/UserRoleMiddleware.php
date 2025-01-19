@@ -8,8 +8,6 @@ class UserRoleMiddleware
 {
     public function handle($request, Closure $next, $roles)
     {
-
-
         if ($request->user() == null) {
             return response()->json([
                 'message' => 'Unauthorized: Please log in first.'
