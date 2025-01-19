@@ -22,11 +22,8 @@ class SystemLogController extends Controller
     public function index()
     {
         try {
-            $systemLogs = $this->systemLogService->findAll();
-            return response()->json([
-                'status' => ['status' => 'success', 'message' => null],
-                'data' => $systemLogs
-            ]);
+            $response = $this->systemLogService->findAll();
+            return response()->json($response);
         } catch (Exception $e) {
             return response()->json([
                 'status' => ['status' => 'error', 'message' => $e->getMessage()],

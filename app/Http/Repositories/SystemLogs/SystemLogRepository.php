@@ -6,5 +6,7 @@ interface SystemLogRepository
 {
     public function findAll();
 
+    public function findPaginated();
+
     public function save($data);
 }

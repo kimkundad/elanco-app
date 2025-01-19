@@ -11,6 +11,11 @@ class SystemLogRepositoryImpl implements SystemLogRepository
         return SystemLog::with('user.countryDetails')->get();
     }
 
+    public function findPaginated()
+    {
+        return SystemLog::with('user.countryDetails');
+    }
+
     public function save($data)
     {
         return SystemLog::create($data);

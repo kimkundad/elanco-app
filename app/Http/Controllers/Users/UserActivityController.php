@@ -22,11 +22,8 @@ class UserActivityController extends Controller
     public function index()
     {
         try {
-            $userActivities = $this->userActivityService->findAll();
-            return response()->json([
-                'status' => ['status' => 'success', 'message' => null],
-                'data' => $userActivities
-            ]);
+            $response = $this->userActivityService->findAll();
+            return response()->json($response);
         } catch (Exception $e) {
             return response()->json([
                 'status' => ['status' => 'error', 'message' => $e->getMessage()],
