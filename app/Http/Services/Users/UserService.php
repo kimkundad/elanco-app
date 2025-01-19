@@ -16,6 +16,7 @@ class UserService
 
     public function saveUserLogin(string $ipAddress, ?string $device = null)
     {
+
         $user = Auth::user();
 
         return $this->userLoginRepository->save([

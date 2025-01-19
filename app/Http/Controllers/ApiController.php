@@ -134,48 +134,73 @@ class ApiController extends Controller
 
     public function courses(Request $request)
     {
-
         try {
-            // ตรวจสอบและดึงผู้ใช้จาก JWT
             $user = JWTAuth::parseToken()->authenticate();
-
             $userCountryId = $user->country;
+
+            // Get filter inputs
+            $search = $request->input('search');
+            $topic = $request->input('topic');
+            $animalType = $request->input('animalType');
+            $uploadDate = $request->input('uploadDate', 'desc');
+            $ratingOrder = $request->input('rating', 'desc');
+            $durationOrder = $request->input('duration', 'asc');
+            $date = $request->input('date');
+
+          //  dd($uploadDate);
 
             $courses = course::whereHas('countries', function ($query) use ($userCountryId) {
                 $query->where('country_id', $userCountryId);
             })
+                ->when($search, function ($query, $search) {
+                    $query->where('course_title', 'LIKE', "%$search%")
+                        ->orWhere('course_id', 'LIKE', "%$search%");
+                })
+                ->when($topic, function ($query, $topic) {
+                    $query->whereHas('mainCategories', function ($subQuery) use ($topic) {
+                        $subQuery->where('name', 'LIKE', "%$topic%");
+                    });
+                })
+                ->when($animalType, function ($query, $animalType) {
+                    $query->whereHas('animalTypes', function ($subQuery) use ($animalType) {
+                        $subQuery->where('name', 'LIKE', "%$animalType%");
+                    });
+                })
+                // ->when($date, function ($query, $date) {
+                //     // Filter by quiz.expire_date ที่ยังไม่หมดอายุ และตรงกับวันที่ที่ส่งมา
+                //     $query->whereHas('quiz', function ($subQuery) use ($date) {
+                //         $subQuery->whereDate('expire_date', '>=', now()) // ไม่หมดอายุ
+                //                 ->whereDate('expire_date', $date); // ตรงกับวันที่ที่ส่งมา
+                //     });
+                // }, function ($query) {
+                //     // Default: กรองเฉพาะ quiz.expire_date ที่ยังไม่หมดอายุ
+                //     $query->whereHas('quiz', function ($subQuery) {
+                //         $subQuery->whereDate('expire_date', '>=', now());
+                //     });
+                // })
                 ->with([
-                    'countries' => function ($query) {
-                        $query->select('countries.id', 'countries.name'); // เลือกเฉพาะฟิลด์ที่ต้องการ
-                    },
-                    'mainCategories' => function ($query) {
-                        $query->select('main_categories.id', 'main_categories.name');
-                    },
-                    'subCategories' => function ($query) {
-                        $query->select('sub_categories.id', 'sub_categories.name');
-                    },
-                    'animalTypes' => function ($query) {
-                        $query->select('animal_types.id', 'animal_types.name');
-                    },
+                    'countries:id,name',
+                    'mainCategories:id,name',
+                    'subCategories:id,name',
+                    'animalTypes:id,name',
                     'itemDes',
-                    'Speaker',
+                    'Speaker.countryDetails',
                     'referances',
-                    // ดึงความสัมพันธ์กับ CourseAction
                     'courseActions' => function ($query) use ($user) {
-                        $query->where('user_id', $user->id)
-                            ->select('course_id', 'isFinishCourse'); // เลือกเฉพาะฟิลด์ที่ต้องการ
+                        $query->where('user_id', $user->id)->select('course_id', 'isFinishCourse');
                     },
                 ])
+                ->orderBy('updated_at', $uploadDate)
+                ->orderBy('ratting', $ratingOrder)
+                ->orderBy('duration', $durationOrder)
                 ->get()
                 ->map(function ($course) {
-                    // ตรวจสอบว่า CourseAction มีข้อมูลหรือไม่
                     $isFinishCourse = $course->courseActions->first()
                         ? $course->courseActions->first()->isFinishCourse == 1
                         : false;
 
-                    // แปลงข้อมูลในรูปแบบที่ต้องการ
                     $course->thumbnail = $course->course_img;
-                    unset($course->course_img); // ลบฟิลด์ `course_img` ที่ไม่ต้องการ
+                    unset($course->course_img);
 
                     return [
                         'id' => $course->id,
@@ -190,7 +215,7 @@ class ApiController extends Controller
                         'updated_at' => $course->updated_at,
                         'id_quiz' => $course->id_quiz,
                         'thumbnail' => $course->thumbnail,
-                        'isFinishCourse' => $isFinishCourse, // เพิ่มสถานะ isFinishCourse
+                        'isFinishCourse' => $isFinishCourse,
                         'countries' => $course->countries->map(function ($country) {
                             return ['name' => $country->name];
                         }),
@@ -204,19 +229,17 @@ class ApiController extends Controller
                             return ['name' => $animal->name];
                         }),
                         'item_des' => $course->itemDes->map(function ($item) {
-                            return [
-                                'detail' => $item->detail,
-                            ];
+                            return ['detail' => $item->detail];
                         }),
-                        'speakers' => $course->Speaker->map(function ($item) {
+                        'speakers' => $course->Speaker->map(function ($speaker) {
                             return [
-                                'id' => $item->id,
-                                'name' => $item->name,
-                                'avatar' => $item->avatar,
-                                'job_position' => $item->job_position,
-                                'country' => $item->countryDetails ? $item->countryDetails->name : null, // ใช้ countryDetails
-                                'file' => $item->file,
-                                'description' => $item->description,
+                                'id' => $speaker->id,
+                                'name' => $speaker->name,
+                                'avatar' => $speaker->avatar,
+                                'job_position' => $speaker->job_position,
+                                'country' => $speaker->countryDetails ? $speaker->countryDetails->name : null,
+                                'file' => $speaker->file,
+                                'description' => $speaker->description,
                             ];
                         }),
                         'referances' => $course->referances->map(function ($referance) {
@@ -231,30 +254,18 @@ class ApiController extends Controller
                     ];
                 });
 
-            return response()->json(['courses' => $courses], 200);
+            return response()->json(['success' => true, 'courses' => $courses], 200);
 
         } catch (TokenExpiredException $e) {
-            // กรณี Token หมดอายุ
-            return response()->json([
-                'error' => 'Token has expired',
-                'message' => 'Please refresh your token or login again.',
-            ], 401);
-
+            return response()->json(['error' => 'Token has expired', 'message' => 'Please refresh your token or login again.'], 401);
         } catch (TokenInvalidException $e) {
-            // กรณี Token ไม่ถูกต้อง
-            return response()->json([
-                'error' => 'Token is invalid',
-                'message' => 'The provided token is not valid.',
-            ], 401);
-
+            return response()->json(['error' => 'Token is invalid', 'message' => 'The provided token is not valid.'], 401);
         } catch (JWTException $e) {
-            // กรณีไม่มี Token ในคำขอ
-            return response()->json([
-                'error' => 'Token not provided',
-                'message' => 'Authorization token is missing from your request.',
-            ], 400);
+            return response()->json(['error' => 'Token not provided', 'message' => 'Authorization token is missing from your request.'], 400);
         }
     }
+
+
 
     public function highlightCourses(Request $request)
     {

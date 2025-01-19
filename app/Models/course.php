@@ -10,7 +10,7 @@ class course extends Model
     use HasFactory;
 
     protected $fillable = [
-        'course_title', 'course_img', 'course_preview', 'duration', 'url_video', 'status'
+        'course_title', 'course_id', 'course_img', 'course_preview', 'duration', 'url_video', 'status'
     ];
 
     // Relationships
