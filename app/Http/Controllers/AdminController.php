@@ -90,6 +90,7 @@ class AdminController extends Controller
         $user->email = $validated['email'];
         $user->password = bcrypt($validated['password']);
         $user->country = $validated['country'];
+        $user->status = 1;
         $user->userType = 'admin'; // กำหนด userType เป็น admin
 
         // กำหนดค่า avatar เป็น Full URL

@@ -153,7 +153,6 @@ class MemberController extends Controller
      * Update the specified resource in storage.
      */
 
-
     public function getMemberDetail($id)
     {
         try {
@@ -315,6 +314,33 @@ class MemberController extends Controller
                 'success' => false,
                 'message' => 'Failed to soft-delete member.',
                 'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function toggleUserStatus($id)
+    {
+        try {
+            // Find the user
+            $user = User::findOrFail($id);
+
+            // Toggle the status (0 -> 1, 1 -> 0)
+            $user->status = $user->status == 1 ? 0 : 1;
+            $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User status updated successfully.',
+                'data' => [
+                    'user_id' => $user->id,
+                    'status' => $user->status
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update user status.',
+                'error' => $e->getMessage()
             ], 500);
         }
     }

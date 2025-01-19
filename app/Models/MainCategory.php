@@ -15,4 +15,9 @@ class MainCategory extends Model
     {
         return $this->belongsToMany(User::class, 'main_category_user', 'main_category_id', 'user_id');
     }
+
+    public function courses()
+    {
+        return $this->belongsToMany(Course::class, 'course_main_category', 'main_category_id', 'course_id');
+    }
 }

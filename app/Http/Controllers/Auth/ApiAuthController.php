@@ -39,6 +39,7 @@ class ApiAuthController extends Controller
         $credentials = $request->only('email', 'password');
 
         try {
+            // Attempt to authenticate the user
             if (!$token = JWTAuth::attempt($credentials)) {
                 return response()->json(['error' => 'Invalid credentials'], 401);
             }
@@ -46,9 +47,18 @@ class ApiAuthController extends Controller
             return response()->json(['error' => 'Could not create token'], 500);
         }
 
-        // ดึงข้อมูลผู้ใช้และโหลด countryDetails
+        // Get the authenticated user
         $user = Auth::user();
 
+        // Check if the user is inactive (status = 0)
+        if ($user->status == 0) {
+            return response()->json([
+                'error' => 'Account inactive.',
+                'message' => 'Your account is currently inactive. Please contact support.',
+            ], 403);
+        }
+
+        // Check if the email is verified
         if (!$user->email_verified_at) {
             return response()->json([
                 'error' => 'Your email is not verified.',
@@ -56,6 +66,9 @@ class ApiAuthController extends Controller
             ], 403);
         }
 
+        $user->update(['last_active_at' => now()->format('Y-m-d H:i:s')]);
+
+        // Load country details
         $user->load('countryDetails');
 
         // Save user login
@@ -75,13 +88,15 @@ class ApiAuthController extends Controller
                 'clinic' => $user->clinic,
                 'userType' => $user->userType,
                 'terms' => $user->terms,
-                'flag' => $user->countryDetails ? $user->countryDetails->name : null, // ดึงชื่อประเทศ
+                'flag' => $user->countryDetails ? $user->countryDetails->name : null, // Get country name
             ],
-            'roles' => $user->roles()->pluck('name'), // ดึงเฉพาะชื่อ Role
+            'roles' => $user->roles()->pluck('name'), // Fetch role names
             'verify' => 1,
+            'last_active_at' => $user->last_active_at,
             'refresh_token' => $this->createRefreshToken($request->email),
         ]);
     }
+
 
     public function resetPassword(Request $request)
     {
@@ -177,6 +192,7 @@ class ApiAuthController extends Controller
                 'vetId' => $request->vetId,
                 'clinic' => $request->clinic,
                 'country' => $country->id,
+                'status' => 1,
                 'email_verified_at' => null, // ยังไม่ได้ยืนยัน
             ]);
 
