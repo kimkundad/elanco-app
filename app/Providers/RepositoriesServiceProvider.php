@@ -10,6 +10,8 @@ use App\Http\Repositories\Settings\PageBannerRepository;
 use App\Http\Repositories\Settings\PageBannerRepositoryImpl;
 use App\Http\Repositories\SystemLogs\SystemLogRepository;
 use App\Http\Repositories\SystemLogs\SystemLogRepositoryImpl;
+use App\Http\Repositories\Users\UserLoginRepository;
+use App\Http\Repositories\Users\UserLoginRepositoryImpl;
 use Illuminate\Support\ServiceProvider;
 
 class RepositoriesServiceProvider extends ServiceProvider
@@ -21,6 +23,9 @@ class RepositoriesServiceProvider extends ServiceProvider
     {
         //
         $this->app->bind(SystemLogRepository::class, SystemLogRepositoryImpl::class);
+
+        /* Users */
+        $this->app->bind(UserLoginRepository::class, UserLoginRepositoryImpl::class);
 
         /* Settings */
         $this->app->bind(PageBannerRepository::class, PageBannerRepositoryImpl::class);
