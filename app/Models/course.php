@@ -68,4 +68,10 @@ class course extends Model
     {
         return $this->belongsTo(Survey::class, 'survey_id');
     }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
 }
