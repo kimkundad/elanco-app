@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Http\Services\SystemLog;
+namespace App\Http\Services\SystemLogs;
 
-use App\Http\Repositories\SystemLog\SystemLogRepository;
+use App\Http\Repositories\SystemLogs\SystemLogRepository;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class SystemLogService
 {
-
     private SystemLogRepository $systemLogRepository;
 
     public function __construct(SystemLogRepository $systemLogRepository)
@@ -23,7 +23,7 @@ class SystemLogService
     public function saveAction(Request $request, string $status = 'access', string $errorReason = null)
     {
         $data = [
-            'user_id' => auth()->id(),
+            'user_id' => Auth::id(),
             'ip_address' => $request->ip(),
             'action' => $this->getAction($request),
             'status' => $status,

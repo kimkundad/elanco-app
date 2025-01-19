@@ -2,9 +2,14 @@
 
 namespace App\Providers;
 
+use App\Providers\Image\ImageUploadServiceProvider;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\Schema; //Import Schema
-use Illuminate\Support\Facades\URL; // Import URL Facade
+use Illuminate\Support\Facades\Schema;
+
+//Import Schema
+use Illuminate\Support\Facades\URL;
+
+// Import URL Facade
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -30,6 +35,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        //
+        $this->app->singleton('ImageUploadService', function ($app) {
+            return new ImageUploadServiceProvider();
+        });
     }
 }

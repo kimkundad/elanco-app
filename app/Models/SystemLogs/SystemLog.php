@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\SystemLogs;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -25,7 +26,7 @@ class SystemLog extends Model
             'status' => $this->status,
             'errorReason' => $this->error_reason,
             'createAt' => $this->created_at,
-            'user' => $this->user ? $this->user->formatForSystemLog() : null,
+            'user' => $this->user ? $this->user->formatIncludingCountry() : null,
         ];
     }
 }

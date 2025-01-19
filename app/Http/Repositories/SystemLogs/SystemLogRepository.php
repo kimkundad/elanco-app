@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Repositories\SystemLog;
+namespace App\Http\Repositories\SystemLogs;
 
 interface SystemLogRepository
 {

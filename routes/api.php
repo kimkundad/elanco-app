@@ -1,6 +1,10 @@
 <?php
 
-use App\Http\Controllers\SystemLog\SystemLogController;
+use App\Http\Controllers\Settings\FeaturedCourseController;
+use App\Http\Controllers\Settings\HomeBannerController;
+use App\Http\Controllers\Settings\PageBannerController;
+use App\Http\Controllers\SystemLogs\SystemLogController;
+use App\Http\Controllers\Users\UserActivityController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\ApiAuthController;
 use App\Http\Controllers\ApiController;
@@ -23,10 +27,14 @@ use App\Http\Controllers\AdminController;
 |
 */
 
-Route::middleware(['log.system'])->group(function () {
+Route::middleware(['log.activity', 'log.system'])->group(function () {
     Route::post('/login', [ApiAuthController::class, 'login']);
+});
+
+Route::middleware(['log.system'])->group(function () {
     Route::post('/register', [ApiAuthController::class, 'register']);
 });
+
 Route::post('/refresh-token', [ApiAuthController::class, 'refreshToken']);
 
 Route::post('password/forgot', [PasswordResetController::class, 'forgotPassword']);
@@ -51,10 +59,13 @@ Route::middleware(['auth:api'])->group(function () {
     Route::get('/courses/explore', [ApiController::class, 'exploreCourses']);
     Route::get('/courses/{id}/quiz', [ApiController::class, 'getCourseQuiz']);
     Route::get('/courses/{id}/progress', [ApiController::class, 'getCourseAction']);
-    Route::get('/courses/{id}/certificate', [ApiController::class, 'getCertificate']);
     Route::get('/courses/{id}/getSuevey', [ApiController::class, 'getSurveyByCourse']);
     Route::post('/courses/{id}/review', [ApiController::class, 'PostReview']);
-    Route::put('/courses/{id}/progress', [ApiController::class, 'upProgress']);
+
+    Route::middleware(['log.activity'])->group(function () {
+        Route::get('/courses/{id}/certificate', [ApiController::class, 'getCertificate']);
+        Route::put('/courses/{id}/progress', [ApiController::class, 'upProgress']);
+    });
 
     Route::post('/quiz/{id}/submit', [ApiController::class, 'submitQuiz']);
     Route::post('/suevey/{id}/submit', [ApiController::class, 'submitSurvey']);
@@ -132,6 +143,25 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
     Route::get('/admin/overView', [SettingController::class, 'overView']);
 
     Route::get('/admin/system-logs', [SystemLogController::class, 'index']);
+
+    Route::get('/admin/settings/page-banners', [PageBannerController::class, 'index']);
+    Route::post('/admin/settings/page-banners', [PageBannerController::class, 'store']);
+    Route::put('/admin/settings/page-banners', [PageBannerController::class, 'update']);
+    Route::delete('/admin/settings/page-banners', [PageBannerController::class, 'destroy']);
+
+    Route::get('/admin/settings/home-banners', [HomeBannerController::class, 'index']);
+    Route::post('/admin/settings/home-banners', [HomeBannerController::class, 'store']);
+    Route::put('/admin/settings/home-banners', [HomeBannerController::class, 'update']);
+    Route::delete('/admin/settings/home-banners', [HomeBannerController::class, 'destroy']);
+
+    Route::get('/admin/settings/featured-courses', [FeaturedCourseController::class, 'index']);
+    Route::post('/admin/settings/featured-courses', [FeaturedCourseController::class, 'store']);
+    Route::put('/admin/settings/featured-courses', [FeaturedCourseController::class, 'update']);
+    Route::delete('/admin/settings/featured-courses', [FeaturedCourseController::class, 'destroy']);
+
+    Route::get('/admin/settings', [\App\Http\Controllers\Settings\SettingController::class, 'index']);
+
+    Route::get('/admin/user-activities', [UserActivityController::class, 'index']);
 });
 
 

@@ -1,18 +1,19 @@
 <?php
 
-namespace App\Http\Controllers\SystemLog;
+namespace App\Http\Controllers\Users;
 
 use App\Http\Controllers\Controller;
-use App\Http\Services\SystemLog\SystemLogService;
+use App\Http\Services\Users\UserActivityService;
+use Exception;
 use Illuminate\Http\Request;
 
-class SystemLogController extends Controller
+class UserActivityController extends Controller
 {
-    private SystemLogService $systemLogService;
+    private UserActivityService $userActivityService;
 
-    public function __construct(SystemLogService $systemLogService)
+    public function __construct(UserActivityService $userActivityService)
     {
-        $this->systemLogService = $systemLogService;
+        $this->userActivityService = $userActivityService;
     }
 
     /**
@@ -20,8 +21,18 @@ class SystemLogController extends Controller
      */
     public function index()
     {
-        $systemLogs = $this->systemLogService->findAll();
-        return response()->json(['error' => false, 'data' => $systemLogs]);
+        try {
+            $userActivities = $this->userActivityService->findAll();
+            return response()->json([
+                'status' => ['status' => 'success', 'message' => null],
+                'data' => $userActivities
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => ['status' => 'error', 'message' => $e->getMessage()],
+                'data' => null
+            ]);
+        }
     }
 
     /**
