@@ -17,28 +17,36 @@ class AdminController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
-        $objs = DB::table('users')->select(
-            'users.*',
-            'users.id as id_q',
-            'users.name as names',
-            'users.status as status1',
-            'users.updated_at as updated_ats',
-            'role_user.*',
-            'roles.*',
-            'roles.name as name1',
-            )
-            ->leftjoin('role_user', 'role_user.user_id',  'users.id')
-            ->leftjoin('roles', 'roles.id',  'role_user.role_id')
-            ->orderby('role_user.id', 'asc')
-            ->paginate(15);
+        try {
+            // ดึงข้อมูล Users ที่มี Roles และ Countries พร้อมกัน
+            $users = User::with(['roles', 'countryDetails']) // เพิ่ม countryDetails เพื่อดึงข้อมูลประเทศ
+                ->whereHas('roles', function ($query) {
+                    $query->whereIn('name', ['admin', 'superadmin']);
+                })
+                ->paginate(15);
 
-            $objs->setPath('');
+            // เพิ่ม Path ให้ Pagination
+            $users->withPath('');
 
-        return view('admin.admin.index', compact('objs'));
+            // Response ข้อมูลสำเร็จ
+            return response()->json([
+                'success' => true,
+                'message' => 'Admin Users retrieved successfully.',
+                'data' => $users,
+            ], 200);
+        } catch (\Exception $e) {
+            // Response เมื่อเกิดข้อผิดพลาด
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve Admin Users.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
+
+
 
     /**
      * Show the form for creating a new resource.
@@ -60,68 +68,56 @@ class AdminController extends Controller
      */
     public function store(Request $request)
 {
-    // Validate ข้อมูลที่ส่งมา
-    $this->validate($request, [
-        'name' => 'required|string|max:255',
-        'surname' => 'required|string|max:255',
-        'email' => 'required|string|email|max:255|unique:users',
-        'password' => 'required|string|min:8|same:retype_password',
-        'retype_password' => 'required|string|min:8',
-        'role' => 'required|integer|exists:roles,id',
-        'country' => 'required|integer|exists:countries,id',
-        'avatar_img' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:4048', // ไม่บังคับอัปโหลดรูป
+    // Validate ข้อมูล
+    $validated = $request->validate([
+        'firstName' => 'required|string|max:255',
+        'lastName' => 'required|string|max:255',
+        'email' => 'required|email|unique:users,email',
+        'password' => 'required|confirmed|min:8',
+        'country' => 'required|exists:countries,id',
+        'role_id' => 'required|exists:roles,id', // ตรวจสอบว่า Role มีอยู่ใน database
+        'avatar_img' => 'nullable|url',
     ]);
 
     DB::beginTransaction();
 
     try {
-        // จัดการรูปภาพ (ถ้ามี)
-        $filename = null;
-        if ($request->hasFile('avatar_img')) {
-            $image = $request->file('avatar_img');
-            $img = Image::make($image->getRealPath());
-            $img->resize(300, 300, function ($constraint) {
-                $constraint->aspectRatio();
-            });
-            $img->stream(); // Prepare image for upload
+        // สร้าง User ใหม่
+        $user = new User();
+        $user->name = $validated['firstName'].' '.$validated['lastName'];
+        $user->firstName = $validated['firstName'];
+        $user->lastName = $validated['lastName'];
+        $user->email = $validated['email'];
+        $user->password = bcrypt($validated['password']);
+        $user->country = $validated['country'];
+        $user->userType = 'admin'; // กำหนด userType เป็น admin
 
-            // Generate a unique filename
-            $filename = time() . '_' . $image->getClientOriginalName();
-
-            // Upload the image to DigitalOcean Spaces
-            Storage::disk('do_spaces')->put(
-                'elanco/avatar/' . $filename,
-                $img->__toString(),
-                'public'
-            );
+        // กำหนดค่า avatar เป็น Full URL
+        if (!empty($validated['avatar_img'])) {
+            $user->avatar = $validated['avatar_img'];
         }
 
-        // สร้าง User ใหม่
-        $user = User::create([
-            'name' => $request->name,
-            'surname' => $request->surname,
-            'email' => $request->email,
-          //  'phone' => $request->phone ?? null,
-            'avatar' => $filename
-                ? 'https://kimspace2.sgp1.cdn.digitaloceanspaces.com/elanco/avatar/' . $filename
-                : null,
-            'provider' => 'email',
-            'email_verified_at' => now(),
-            'country' => $request->country,
-            'is_admin' => 0, // ค่าเริ่มต้นสำหรับผู้ใช้ทั่วไป
-            'password' => Hash::make($request->password),
-        ]);
+        $user->save();
 
-        // เชื่อมโยง Role กับ User
-        $role = Role::find($request->role);
-        $user->roles()->attach($role);
+        // เพิ่ม Role ให้ User
+        $user->roles()->attach($validated['role_id']);
 
         DB::commit();
 
-        return redirect(url('admin/adminUser'))->with('add_success', 'เพิ่มผู้ใช้งานสำเร็จ!');
+        return response()->json([
+            'success' => true,
+            'message' => 'Admin User created successfully.',
+            'data' => $user->load('roles', 'countryDetails'), // ดึงข้อมูล Role กลับมาด้วย
+        ], 201);
+
     } catch (\Exception $e) {
-        DB::rollback();
-        return redirect()->back()->withErrors(['database' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()]);
+        DB::rollBack();
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to create Admin User.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
 }
 
@@ -129,10 +125,28 @@ class AdminController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
-    {
-        //
-    }
+    public function show($id)
+        {
+            try {
+                // ดึงข้อมูลผู้ใช้ด้วย Roles และ Country
+                $user = User::with(['roles', 'countryDetails']) // ดึงข้อมูล Roles และ Country
+                    ->findOrFail($id);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Admin User details retrieved successfully.',
+                    'data' => $user,
+                ], 200);
+            } catch (\Exception $e) {
+                // หากเกิดข้อผิดพลาด
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to retrieve Admin User details.',
+                    'error' => $e->getMessage(),
+                ], 500);
+            }
+        }
+
 
     /**
      * Show the form for editing the specified resource.
@@ -145,16 +159,100 @@ class AdminController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
-    {
-        //
+    public function update(Request $request, $id)
+{
+    // Validate ข้อมูล
+    $validated = $request->validate([
+        'firstName' => 'required|string|max:255',
+        'lastName' => 'required|string|max:255',
+        'email' => 'required|email|unique:users,email,' . $id, // อีเมลต้องไม่ซ้ำกับผู้ใช้อื่น
+        'password' => 'nullable|confirmed|min:8',
+        'country' => 'required|exists:countries,id',
+        'role_id' => 'required|exists:roles,id', // ตรวจสอบว่า Role มีอยู่ใน database
+        'avatar_img' => 'nullable|url',
+    ]);
+
+    DB::beginTransaction();
+
+    try {
+        // ค้นหา User
+        $user = User::findOrFail($id);
+
+        // อัปเดตข้อมูลผู้ใช้
+        $user->firstName = $validated['firstName'];
+        $user->lastName = $validated['lastName'];
+        $user->email = $validated['email'];
+
+        // อัปเดตรหัสผ่าน (ถ้าส่งมา)
+        if (!empty($validated['password'])) {
+            $user->password = bcrypt($validated['password']);
+        }
+
+        $user->country = $validated['country'];
+
+        // อัปเดต Avatar
+        if (!empty($validated['avatar_img'])) {
+            $user->avatar = $validated['avatar_img'];
+        }
+
+        $user->save();
+
+        // อัปเดต Role
+        $user->roles()->sync([$validated['role_id']]);
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Admin User updated successfully.',
+            'data' => $user->load('roles', 'countryDetails'), // ดึงข้อมูล Role กลับมาด้วย
+        ], 200);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to update Admin User.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
+
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy($id)
     {
-        //
+        DB::beginTransaction();
+
+        try {
+            // ค้นหา User
+            $user = User::findOrFail($id);
+
+            // ลบความสัมพันธ์กับ Role
+            $user->roles()->detach();
+
+            // ลบ User
+            $user->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Admin User deleted successfully.'
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete Admin User.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
+
 }

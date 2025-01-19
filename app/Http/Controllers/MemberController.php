@@ -10,11 +10,8 @@ use App\Models\CourseAction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Facades\Image;
-use Illuminate\Support\Facades\Validator;
 use App\Exports\MembersExport;
 use Maatwebsite\Excel\Facades\Excel;
-
-use Illuminate\Support\Facades\Hash;
 
 class MemberController extends Controller
 {
@@ -35,7 +32,7 @@ class MemberController extends Controller
                 ->when($search, function ($query) use ($search) {
                     $query->where(function ($q) use ($search) {
                         $q->where('name', 'LIKE', "%$search%")
-                        ->orWhere('email', 'LIKE', "%$search%");
+                            ->orWhere('email', 'LIKE', "%$search%");
                     });
                 })
                 ->when($userType, function ($query) use ($userType) {
@@ -43,17 +40,15 @@ class MemberController extends Controller
                 })
                 ->paginate(8);
 
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Surveys retrieved successfully.',
-                    'data' =>  [
-                        'members' => $objs,
-                        'search' => $search,
-                        'userType' => $userType
-                    ]
-                ], 200);
-
-
+            return response()->json([
+                'success' => true,
+                'message' => 'Surveys retrieved successfully.',
+                'data' => [
+                    'members' => $objs,
+                    'search' => $search,
+                    'userType' => $userType
+                ]
+            ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
@@ -64,41 +59,38 @@ class MemberController extends Controller
         }
     }
 
-
     public function exportMembers()
     {
         $fileName = 'members_' . now()->format('Y_m_d_H_i_s') . '.xlsx'; // ตั้งชื่อไฟล์
         return Excel::download(new MembersExport, $fileName);
     }
 
-
-
     public function getUserCourses($userId)
     {
         // ดึงข้อมูล CourseAction และความสัมพันธ์กับ Course
         $courses = CourseAction::where('user_id', $userId)
-        ->with('course')
-        ->get()
-        ->map(function ($course) {
-            // ถ้า isFinishCourse = 1 ให้ Pass Rate = 100%
-            if ($course->isFinishCourse) {
-                $course->pass_rate = 100; // ตั้งค่าเป็น 100%
-            } else {
-                // คำนวณ Pass Rate ปกติ
-                $totalItems = 2; // จำนวนกิจกรรมทั้งหมด (เปลี่ยนได้ตามจริง)
-                $completedItems = 0;
+            ->with('course')
+            ->get()
+            ->map(function ($course) {
+                // ถ้า isFinishCourse = 1 ให้ Pass Rate = 100%
+                if ($course->isFinishCourse) {
+                    $course->pass_rate = 100; // ตั้งค่าเป็น 100%
+                } else {
+                    // คำนวณ Pass Rate ปกติ
+                    $totalItems = 2; // จำนวนกิจกรรมทั้งหมด (เปลี่ยนได้ตามจริง)
+                    $completedItems = 0;
 
-                if ($course->isFinishVideo) $completedItems++;
-                if ($course->isFinishQuiz) $completedItems++;
+                    if ($course->isFinishVideo) $completedItems++;
+                    if ($course->isFinishQuiz) $completedItems++;
 
-                $course->pass_rate = ($completedItems / $totalItems) * 100; // คำนวณเปอร์เซ็นต์
-            }
+                    $course->pass_rate = ($completedItems / $totalItems) * 100; // คำนวณเปอร์เซ็นต์
+                }
 
-            return $course;
-        });
+                return $course;
+            });
 
         $user = User::with(['countryDetails', 'mainCategories', 'subCategories', 'animalTypes'])
-        ->findOrFail($userId);
+            ->findOrFail($userId);
 
         return response()->json([
             'success' => true,
@@ -108,7 +100,6 @@ class MemberController extends Controller
             ]
         ]);
     }
-
 
     /**
      * Show the form for creating a new resource.
@@ -162,64 +153,98 @@ class MemberController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, $id)
+
+
+     public function getMemberDetail($id)
     {
-        // Validate ข้อมูลที่ส่งเข้ามา
-        $validated = $request->validate([
-            'firstName' => 'required|string|max:255',
-            'lastName' => 'required|string|max:255',
-            'password' => 'nullable|confirmed|min:8',
-            'country' => 'required|exists:countries,id', // ตรวจสอบว่า country มีอยู่ใน database
-            'userType' => 'required|string|max:255',
-            'avatar_img' => 'nullable|url', // ต้องเป็น URL
-        ]);
-
-        DB::beginTransaction();
         try {
-            // ค้นหา User
-            $user = User::findOrFail($id);
-
-            // อัปเดตข้อมูลทั่วไป
-            $user->firstName = $validated['firstName'];
-            $user->lastName = $validated['lastName'];
-
-            // อัปเดตรหัสผ่านถ้าส่งมา
-            if (!empty($validated['password'])) {
-                $user->password = bcrypt($validated['password']);
-            }
-
-            // อัปเดตข้อมูล country, userType และ avatar
-            $user->country = $validated['country'];
-            $user->userType = $validated['userType'];
-
-            // กำหนดค่า avatar เป็น Full URL
-            if (!empty($validated['avatar_img'])) {
-                $user->avatar = $validated['avatar_img'];
-            }
-
-            // บันทึกข้อมูลลง Database
-            $user->save();
-
-            DB::commit();
+            // ดึงข้อมูลสมาชิกพร้อมความสัมพันธ์ที่เกี่ยวข้อง
+            $user = User::with([
+                'countryDetails', // ดึงข้อมูลประเทศ
+                'mainCategories', // หมวดหมู่หลัก
+                'subCategories',  // หมวดหมู่ย่อย
+                'animalTypes',    // ประเภทสัตว์
+            ])->findOrFail($id); // ถ้าไม่เจอ User จะ throw Exception
 
             // Response สำเร็จ
             return response()->json([
                 'success' => true,
-                'message' => 'Member updated successfully.',
+                'message' => 'Member details retrieved successfully.',
                 'data' => $user,
             ], 200);
 
         } catch (\Exception $e) {
-            DB::rollBack();
-
             // Response เมื่อเกิดข้อผิดพลาด
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to update member.',
+                'message' => 'Failed to retrieve member details.',
                 'error' => $e->getMessage(),
             ], 500);
         }
     }
+
+
+
+    public function update(Request $request, $id)
+{
+    // Validate ข้อมูลที่ส่งเข้ามา
+    $validated = $request->validate([
+        'firstName' => 'required|string|max:255',
+        'lastName' => 'required|string|max:255',
+        'email' => 'required|email|unique:users,email,' . $id, // ตรวจสอบอีเมลและต้องไม่ซ้ำกับ user อื่น
+        'password' => 'nullable|confirmed|min:8',
+        'country' => 'required|exists:countries,id', // ตรวจสอบว่า country มีอยู่ใน database
+        'userType' => 'required|string|max:255',
+        'avatar_img' => 'nullable|url', // ต้องเป็น URL
+    ]);
+
+    DB::beginTransaction();
+    try {
+        // ค้นหา User
+        $user = User::findOrFail($id);
+
+        // อัปเดตข้อมูลทั่วไป
+        $user->firstName = $validated['firstName'];
+        $user->lastName = $validated['lastName'];
+        $user->email = $validated['email']; // อัปเดตอีเมล
+
+        // อัปเดตรหัสผ่านถ้าส่งมา
+        if (!empty($validated['password'])) {
+            $user->password = bcrypt($validated['password']);
+        }
+
+        // อัปเดตข้อมูล country, userType และ avatar
+        $user->country = $validated['country'];
+        $user->userType = $validated['userType'];
+
+        // กำหนดค่า avatar เป็น Full URL
+        if (!empty($validated['avatar_img'])) {
+            $user->avatar = $validated['avatar_img'];
+        }
+
+        // บันทึกข้อมูลลง Database
+        $user->save();
+
+        DB::commit();
+
+        // Response สำเร็จ
+        return response()->json([
+            'success' => true,
+            'message' => 'Member updated successfully.',
+            'data' => $user,
+        ], 200);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+
+        // Response เมื่อเกิดข้อผิดพลาด
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to update member.',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
 
 
     private function uploadImage($image, $path)
@@ -252,7 +277,6 @@ class MemberController extends Controller
         Storage::disk('do_spaces')->delete($relativePath);
     }
 
-
     /**
      * Remove the specified resource from storage.
      */
@@ -260,4 +284,45 @@ class MemberController extends Controller
     {
         //
     }
+
+
+    public function softDelete($id)
+{
+    DB::beginTransaction();
+
+    try {
+        // ค้นหา User
+        $user = User::findOrFail($id);
+
+        // เปลี่ยนอีเมลของผู้ใช้
+        $timestamp = now()->timestamp;
+        $newEmail = $user->email . "Deleted{$timestamp}";
+
+        $user->update(['email' => $newEmail]);
+
+        // ตั้งสถานะเป็นลบหรือ Inactive (ถ้าต้องการ)
+        $user->update(['status' => 0]);
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Member soft-deleted successfully.',
+            'data' => [
+                'original_email' => $user->email,
+                'updated_email' => $newEmail,
+            ],
+        ], 200);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to soft-delete member.',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
+
 }

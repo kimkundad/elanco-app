@@ -6,8 +6,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Facades\DB;
-use Tymon\JWTAuth\Contracts\JWTSubject; // เพิ่ม JWTSubject
+use Tymon\JWTAuth\Contracts\JWTSubject;
+
+// เพิ่ม JWTSubject
 
 class User extends Authenticatable implements JWTSubject
 {
@@ -24,17 +25,17 @@ class User extends Authenticatable implements JWTSubject
 
     public function sendPasswordResetNotification($token)
     {
-      $this->notify(new ResetPasswordNotification($token));
+        $this->notify(new ResetPasswordNotification($token));
     }
 
     public function roles()
     {
-      return $this->belongsToMany(Role::class);
+        return $this->belongsToMany(Role::class);
     }
 
     /**
-    * @param string|array $roles
-    */
+     * @param string|array $roles
+     */
     public function authorizeRoles($roles)
     {
         if (is_array($roles)) {
@@ -42,18 +43,20 @@ class User extends Authenticatable implements JWTSubject
         }
         return $this->hasRole($roles) || abort(401, 'This action is unauthorized.');
     }
+
     /**
-    * Check multiple roles
-    * @param array $roles
-    */
+     * Check multiple roles
+     * @param array $roles
+     */
     public function hasAnyRole($roles)
     {
         return null !== $this->roles()->whereIn('name', $roles)->first();
     }
+
     /**
-    * Check one role
-    * @param string $role
-    */
+     * Check one role
+     * @param string $role
+     */
     public function hasRole($role)
     {
         return null !== $this->roles()->where('name', $role)->first();
@@ -67,7 +70,6 @@ class User extends Authenticatable implements JWTSubject
     protected $hidden = [
         'password', 'remember_token',
     ];
-
 
     /**
      * The attributes that should be cast to native types.
@@ -96,7 +98,6 @@ class User extends Authenticatable implements JWTSubject
         return $this->belongsTo(Country::class, 'country', 'id'); // 'country' คือ foreign key
     }
 
-
     public function mainCategories()
     {
         return $this->belongsToMany(MainCategory::class, 'main_category_user', 'user_id', 'main_category_id');
@@ -117,4 +118,34 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasMany(Survey::class, 'created_by');
     }
 
+    public function systemLogs()
+    {
+        return $this->hasMany(SystemLog::class);
+    }
+
+    public function formatForSystemLog()
+    {
+        return [
+            'id' => $this->id,
+            'firstName' => $this->firstName,
+            'lastName' => $this->lastName,
+            'email' => $this->email,
+            'position' => $this->position,
+            'userType' => $this->userType,
+            'terms' => $this->terms,
+            'prefix' => $this->prefix,
+            'vetId' => $this->vetId,
+            'clinic' => $this->clinic,
+            'avatar' => $this->avatar,
+            'phone' => $this->phone,
+            'address' => $this->address,
+            'birthday' => $this->birthday,
+            'zipcode' => $this->zipcode,
+            'point' => $this->point,
+            'idcard' => $this->idcard,
+            'codeUser' => $this->code_user,
+            'shopId' => $this->shop_id,
+            'country' => $this->countryDetails ? $this->countryDetails->format() : null,
+        ];
+    }
 }

@@ -17,8 +17,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
-
-        $this->call(SurveySeeder::class);
+        $this->call([
+            SurveySeeder::class,
+            CountriesSeeder::class,
+            RolesSeeder::class,
+        ]);
+        /*$this->call(SurveySeeder::class);*/
 
         // \App\Models\User::factory(10)->create();
 
@@ -120,9 +124,5 @@ class DatabaseSeeder extends Seeder
         //     'email' => 'thewealthangels@gmail.com'
         //     ]
         // ]);
-
-
-
-
     }
 }
