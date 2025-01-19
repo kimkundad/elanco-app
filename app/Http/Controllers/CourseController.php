@@ -19,6 +19,8 @@ use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Facades\Image;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 class CourseController extends Controller
 {
@@ -243,6 +245,7 @@ class CourseController extends Controller
             $course->url_video = $request->url_video;
             $course->id_quiz = $request->id_quiz;
             $course->survey_id = $request->survey_id;
+            $course->created_by = Auth::id();
             $course->save();
 
             // Save ItemDes
@@ -328,10 +331,84 @@ class CourseController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+
+     public function courseReview(Request $request, string $id)
     {
-        //
         try {
+            $search = $request->input('search'); // คำค้นหา
+            $ratingFilter = $request->input('rating'); // ค่ากรอง Rating (1 - 5)
+
+            // ดึงข้อมูล Rating จาก courseActions
+            $ratings = CourseAction::with(['user.countryDetails']) // ดึงข้อมูล User และประเทศ
+                ->where('course_id', $id)
+                ->when($search, function ($query, $search) {
+                    // ค้นหาจากชื่อผู้ใช้ (firstName, lastName) หรืออีเมล
+                    $query->whereHas('user', function ($userQuery) use ($search) {
+                        $userQuery->where('firstName', 'LIKE', "%$search%")
+                            ->orWhere('lastName', 'LIKE', "%$search%")
+                            ->orWhere('email', 'LIKE', "%$search%");
+                    });
+                })
+                ->when($ratingFilter, function ($query, $ratingFilter) {
+                    // กรอง Rating ตามค่าที่ส่งมา
+                    $query->where('rating', $ratingFilter);
+                })
+                ->paginate(10); // แบ่งหน้า
+
+            // คำนวณค่าเฉลี่ย Rating และจำนวน Review ทั้งหมด
+            $averageRating = CourseAction::where('course_id', $id)->avg('rating');
+            $totalReviews = CourseAction::where('course_id', $id)->count();
+
+            // สร้าง Response
+            $response = [
+                'course_id' => $id,
+                'average_rating' => round($averageRating, 1), // ค่าเฉลี่ย Rating
+                'total_reviews' => $totalReviews, // จำนวนรีวิวทั้งหมด
+                'ratings' => $ratings->map(function ($rating) {
+                    return [
+                        'name' => $rating->user ? $rating->user->firstName . ' ' . $rating->user->lastName : null,
+                        'email' => $rating->user ? $rating->user->email : null,
+                        'clinicName' => $rating->user ? $rating->user->clinic : null,
+                        'rating' => $rating->rating,
+                        'timestamp' => $rating->updated_at->format('d M Y | h:i A'),
+                        'country' => $rating->user && $rating->user->countryDetails ? $rating->user->countryDetails->name : null,
+                        'countryImg' => $rating->user && $rating->user->countryDetails ? $rating->user->countryDetails->img : null,
+                        'userType' => $rating->user ? $rating->user->userType : null,
+                    ];
+                }),
+                'pagination' => [
+                    'current_page' => $ratings->currentPage(),
+                    'total_pages' => $ratings->lastPage(),
+                    'per_page' => $ratings->perPage(),
+                    'total' => $ratings->total(),
+                ],
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Course reviews retrieved successfully.',
+                'data' => $response,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve course reviews.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+
+
+
+    public function show(Request $request, string $id)
+    {
+        try {
+
+            $startDate = $request->input('start_date'); // วันที่เริ่มต้น
+            $endDate = $request->input('end_date');    // วันที่สิ้นสุด
+
             // ดึงข้อมูลคอร์สและความสัมพันธ์ที่เกี่ยวข้อง
             $course = course::with([
                 'countries',
@@ -341,12 +418,59 @@ class CourseController extends Controller
                 'itemDes',
                 'referances',
                 'Speaker',
-                'Speaker.countryDetails'
+                'Speaker.countryDetails',
+                'creator'
             ])->findOrFail($id);
+
+            // ข้อมูลเพิ่มเติมที่ต้องการคำนวณ
+            $totalEnrolled = $course->courseActions()->count(); // จำนวนผู้ลงทะเบียนทั้งหมด
+            $completedEnrolled = $course->courseActions()->where('isFinishCourse', 1)->count(); // จำนวนผู้เรียนจบ
+            $rating = $course->courseActions()->avg('rating'); // คะแนนเฉลี่ย
+            $passedCount = $course->courseActions()->where('isFinishQuiz', 1)->count(); // จำนวนผู้ที่ผ่าน
+            $surveySummit = $course->survey ? $course->survey->responses()->count() : 0; // จำนวนผู้ที่ตอบ Survey
+            $course->ce_point = $course->quiz->point_cpd;
+            // คำนวณเปอร์เซ็นต์
+            $completePercentage = $totalEnrolled > 0 ? round(($completedEnrolled / $totalEnrolled) * 100) : 0;
+            $passedPercentage = $totalEnrolled > 0 ? round(($passedCount / $totalEnrolled) * 100) : 0;
+            $surveyPercentage = $totalEnrolled > 0 ? round(($surveySummit / $totalEnrolled) * 100) : 0;
+
+            // กราฟแท่งแสดงจำนวนผู้ลงทะเบียนในแต่ละเดือน โดยมีการใช้ Date Range
+        $enrollmentQuery = $course->courseActions()
+        ->selectRaw('MONTH(created_at) as month, COUNT(*) as count')
+        ->groupBy('month')
+        ->orderBy('month');
+
+        // เพิ่มการกรองตาม Date Range
+        if ($startDate && $endDate) {
+            $enrollmentQuery->whereBetween('created_at', [
+                Carbon::parse($startDate)->startOfDay(),
+                Carbon::parse($endDate)->endOfDay()
+            ]);
+        }
+
+        $enrollmentReport = $enrollmentQuery->get()
+            ->mapWithKeys(function ($row) {
+                return [date('M', mktime(0, 0, 0, $row->month, 1)) => $row->count];
+            });
 
             // สร้าง Response Data
             $response = [
-                'course' => $course
+                'course' => $course,
+                'stats' => [
+                    'complete_percentage' => $completePercentage,
+                    'completed' => $completedEnrolled,
+                    'total_enrolled' => $totalEnrolled,
+                    'rating' => round($rating, 1),
+                    'passed_percentage' => $passedPercentage,
+                    'passed_count' => $passedCount,
+                    'survey_summit' => $surveySummit,
+                    'survey_percentage' => $surveyPercentage,
+                ],
+                'enrollment_report' => $enrollmentReport,
+                'created_by' => $course->creator ? [
+                    'firstName' => $course->creator->firstName,
+                    'lastName' => $course->creator->lastName,
+                ] : null,
             ];
 
             // ส่งออกข้อมูลในรูปแบบ JSON

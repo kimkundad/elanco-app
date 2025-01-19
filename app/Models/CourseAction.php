@@ -26,4 +26,9 @@ class CourseAction extends Model
     {
         return $this->belongsTo(course::class, 'course_id');
     }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 }
