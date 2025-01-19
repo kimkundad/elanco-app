@@ -9,6 +9,7 @@ use App\Models\SubCategory;
 use App\Models\AnimalType;
 use App\Models\quiz;
 use App\Models\Survey;
+use App\Models\Role;
 use Intervention\Image\Facades\Image;
 use Illuminate\Support\Facades\Storage;
 
@@ -33,6 +34,24 @@ class SettingController extends Controller
         ], 200);
 
     }
+
+
+    public function getRole(){
+
+        $Role = Role::all();
+
+        $response = [
+            'Role' => $Role
+        ];
+
+        // ส่งออกข้อมูลในรูปแบบ JSON
+        return response()->json([
+            'success' => true,
+            'data' => $response
+        ], 200);
+
+    }
+
 
 
     public function getMainCategory(){

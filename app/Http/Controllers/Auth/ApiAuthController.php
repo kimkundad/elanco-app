@@ -67,6 +67,7 @@ class ApiAuthController extends Controller
                 'terms' => $user->terms,
                 'flag' => $user->countryDetails ? $user->countryDetails->name : null, // ดึงชื่อประเทศ
             ],
+            'roles' => $user->roles()->pluck('name'), // ดึงเฉพาะชื่อ Role
             'verify' => 1,
             'refresh_token' => $this->createRefreshToken($request->email),
         ]);

@@ -398,4 +398,38 @@ class QuizController extends Controller
         }
     }
 
+
+    public function questionDelete($id)
+    {
+        DB::beginTransaction();
+
+        try {
+            // ค้นหา Question
+            $question = question::findOrFail($id);
+
+            // ลบคำตอบ (Answers) ที่เกี่ยวข้องกับ Question นี้
+            answer::where('questions_id', $id)->delete();
+
+            // ลบ Question
+            $question->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Question deleted successfully.',
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete question.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
 }

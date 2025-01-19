@@ -11,6 +11,7 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\SurvayController;
 use App\Http\Controllers\MemberController;
+use App\Http\Controllers\AdminController;
 
 /*
 |--------------------------------------------------------------------------
@@ -88,6 +89,8 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
 
     Route::get('/admin/question/{id}', [QuizController::class, 'questionID']);
     Route::post('/admin/question/{id}', [QuizController::class, 'questionUpdate']);
+    Route::delete('/admin/question/{id}', [QuizController::class, 'questionDelete']);
+    Route::delete('/admin/deleteAnswer/{id}', [SurvayController::class, 'deleteAnswerQuiz']);
 
     Route::get('/admin/survey', [SurvayController::class, 'index']);
     Route::get('/admin/survey/{id}', [SurvayController::class, 'show']);
@@ -95,6 +98,7 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
         Route::post('/admin/survey', [SurvayController::class, 'store']);
         Route::put('/admin/survey/{id}', [SurvayController::class, 'update']);
         Route::delete('/admin/survey/{id}', [SurvayController::class, 'destroy']);
+        Route::delete('/admin/del-question-survey/{id}', [SurvayController::class, 'destroyQuestion']);
     });
 
     Route::post('/admin/postSurveyQuestion/{id}', [SurvayController::class, 'SurveyQuestion']);
@@ -102,8 +106,16 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
     Route::delete('/admin/answer/{id}', [SurvayController::class, 'deleteAnswer']);
 
     Route::get('/admin/members', [MemberController::class, 'index']);
+    Route::get('/admin/member/{id}', [MemberController::class, 'getMemberDetail']);
     Route::get('/admin/export-members', [MemberController::class, 'exportMembers']);
     Route::post('/admin/members/{id}', [MemberController::class, 'update']);
+    Route::delete('/admin/members/{id}', [MemberController::class, 'softDelete']);
+
+    Route::get('/admin/adminUser', [AdminController::class, 'index']);
+    Route::post('/admin/adminUser', [AdminController::class, 'store']);
+    Route::get('/admin/adminUser/{id}', [AdminController::class, 'show']);
+    Route::put('/admin/adminUser/{id}', [AdminController::class, 'update']);
+    Route::delete('/admin/adminUser/{id}', [AdminController::class, 'destroy']);
 
     Route::get('/admin/getCountry', [SettingController::class, 'getCountry']);
     Route::get('/admin/getItemForCourse ', [SettingController::class, 'getItemForCourse']);
@@ -112,6 +124,7 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
     Route::get('/admin/getAnimalType', [SettingController::class, 'getAnimalType']);
     Route::get('/admin/getQuiz', [SettingController::class, 'getQuiz']);
     Route::get('/admin/getSurvey', [SettingController::class, 'getSurvey']);
+    Route::get('/admin/getRole', [SettingController::class, 'getRole']);
 
     Route::get('/admin/system-logs', [SystemLogController::class, 'index']);
 
