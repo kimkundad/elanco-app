@@ -88,6 +88,8 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
 
     Route::get('/admin/question/{id}', [QuizController::class, 'questionID']);
     Route::post('/admin/question/{id}', [QuizController::class, 'questionUpdate']);
+    Route::delete('/admin/question/{id}', [QuizController::class, 'questionDelete']);
+    Route::delete('/admin/deleteAnswer/{id}', [SurvayController::class, 'deleteAnswerQuiz']);
 
     Route::get('/admin/survey', [SurvayController::class, 'index']);
     Route::get('/admin/survey/{id}', [SurvayController::class, 'show']);
@@ -95,6 +97,7 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
         Route::post('/admin/survey', [SurvayController::class, 'store']);
         Route::put('/admin/survey/{id}', [SurvayController::class, 'update']);
         Route::delete('/admin/survey/{id}', [SurvayController::class, 'destroy']);
+        Route::delete('/admin/del-question-survey/{id}', [SurvayController::class, 'destroyQuestion']);
     });
 
     Route::post('/admin/postSurveyQuestion/{id}', [SurvayController::class, 'SurveyQuestion']);
@@ -120,6 +123,7 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
     Route::get('/admin/getAnimalType', [SettingController::class, 'getAnimalType']);
     Route::get('/admin/getQuiz', [SettingController::class, 'getQuiz']);
     Route::get('/admin/getSurvey', [SettingController::class, 'getSurvey']);
+    Route::get('/admin/getRole', [SettingController::class, 'getRole']);
 
     Route::get('/admin/system-logs', [SystemLogController::class, 'index']);
 });

@@ -464,4 +464,41 @@ class SurvayController extends Controller
         }
     }
 
+
+    public function destroyQuestion($id)
+    {
+        DB::beginTransaction();
+
+        try {
+            // ค้นหา Survey Question
+            $question = SurveyQuestion::findOrFail($id);
+
+            // ลบคำตอบ (SurveyAnswers) ที่เกี่ยวข้องกับคำถามนี้
+            SurveyAnswer::where('survey_question_id', $id)->delete();
+
+            // ลบความสัมพันธ์ที่เกี่ยวข้องกับ Survey Responses (SurveyResponseAnswers)
+            SurveyResponseAnswer::where('survey_question_id', $id)->delete();
+
+            // ลบคำถาม
+            $question->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Survey Question deleted successfully.',
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete survey question.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
 }
