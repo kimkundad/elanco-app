@@ -4,6 +4,7 @@ namespace App\Http\Controllers\SystemLogs;
 
 use App\Http\Controllers\Controller;
 use App\Http\Services\SystemLogs\SystemLogService;
+use Exception;
 use Illuminate\Http\Request;
 
 class SystemLogController extends Controller
@@ -20,8 +21,18 @@ class SystemLogController extends Controller
      */
     public function index()
     {
-        $systemLogs = $this->systemLogService->findAll();
-        return response()->json(['status' => ['status' => 'success', 'message' => null], 'data' => $systemLogs]);
+        try {
+            $systemLogs = $this->systemLogService->findAll();
+            return response()->json([
+                'status' => ['status' => 'success', 'message' => null],
+                'data' => $systemLogs
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => ['status' => 'error', 'message' => $e->getMessage()],
+                'data' => null
+            ]);
+        }
     }
 
     /**
