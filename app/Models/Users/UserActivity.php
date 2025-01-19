@@ -34,4 +34,18 @@ class UserActivity extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
+
+    public function format()
+    {
+        return [
+            'id' => $this->id,
+            'activityType' => $this->activity_type,
+            'activityDetail' => $this->activity_detail,
+            'deviceType' => $this->device_type,
+            'browserType' => $this->browser_type,
+            'ipAddress' => $this->ip_address,
+            'activityTimestamp' => $this->activity_timestamp,
+            'user' => $this->user ? $this->user->formatIncludingCountry() : null,
+        ];
+    }
 }

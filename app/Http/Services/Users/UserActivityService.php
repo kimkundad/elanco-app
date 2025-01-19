@@ -13,6 +13,11 @@ class UserActivityService
         $this->userActivityRepository = $userActivityRepository;
     }
 
+    public function findAll()
+    {
+        return $this->userActivityRepository->findAll()->map->format();
+    }
+
     public function logActivity($userId, $activity, $detail, $ipAddress, $device, $browser)
     {
         $data = [

@@ -4,6 +4,7 @@ use App\Http\Controllers\Settings\FeaturedCourseController;
 use App\Http\Controllers\Settings\HomeBannerController;
 use App\Http\Controllers\Settings\PageBannerController;
 use App\Http\Controllers\SystemLogs\SystemLogController;
+use App\Http\Controllers\Users\UserActivityController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\ApiAuthController;
 use App\Http\Controllers\ApiController;
@@ -153,6 +154,8 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
     Route::delete('/admin/settings/featured-courses', [FeaturedCourseController::class, 'destroy']);
 
     Route::get('/admin/settings', [\App\Http\Controllers\Settings\SettingController::class, 'index']);
+
+    Route::get('/admin/user-activities', [UserActivityController::class, 'index']);
 });
 
 

@@ -45,7 +45,7 @@ class UserActivityMiddleware
         $detail = null;
 
         if ($route === 'api/login' && $method === 'POST') {
-            $activity = 'Log In';
+            $activity = 'Login';
             $detail = 'User successfully logged in.';
         } elseif (preg_match('/^courses\/(\d+)\/progress$/', $route, $matches) && $method === 'PUT') {
             $course = $this->courseRepository->findById($matches[1]);
