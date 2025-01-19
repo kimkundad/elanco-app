@@ -138,6 +138,8 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
     Route::post('/admin/settings/home-banners', [HomeBannerController::class, 'store']);
     Route::put('/admin/settings/home-banners', [HomeBannerController::class, 'update']);
     Route::delete('/admin/settings/home-banners', [HomeBannerController::class, 'destroy']);
+
+    Route::get('/admin/settings', [\App\Http\Controllers\Settings\SettingController::class, 'index']);
 });
 
 
