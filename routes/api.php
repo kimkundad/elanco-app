@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Settings\PageBannerController;
 use App\Http\Controllers\SystemLogs\SystemLogController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\ApiAuthController;
@@ -113,6 +114,11 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
     Route::get('/admin/getSurvey', [SettingController::class, 'getSurvey']);
 
     Route::get('/admin/system-logs', [SystemLogController::class, 'index']);
+
+    Route::get('/admin/settings/page-banners', [PageBannerController::class, 'index']);
+    Route::post('/admin/settings/page-banners', [PageBannerController::class, 'store']);
+    Route::put('/admin/settings/page-banners', [PageBannerController::class, 'update']);
+    Route::delete('/admin/settings/page-banners', [PageBannerController::class, 'destroy']);
 });
 
 
