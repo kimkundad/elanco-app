@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Http\Services\SystemLog\SystemLogService;
+use App\Http\Services\SystemLogs\SystemLogService;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;

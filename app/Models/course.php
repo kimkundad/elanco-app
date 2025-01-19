@@ -68,7 +68,4 @@ class course extends Model
     {
         return $this->belongsTo(Survey::class, 'survey_id');
     }
-
-
-
 }

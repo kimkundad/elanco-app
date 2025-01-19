@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Services\Users\UserService;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,12 +22,18 @@ use App\Models\MainCategory;
 use App\Models\SubCategory;
 use App\Models\AnimalType;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\URL;
 use App\Mail\UserVerificationMail;
 use Illuminate\Support\Str;
 
 class ApiAuthController extends Controller
 {
+    private UserService $userService;
+
+    public function __construct(UserService $userService)
+    {
+        $this->userService = $userService;
+    }
+
     public function login(Request $request)
     {
         $credentials = $request->only('email', 'password');
@@ -61,9 +68,11 @@ class ApiAuthController extends Controller
 
         $user->update(['last_active_at' => now()->format('Y-m-d H:i:s')]);
 
-
         // Load country details
         $user->load('countryDetails');
+
+        // Save user login
+        $this->userService->saveUserLogin($request->ip(), $request->header('User-Agent'));
 
         return response()->json([
             'success' => true,
