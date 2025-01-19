@@ -56,81 +56,85 @@ class ApiController extends Controller
     }
 
     public function getCertificate(Request $request, $id)
-    {
-        try {
-            // ตรวจสอบและดึงผู้ใช้จาก JWT
-            $user = JWTAuth::parseToken()->authenticate();
+{
+    try {
+        // ตรวจสอบและดึงผู้ใช้จาก JWT
+        $user = JWTAuth::parseToken()->authenticate();
 
-            $course = course::with('quiz')->findOrFail($id);
+        $course = course::with('quiz')->findOrFail($id);
 
-            // ดึงคะแนน (score) จาก QuizAttempt
-            $quizAttempt = QuizAttempt::where('user_id', $user->id)
-                ->where('quiz_id', $course->quiz->id ?? null) // ตรวจสอบว่ามี quiz_id ใน course หรือไม่
-                ->first();
+        // ดึงคะแนน (score) จาก QuizAttempt
+        $quizAttempt = QuizAttempt::where('user_id', $user->id)
+            ->where('quiz_id', $course->quiz->id ?? null) // ตรวจสอบว่ามี quiz_id ใน course หรือไม่
+            ->first();
 
-            $data = [
-                'recipientName' => $request->name,
-                'programTitle' => $course->course_title,
-                'codeNumber' => $course->quiz->code_number, // ใช้ quiz_id แทน course_id
-                'points' => $course->quiz->point_cpd ?? '0', // หากไม่มี CE Points ให้ใช้ 0
-            ];
+        $data = [
+            'recipientName' => $request->name ?? "{$user->firstName} {$user->lastName}",
+            'programTitle' => $course->course_title,
+            'codeNumber' => $course->quiz->code_number ?? 'N/A', // ใช้ quiz_id แทน course_id
+            'points' => $course->quiz->point_cpd ?? '0', // หากไม่มี CE Points ให้ใช้ 0
+        ];
 
-            // แปลงไฟล์ PDF เป็น Base64
-            // สร้าง PDF
-            $pdf = Pdf::loadView('certificate-template', $data)
-                ->setPaper('a4', 'landscape'); // ตั้งค่าเป็น A4 แนวนอน
+        // สร้าง PDF
+        $pdf = Pdf::loadView('certificate-template', $data)
+            ->setPaper('a4', 'landscape'); // ตั้งค่าเป็น A4 แนวนอน
 
-            // อัปเดตสถานะ isDownloadCertificate เป็น true
-            $courseAction = CourseAction::updateOrCreate(
-                [
-                    'course_id' => $id,
-                    'user_id' => $user->id,
-                ],
-                [
-                    'isDownloadCertificate' => true,
-                    'isFinishCourse' => true,
-                ]
-            );
+        // อัปเดตสถานะ isDownloadCertificate เป็น true
+        $courseAction = CourseAction::updateOrCreate(
+            [
+                'course_id' => $id,
+                'user_id' => $user->id,
+            ],
+            [
+                'isDownloadCertificate' => true,
+                'isFinishCourse' => true,
+            ]
+        );
 
-            // แปลง PDF เป็น Base64
-            $pdfContent = $pdf->output(); // ดึงเนื้อหา PDF
-            $pdfBase64 = base64_encode($pdfContent);
+        // สร้างชื่อไฟล์
+        $fileName = "Certificate_{$user->firstName}_{$user->lastName}_{$course->course_title}.pdf";
 
-            // ส่งข้อมูล Base64 กลับใน response
-            return response()->json([
-                'certificate_base64' => $pdfBase64,
-                'message' => 'Certificate downloaded successfully.',
-                'courseAction' => [
-                    'course_id' => $courseAction->course_id,
-                    'user_id' => $courseAction->user_id,
-                    'isDownloadCertificate' => $courseAction->isDownloadCertificate,
-                    'isFinishCourse' => $courseAction->isFinishCourse,
-                ],
-            ], 200);
+        // แปลง PDF เป็น Base64
+        $pdfContent = $pdf->output(); // ดึงเนื้อหา PDF
+        $pdfBase64 = base64_encode($pdfContent);
 
-        } catch (TokenExpiredException $e) {
-            return response()->json([
-                'error' => 'Token has expired',
-                'message' => 'Please refresh your token or login again.',
-            ], 401);
-        } catch (TokenInvalidException $e) {
-            return response()->json([
-                'error' => 'Token is invalid',
-                'message' => 'The provided token is not valid.',
-            ], 401);
-        } catch (JWTException $e) {
-            return response()->json([
-                'error' => 'Token not provided',
-                'message' => 'Authorization token is missing from your request.',
-            ], 400);
-        } catch (\Exception $e) {
-            // กรณีเกิดข้อผิดพลาดทั่วไป
-            return response()->json([
-                'error' => 'Internal Server Error',
-                'message' => $e->getMessage(),
-            ], 500);
-        }
+        // ส่งข้อมูล Base64 พร้อมชื่อไฟล์กลับใน response
+        return response()->json([
+            'certificate_base64' => $pdfBase64,
+            'file_name' => $fileName, // เพิ่มชื่อไฟล์ใน response
+            'message' => 'Certificate downloaded successfully.',
+            'courseAction' => [
+                'course_id' => $courseAction->course_id,
+                'user_id' => $courseAction->user_id,
+                'isDownloadCertificate' => $courseAction->isDownloadCertificate,
+                'isFinishCourse' => $courseAction->isFinishCourse,
+            ],
+        ], 200);
+
+    } catch (TokenExpiredException $e) {
+        return response()->json([
+            'error' => 'Token has expired',
+            'message' => 'Please refresh your token or login again.',
+        ], 401);
+    } catch (TokenInvalidException $e) {
+        return response()->json([
+            'error' => 'Token is invalid',
+            'message' => 'The provided token is not valid.',
+        ], 401);
+    } catch (JWTException $e) {
+        return response()->json([
+            'error' => 'Token not provided',
+            'message' => 'Authorization token is missing from your request.',
+        ], 400);
+    } catch (\Exception $e) {
+        // กรณีเกิดข้อผิดพลาดทั่วไป
+        return response()->json([
+            'error' => 'Internal Server Error',
+            'message' => $e->getMessage(),
+        ], 500);
     }
+}
+
 
     public function courses(Request $request)
 {
@@ -200,6 +204,7 @@ class ApiController extends Controller
 
                 return [
                     'id' => $course->id,
+                    'course_id' => $course->course_id,
                     'course_title' => $course->course_title,
                     'course_description' => $course->course_description,
                     'course_preview' => $course->course_preview,
@@ -313,6 +318,7 @@ class ApiController extends Controller
 
                     return [
                         'id' => $course->id,
+                        'course_id' => $course->course_id,
                         'course_title' => $course->course_title,
                         'course_description' => $course->course_description,
                         'course_preview' => $course->course_preview,
@@ -425,6 +431,7 @@ class ApiController extends Controller
 
                 return [
                     'id' => $course->id,
+                    'course_id' => $course->course_id,
                     'course_title' => $course->course_title,
                     'course_description' => $course->course_description,
                     'course_preview' => $course->course_preview,
@@ -535,6 +542,7 @@ class ApiController extends Controller
             $formattedCourses = $courses->map(function ($course) {
                 return [
                     'id' => $course->id,
+                    'course_id' => $course->course_id,
                     'course_title' => $course->course_title,
                     'course_description' => $course->course_description,
                     'course_preview' => $course->course_preview,
@@ -653,6 +661,7 @@ class ApiController extends Controller
             // จัดรูปแบบข้อมูลสำหรับการส่งกลับ
             $formattedCourse = [
                 'id' => $course->id,
+                'course_id' => $course->course_id,
                 'course_title' => $course->course_title,
                 'course_description' => $course->course_description,
                 'course_preview' => $course->course_preview,
