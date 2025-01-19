@@ -25,7 +25,7 @@ class AdminController extends Controller
                 ->whereHas('roles', function ($query) {
                     $query->whereIn('name', ['admin', 'superadmin']);
                 })
-                ->paginate(15);
+                ->paginate(10);
 
             // เพิ่ม Path ให้ Pagination
             $users->withPath('');
