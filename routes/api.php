@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Settings\FeaturedCourseController;
 use App\Http\Controllers\Settings\HomeBannerController;
 use App\Http\Controllers\Settings\PageBannerController;
 use App\Http\Controllers\SystemLogs\SystemLogController;
@@ -138,6 +139,11 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
     Route::post('/admin/settings/home-banners', [HomeBannerController::class, 'store']);
     Route::put('/admin/settings/home-banners', [HomeBannerController::class, 'update']);
     Route::delete('/admin/settings/home-banners', [HomeBannerController::class, 'destroy']);
+
+    Route::get('/admin/settings/featured-courses', [FeaturedCourseController::class, 'index']);
+    Route::post('/admin/settings/featured-courses', [FeaturedCourseController::class, 'store']);
+    Route::put('/admin/settings/featured-courses', [FeaturedCourseController::class, 'update']);
+    Route::delete('/admin/settings/featured-courses', [FeaturedCourseController::class, 'destroy']);
 
     Route::get('/admin/settings', [\App\Http\Controllers\Settings\SettingController::class, 'index']);
 });
