@@ -26,10 +26,14 @@ use App\Http\Controllers\AdminController;
 |
 */
 
-Route::middleware(['log.system'])->group(function () {
+Route::middleware(['log.activity', 'log.system'])->group(function () {
     Route::post('/login', [ApiAuthController::class, 'login']);
+});
+
+Route::middleware(['log.system'])->group(function () {
     Route::post('/register', [ApiAuthController::class, 'register']);
 });
+
 Route::post('/refresh-token', [ApiAuthController::class, 'refreshToken']);
 
 Route::post('password/forgot', [PasswordResetController::class, 'forgotPassword']);
@@ -54,10 +58,13 @@ Route::middleware(['auth:api'])->group(function () {
     Route::get('/courses/explore', [ApiController::class, 'exploreCourses']);
     Route::get('/courses/{id}/quiz', [ApiController::class, 'getCourseQuiz']);
     Route::get('/courses/{id}/progress', [ApiController::class, 'getCourseAction']);
-    Route::get('/courses/{id}/certificate', [ApiController::class, 'getCertificate']);
     Route::get('/courses/{id}/getSuevey', [ApiController::class, 'getSurveyByCourse']);
     Route::post('/courses/{id}/review', [ApiController::class, 'PostReview']);
-    Route::put('/courses/{id}/progress', [ApiController::class, 'upProgress']);
+
+    Route::middleware(['log.activity'])->group(function () {
+        Route::get('/courses/{id}/certificate', [ApiController::class, 'getCertificate']);
+        Route::put('/courses/{id}/progress', [ApiController::class, 'upProgress']);
+    });
 
     Route::post('/quiz/{id}/submit', [ApiController::class, 'submitQuiz']);
     Route::post('/suevey/{id}/submit', [ApiController::class, 'submitSurvey']);

@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Auth;
 
 class SystemLogService
 {
-
     private SystemLogRepository $systemLogRepository;
 
     public function __construct(SystemLogRepository $systemLogRepository)
