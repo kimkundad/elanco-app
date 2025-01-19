@@ -17,12 +17,17 @@ return new class extends Migration {
             $table->integer('order')->default(1);
             $table->string('desktop_image')->nullable();
             $table->string('mobile_image')->nullable();
+            $table->unsignedBigInteger('country_id')->nullable();
             $table->unsignedBigInteger('created_by');
             $table->unsignedBigInteger('updated_by')->nullable();
-            $table->unsignedBigInteger('country_id')->nullable();
             $table->timestamps();
 
             // Foreign Key Constraints
+            $table->foreign('country_id')
+                ->references('id')
+                ->on('countries')
+                ->onDelete('set null');
+
             $table->foreign('created_by')
                 ->references('id')
                 ->on('users')
@@ -31,11 +36,6 @@ return new class extends Migration {
             $table->foreign('updated_by')
                 ->references('id')
                 ->on('users')
-                ->onDelete('set null');
-
-            $table->foreign('country_id')
-                ->references('id')
-                ->on('countries')
                 ->onDelete('set null');
         });
     }

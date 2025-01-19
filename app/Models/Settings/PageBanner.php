@@ -31,9 +31,9 @@ class PageBanner extends Model
         'mobile_image',
         'status',
         'order',
+        'country_id',
         'created_by',
         'updated_by',
-        'country_id',
     ];
 
     /**
@@ -43,10 +43,18 @@ class PageBanner extends Model
      */
     protected $casts = [
         'order' => 'integer',
+        'country_id' => 'integer',
         'created_by' => 'integer',
         'updated_by' => 'integer',
-        'country_id' => 'integer',
     ];
+
+    /**
+     * Get the country associated with the banner.
+     */
+    public function country()
+    {
+        return $this->belongsTo(Country::class, 'country_id');
+    }
 
     /**
      * Get the user who created the banner.
@@ -62,14 +70,6 @@ class PageBanner extends Model
     public function updatedByUser()
     {
         return $this->belongsTo(User::class, 'updated_by');
-    }
-
-    /**
-     * Get the country associated with the banner.
-     */
-    public function country()
-    {
-        return $this->belongsTo(Country::class, 'country_id');
     }
 
     public function formatIncludingCreatedUserAndUpdatedUserAndCountry()
