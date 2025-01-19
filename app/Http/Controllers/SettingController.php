@@ -10,6 +10,11 @@ use App\Models\AnimalType;
 use App\Models\quiz;
 use App\Models\Survey;
 use App\Models\Role;
+use App\Models\course;
+use App\Models\User;
+use App\Models\CourseAction;
+
+
 use Intervention\Image\Facades\Image;
 use Illuminate\Support\Facades\Storage;
 
@@ -34,6 +39,97 @@ class SettingController extends Controller
         ], 200);
 
     }
+
+    public function overView()
+    {
+        try {
+            // Active Users Today
+            $activeUsersToday = User::whereDate('last_active_at', today())->count();
+
+            // Active Users Yesterday
+            $activeUsersYesterday = User::whereDate('last_active_at', today()->subDay())->count();
+
+            // เปรียบเทียบเปอร์เซ็นต์ระหว่างวันนี้และเมื่อวาน
+            $percentageChange = $activeUsersYesterday > 0
+                ? round((($activeUsersToday - $activeUsersYesterday) / $activeUsersYesterday) * 100, 2)
+                : ($activeUsersToday > 0 ? 100 : 0);
+
+            // ดึงข้อมูลสำหรับกราฟ (7 วันที่ผ่านมา)
+            $activeUsersLast7Days = collect(range(0, 6))->map(function ($day) {
+                return [
+                    'date' => now()->subDays($day)->toDateString(),
+                    'count' => User::whereDate('last_active_at', now()->subDays($day)->toDateString())->count(),
+                ];
+            })->reverse(); // เรียงลำดับจากวันเก่ามากไปวันล่าสุด
+
+            // Total Registrations, All Courses, Learning, Complete
+            $totalRegistrations = CourseAction::count();
+            $totalCourses = Course::where('status', 1)->count();
+            $totalLearning = CourseAction::where('isFinishCourse', 0)->count(); // กำลังเรียน
+            $totalComplete = CourseAction::where('isFinishCourse', 1)->count(); // เรียนจบ
+
+            // Most Popular Categories
+            $popularCategories = MainCategory::with(['courses' => function ($query) {
+                $query->withCount('courseActions'); // นับการลงทะเบียนในแต่ละคอร์ส
+            }])
+            ->get()
+            ->map(function ($category) use ($totalRegistrations) {
+                // รวมจำนวนการลงทะเบียนในคอร์สทั้งหมดที่เกี่ยวข้องกับ MainCategory
+                $categoryRegistrations = $category->courses->sum('course_actions_count');
+
+                return [
+                    'name' => $category->name,
+                    'percentage' => $totalRegistrations > 0
+                        ? round(($categoryRegistrations / $totalRegistrations) * 100, 2) // คำนวณเปอร์เซ็นต์
+                        : 0,
+                ];
+            });
+
+            // Most Popular Courses
+            $popularCourses = course::withCount('courseActions')
+                ->orderBy('course_actions_count', 'desc')
+                ->take(10)
+                ->get()
+                ->map(function ($course) {
+                    return [
+                        'id' => $course->id,
+                        'title' => $course->course_title,
+                        'image' => $course->course_img,
+                    ];
+                });
+
+            // Response Data
+            $data = [
+                'active_users_today' => $activeUsersToday,
+                'percentage_change' => $percentageChange,
+                'data_percentage_change' => 'data_percentage_change เปรียบเทียบเปอร์เซ็นต์ระหว่างวันนี้และเมื่อวาน ของยอดคนเข้าใช้งาน',
+                'active_users_last_7_days' => $activeUsersLast7Days,
+                'stats' => [
+                    'total_registrations' => $totalRegistrations,
+                    'all_courses' => $totalCourses,
+                    'learning' => $totalLearning,
+                    'complete' => $totalComplete,
+                ],
+                'most_popular_categories' => $popularCategories,
+                'most_popular_courses' => $popularCourses,
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve overview data.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+
 
 
     public function getRole(){

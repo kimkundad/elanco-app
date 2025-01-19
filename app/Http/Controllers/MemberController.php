@@ -287,42 +287,70 @@ class MemberController extends Controller
 
 
     public function softDelete($id)
-{
-    DB::beginTransaction();
+    {
+        DB::beginTransaction();
 
-    try {
-        // ค้นหา User
-        $user = User::findOrFail($id);
+        try {
+            // ค้นหา User
+            $user = User::findOrFail($id);
 
-        // เปลี่ยนอีเมลของผู้ใช้
-        $timestamp = now()->timestamp;
-        $newEmail = $user->email . "Deleted{$timestamp}";
+            // เปลี่ยนอีเมลของผู้ใช้
+            $timestamp = now()->timestamp;
+            $newEmail = $user->email . "Deleted{$timestamp}";
 
-        $user->update(['email' => $newEmail]);
+            $user->update(['email' => $newEmail]);
 
-        // ตั้งสถานะเป็นลบหรือ Inactive (ถ้าต้องการ)
-        $user->update(['status' => 0]);
+            // ตั้งสถานะเป็นลบหรือ Inactive (ถ้าต้องการ)
+            $user->update(['status' => 0]);
 
-        DB::commit();
+            DB::commit();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Member soft-deleted successfully.',
-            'data' => [
-                'original_email' => $user->email,
-                'updated_email' => $newEmail,
-            ],
-        ], 200);
+            return response()->json([
+                'success' => true,
+                'message' => 'Member soft-deleted successfully.',
+                'data' => [
+                    'original_email' => $user->email,
+                    'updated_email' => $newEmail,
+                ],
+            ], 200);
 
-    } catch (\Exception $e) {
-        DB::rollBack();
+        } catch (\Exception $e) {
+            DB::rollBack();
 
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to soft-delete member.',
-            'error' => $e->getMessage(),
-        ], 500);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to soft-delete member.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
-}
+
+    public function toggleUserStatus($id)
+    {
+        try {
+            // Find the user
+            $user = User::findOrFail($id);
+
+            // Toggle the status (0 -> 1, 1 -> 0)
+            $user->status = $user->status == 1 ? 0 : 1;
+            $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User status updated successfully.',
+                'data' => [
+                    'user_id' => $user->id,
+                    'status' => $user->status
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update user status.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
 
 }

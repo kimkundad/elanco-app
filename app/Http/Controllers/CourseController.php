@@ -631,4 +631,34 @@ class CourseController extends Controller
             ], 500);
         }
     }
+
+    public function courseStatus($id)
+{
+    try {
+        // Find the course by its ID
+        $course = course::findOrFail($id);
+
+        // Toggle the status (if 1, set to 0; if 0, set to 1)
+        $course->status = $course->status == 1 ? 0 : 1;
+
+        // Save the updated status
+        $course->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Course status updated successfully.',
+            'data' => [
+                'course_id' => $course->id,
+                'status' => $course->status // Return the new status
+            ]
+        ], 200);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to update course status.',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
 }

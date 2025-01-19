@@ -69,9 +69,12 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
     Route::get('/admin/course', [CourseController::class, 'index']);
     Route::get('/admin/course/{id}', [CourseController::class, 'show']);
     Route::middleware(['log.system'])->group(function () {
+
+        Route::get('/admin/courseStatus/{id}', [CourseController::class, 'courseStatus']);
         Route::post('/admin/course', [CourseController::class, 'store']);
         Route::post('/admin/course/{id}', [CourseController::class, 'update']);
         Route::delete('/admin/course/{id}', [CourseController::class, 'destroy']);
+
     });
 
     Route::post('/admin/uploadImg', [SettingController::class, 'upPicUrl']);
@@ -109,6 +112,7 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
     Route::get('/admin/export-members', [MemberController::class, 'exportMembers']);
     Route::post('/admin/members/{id}', [MemberController::class, 'update']);
     Route::delete('/admin/members/{id}', [MemberController::class, 'softDelete']);
+    Route::get('/admin/userStatus/{id}', [MemberController::class, 'toggleUserStatus']);
 
     Route::get('/admin/adminUser', [AdminController::class, 'index']);
     Route::post('/admin/adminUser', [AdminController::class, 'store']);
@@ -124,6 +128,8 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
     Route::get('/admin/getQuiz', [SettingController::class, 'getQuiz']);
     Route::get('/admin/getSurvey', [SettingController::class, 'getSurvey']);
     Route::get('/admin/getRole', [SettingController::class, 'getRole']);
+
+    Route::get('/admin/overView', [SettingController::class, 'overView']);
 
     Route::get('/admin/system-logs', [SystemLogController::class, 'index']);
 });
