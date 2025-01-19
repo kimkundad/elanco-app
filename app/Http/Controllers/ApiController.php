@@ -156,15 +156,20 @@ class ApiController extends Controller
             })
             ->when($topic, function ($query, $topic) {
                 if ($topic === 'all') {
-                    // If topic is 'all', skip filtering by mainCategories
+                    // ไม่กรองใด ๆ หาก topic คือ all
                     return $query;
                 }
-                // Filter by specific topic
+                // กรองตาม topic ที่ส่งมา
                 $query->whereHas('mainCategories', function ($subQuery) use ($topic) {
                     $subQuery->where('name', 'LIKE', "%$topic%");
                 });
             })
             ->when($animalType, function ($query, $animalType) {
+                if ($animalType === 'all') {
+                    // ไม่กรองใด ๆ หาก animalType คือ all
+                    return $query;
+                }
+                // กรองตาม animalType ที่ส่งมา
                 $query->whereHas('animalTypes', function ($subQuery) use ($animalType) {
                     $subQuery->where('name', 'LIKE', "%$animalType%");
                 });
@@ -255,6 +260,7 @@ class ApiController extends Controller
         return response()->json(['error' => 'Token not provided', 'message' => 'Authorization token is missing from your request.'], 400);
     }
 }
+
 
 
 
