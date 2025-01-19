@@ -85,8 +85,8 @@ class FeaturedCourse extends Model
             'country' => $this->country ? $this->country->format() : null,
             'status' => $this->status,
             'order' => $this->order,
-            'createdBy' => $this->createdByUser ? $this->createdByUser->format() : null,
-            'updatedBy' => $this->updatedByUser ? $this->updatedByUser->format() : null,
+            'createdBy' => $this->createdByUser ? $this->createdByUser->formatIncludingCountry() : null,
+            'updatedBy' => $this->updatedByUser ? $this->updatedByUser->formatIncludingCountry() : null,
             'createdAt' => $this->created_at,
             'updatedAt' => $this->updated_at,
         ];
