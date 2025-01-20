@@ -136,7 +136,7 @@ class ApiController extends Controller
 }
 
 
-    public function courses(Request $request)
+public function courses(Request $request)
 {
     try {
         $user = JWTAuth::parseToken()->authenticate();
@@ -149,35 +149,34 @@ class ApiController extends Controller
         $uploadDate = $request->input('uploadDate', 'desc');
         $ratingOrder = $request->input('rating', 'desc');
         $durationOrder = $request->input('duration', 'asc');
-        $date = $request->input('date');
 
         $courses = course::whereHas('countries', function ($query) use ($userCountryId) {
             $query->where('country_id', $userCountryId);
         })
+            // 1. Apply search condition first
             ->when($search, function ($query, $search) {
-                $query->where('course_title', 'LIKE', "%$search%")
-                    ->orWhere('course_id', 'LIKE', "%$search%");
+                $query->where(function ($subQuery) use ($search) {
+                    $subQuery->where('course_title', 'LIKE', "%$search%")
+                        ->orWhere('course_id', 'LIKE', "%$search%");
+                });
             })
+            // 2. Filter by mainCategories
             ->when($topic, function ($query, $topic) {
-                if ($topic === 'all') {
-                    // ไม่กรองใด ๆ หาก topic คือ all
-                    return $query;
+                if ($topic !== 'all') {
+                    $query->whereHas('mainCategories', function ($subQuery) use ($topic) {
+                        $subQuery->where('name', 'LIKE', "%$topic%");
+                    });
                 }
-                // กรองตาม topic ที่ส่งมา
-                $query->whereHas('mainCategories', function ($subQuery) use ($topic) {
-                    $subQuery->where('name', 'LIKE', "%$topic%");
-                });
             })
+            // 3. Filter by animalTypes
             ->when($animalType, function ($query, $animalType) {
-                if ($animalType === 'all') {
-                    // ไม่กรองใด ๆ หาก animalType คือ all
-                    return $query;
+                if ($animalType !== 'all') {
+                    $query->whereHas('animalTypes', function ($subQuery) use ($animalType) {
+                        $subQuery->where('name', 'LIKE', "%$animalType%");
+                    });
                 }
-                // กรองตาม animalType ที่ส่งมา
-                $query->whereHas('animalTypes', function ($subQuery) use ($animalType) {
-                    $subQuery->where('name', 'LIKE', "%$animalType%");
-                });
             })
+            // Include relationships and apply sorting
             ->with([
                 'countries:id,name',
                 'mainCategories:id,name',
@@ -265,6 +264,7 @@ class ApiController extends Controller
         return response()->json(['error' => 'Token not provided', 'message' => 'Authorization token is missing from your request.'], 400);
     }
 }
+
 
 
 
