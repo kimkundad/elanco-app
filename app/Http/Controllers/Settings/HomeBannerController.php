@@ -20,10 +20,10 @@ class HomeBannerController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $homeBanners = $this->homeBannerService->findAll();
+            $homeBanners = $this->homeBannerService->findAll($request->query());
             return response()->json([
                 'status' => ['status' => 'success', 'message' => null],
                 'data' => $homeBanners

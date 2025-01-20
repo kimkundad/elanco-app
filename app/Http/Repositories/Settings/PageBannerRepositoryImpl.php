@@ -7,9 +7,15 @@ use Illuminate\Support\Facades\DB;
 
 class PageBannerRepositoryImpl implements PageBannerRepository
 {
-    public function findAll()
+    public function findAll(array $queryParams)
     {
-        return PageBanner::with(['createdByUser.countryDetails', 'updatedByUser.countryDetails', 'country'])->get();
+        $query = PageBanner::with(['createdByUser.countryDetails', 'updatedByUser.countryDetails', 'country']);
+
+        foreach ($queryParams as $key => $value) {
+            $query->where($key, 'LIKE', '%' . $value . '%');
+        }
+
+        return $query->get();
     }
 
     public function findById($id)

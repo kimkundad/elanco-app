@@ -18,9 +18,13 @@ class FeaturedCourseService
         $this->featuredCourseRepository = $featuredCourseRepository;
     }
 
-    public function findAll()
+    public function findAll(array $queryParams)
     {
-        return $this->featuredCourseRepository->findAll()->map->formatIncludingCourseAndCountry();
+        $queryParams = ArrayKeyConverter::convertToSnakeCase($queryParams);
+
+        return $this->featuredCourseRepository
+            ->findAll($queryParams)
+            ->map->formatIncludingCourseAndCountry();
     }
 
     public function create(Request $request)

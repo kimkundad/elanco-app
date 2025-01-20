@@ -7,9 +7,15 @@ use Illuminate\Support\Facades\DB;
 
 class HomeBannerRepositoryImpl implements HomeBannerRepository
 {
-    public function findAll()
+    public function findAll(array $queryParams)
     {
-        return HomeBanner::with(['createdByUser.countryDetails', 'updatedByUser.countryDetails', 'country'])->get();
+        $query = HomeBanner::with(['createdByUser.countryDetails', 'updatedByUser.countryDetails', 'country']);
+
+        foreach ($queryParams as $key => $value) {
+            $query->where($key, 'LIKE', '%' . $value . '%');
+        }
+
+        return $query->get();
     }
 
     public function findById($id)

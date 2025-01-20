@@ -20,9 +20,13 @@ class PageBannerService
         $this->pageBannerRepository = $pageBannerRepository;
     }
 
-    public function findAll()
+    public function findAll(array $queryParams)
     {
-        return $this->pageBannerRepository->findAll()->map->formatIncludingCreatedUserAndUpdatedUserAndCountry();
+        $queryParams = ArrayKeyConverter::convertToSnakeCase($queryParams);
+
+        return $this->pageBannerRepository
+            ->findAll($queryParams)
+            ->map->formatIncludingCreatedUserAndUpdatedUserAndCountry();
     }
 
     public function create(Request $request)

@@ -4,7 +4,7 @@ namespace App\Http\Repositories\Settings;
 
 interface FeaturedCourseRepository
 {
-    public function findAll();
+    public function findAll(array $queryParams);
 
     public function findById($id);
 
