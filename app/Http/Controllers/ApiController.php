@@ -834,93 +834,108 @@ public function courses(Request $request)
             'answers.*' => 'integer|exists:answers,id', // แต่ละคำตอบต้องมี id ที่อยู่ในตาราง answers
         ]);
 
-        try {
-            // ตรวจสอบผู้ใช้
-            $user = JWTAuth::parseToken()->authenticate();
+    try {
+        // ตรวจสอบผู้ใช้
+        $user = JWTAuth::parseToken()->authenticate();
 
-            // ดึงข้อมูล Quiz พร้อมคำถามและคำตอบ
-            $quiz = Quiz::with('questions.answers')->findOrFail($id);
+        // ดึงข้อมูล Quiz พร้อมคำถามและคำตอบ
+        $quiz = Quiz::with('questions.answers')->findOrFail($id);
 
-            if ($quiz->questions->isEmpty()) {
-                return response()->json([
-                    'error' => 'Invalid Quiz',
-                    'message' => 'The quiz has no questions.',
-                ], 400);
-            }
-
-            // ค้นหา Course ที่สัมพันธ์กับ Quiz
-            $course = course::where('id_quiz', $quiz->id)->first();
-            if (!$course) {
-                return response()->json([
-                    'error' => 'Invalid Quiz',
-                    'message' => 'No course associated with this quiz.',
-                ], 400);
-            }
-
-            $totalPoints = count($quiz->questions);  // คะแนนเต็มจาก point_cpd
-            $passPercentage = $quiz->pass_percentage; // เปอร์เซ็นต์ที่ต้องผ่าน
-            $correctPoints = 0;
-
-            // ตรวจสอบคำตอบที่ส่งมา
-            foreach ($quiz->questions as $question) {
-                $submittedAnswerId = collect($request->answers)
-                    ->firstWhere(fn($answerId) => $question->answers->pluck('id')->contains($answerId));
-
-                $correctAnswer = $question->answers->firstWhere('answers_status', 1);
-
-                if ($correctAnswer && $submittedAnswerId == $correctAnswer->id) {
-                    $correctPoints++;
-                }
-            }
-
-            // คำนวณเปอร์เซ็นต์ที่ได้
-            $scorePercentage = ($correctPoints / $totalPoints) * 100;
-
-            // ตรวจสอบผ่านหรือไม่
-            $isPass = $scorePercentage >= $passPercentage;
-
-            // ตรวจสอบและจัดการ QuizAttempt
-            $attempt = QuizAttempt::updateOrCreate(
-                [
-                    'user_id' => $user->id,
-                    'quiz_id' => $quiz->id,
-                ],
-                [
-                    'score' => $correctPoints,
-                    'total_questions' => $totalPoints,
-                ]
-            );
-
-            // อัปเดตหรือสร้าง course_action
-            $courseAction = CourseAction::updateOrCreate(
-                [
-                    'course_id' => $course->id, // ใช้ course_id จาก Course
-                    'user_id' => $user->id,
-                ],
-                [
-                    'isFinishQuiz' => $isPass, // อัปเดตสถานะ isFinishQuiz
-                ]
-            );
-
-            // ส่งข้อมูลกลับ
+        if ($quiz->questions->isEmpty()) {
             return response()->json([
-                'message' => 'Quiz submitted successfully',
-                'score' => $correctPoints,
-                'total_points' => $totalPoints,
-                'isPass' => $isPass,
-            ], 200);
-
-        } catch (ModelNotFoundException $e) {
-            return response()->json([
-                'error' => 'Quiz not found',
-            ], 404);
-        } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Internal Server Error',
-                'message' => $e->getMessage(),
-            ], 500);
+                'error' => 'Invalid Quiz',
+                'message' => 'The quiz has no questions.',
+            ], 400);
         }
+
+        // ค้นหา Course ที่สัมพันธ์กับ Quiz
+        $course = course::where('id_quiz', $quiz->id)->first();
+        if (!$course) {
+            return response()->json([
+                'error' => 'Invalid Quiz',
+                'message' => 'No course associated with this quiz.',
+            ], 400);
+        }
+
+        $totalPoints = count($quiz->questions);  // คะแนนเต็มจาก point_cpd
+        $passPercentage = $quiz->pass_percentage; // เปอร์เซ็นต์ที่ต้องผ่าน
+        $correctPoints = 0;
+
+        // ลบคำตอบเก่าของ User ใน Quiz นี้ (หากมี)
+        DB::table('quiz_user_answers')->where('user_id', $user->id)->where('quiz_id', $quiz->id)->delete();
+
+        // ตรวจสอบคำตอบที่ส่งมาและบันทึกใน `quiz_user_answers`
+        foreach ($quiz->questions as $question) {
+            $submittedAnswerId = collect($request->answers)
+                ->firstWhere(fn($answerId) => $question->answers->pluck('id')->contains($answerId));
+
+            $correctAnswer = $question->answers->firstWhere('answers_status', 1);
+
+            // บันทึกคำตอบของ User
+            DB::table('quiz_user_answers')->insert([
+                'user_id' => $user->id,
+                'quiz_id' => $quiz->id,
+                'question_id' => $question->id,
+                'answer_id' => $submittedAnswerId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            // ตรวจสอบว่าคำตอบถูกต้องหรือไม่
+            if ($correctAnswer && $submittedAnswerId == $correctAnswer->id) {
+                $correctPoints++;
+            }
+        }
+
+        // คำนวณเปอร์เซ็นต์ที่ได้
+        $scorePercentage = ($correctPoints / $totalPoints) * 100;
+
+        // ตรวจสอบผ่านหรือไม่
+        $isPass = $scorePercentage >= $passPercentage;
+
+        // ตรวจสอบและจัดการ QuizAttempt
+        $attempt = QuizAttempt::updateOrCreate(
+            [
+                'user_id' => $user->id,
+                'quiz_id' => $quiz->id,
+            ],
+            [
+                'score' => $correctPoints,
+                'total_questions' => $totalPoints,
+            ]
+        );
+
+        // อัปเดตหรือสร้าง course_action
+        $courseAction = CourseAction::updateOrCreate(
+            [
+                'course_id' => $course->id, // ใช้ course_id จาก Course
+                'user_id' => $user->id,
+            ],
+            [
+                'isFinishQuiz' => $isPass, // อัปเดตสถานะ isFinishQuiz
+            ]
+        );
+
+        // ส่งข้อมูลกลับ
+        return response()->json([
+            'message' => 'Quiz submitted successfully',
+            'score' => $correctPoints,
+            'total_points' => $totalPoints,
+            'isPass' => $isPass,
+        ], 200);
+
+    } catch (ModelNotFoundException $e) {
+        return response()->json([
+            'error' => 'Quiz not found',
+        ], 404);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => 'Internal Server Error',
+            'message' => $e->getMessage(),
+        ], 500);
     }
+}
+
 
     public function submitSurvey(Request $request, $id)
     {
