@@ -143,41 +143,36 @@ public function courses(Request $request)
         $userCountryId = $user->country;
 
         // Get filter inputs
-        $search = $request->input('search');
-        $topic = $request->input('topic');
-        $animalType = $request->input('animalType');
-        $uploadDate = $request->input('uploadDate');
-        $ratingOrder = $request->input('rating');
-        $durationOrder = $request->input('duration');
-
+        $search = $request->input('search', '');
+        $topic = $request->input('topic', 'all');
+        $animalType = $request->input('animalType', 'all');
+        $uploadDate = $request->input('uploadDate', 'desc');
+        $ratingOrder = $request->input('rating', 'desc');
+        $durationOrder = $request->input('duration', 'asc');
 
         $courses = course::whereHas('countries', function ($query) use ($userCountryId) {
             $query->where('country_id', $userCountryId);
         })
-            // 1. Apply search condition first
-            ->when($search, function ($query, $search) {
+            // 1. Filter by search (search in course title or course ID)
+            ->when(!empty($search), function ($query) use ($search) {
                 $query->where(function ($subQuery) use ($search) {
                     $subQuery->where('course_title', 'LIKE', "%$search%")
                         ->orWhere('course_id', 'LIKE', "%$search%");
                 });
             })
-            // 2. Filter by mainCategories
-            ->when($topic, function ($query, $topic) {
-                if ($topic !== 'all') {
-                    $query->whereHas('mainCategories', function ($subQuery) use ($topic) {
-                        $subQuery->where('name', 'LIKE', "%$topic%");
-                    });
-                }
+            // 2. Filter by topic (mainCategories) if not "all"
+            ->when($topic !== 'all', function ($query) use ($topic) {
+                $query->whereHas('mainCategories', function ($subQuery) use ($topic) {
+                    $subQuery->where('name', 'LIKE', "%$topic%");
+                });
             })
-            // 3. Filter by animalTypes
-            ->when($animalType, function ($query, $animalType) {
-                if ($animalType !== 'all') {
-                    $query->whereHas('animalTypes', function ($subQuery) use ($animalType) {
-                        $subQuery->where('name', 'LIKE', "%$animalType%");
-                    });
-                }
+            // 3. Filter by animalType if not "all"
+            ->when($animalType !== 'all', function ($query) use ($animalType) {
+                $query->whereHas('animalTypes', function ($subQuery) use ($animalType) {
+                    $subQuery->where('name', 'LIKE', "%$animalType%");
+                });
             })
-            // Include relationships and apply sorting
+            // Include relationships
             ->with([
                 'countries:id,name',
                 'mainCategories:id,name',
@@ -190,9 +185,10 @@ public function courses(Request $request)
                     $query->where('user_id', $user->id)->select('course_id', 'isFinishCourse');
                 },
             ])
-            ->orderBy('updated_at', $uploadDate)
-            ->orderBy('ratting', $ratingOrder)
-            ->orderBy('duration', $durationOrder)
+            // Sorting
+            ->orderBy('updated_at', $uploadDate) // Default: uploadDate
+            ->orderBy('ratting', $ratingOrder)  // Sort by rating
+            ->orderBy('duration', $durationOrder) // Sort by duration
             ->get()
             ->map(function ($course) {
                 $isFinishCourse = $course->courseActions->first()
@@ -255,7 +251,7 @@ public function courses(Request $request)
                 ];
             });
 
-        return response()->json(['success' => true, 'courses' => $courses, 'ratingOrder' => $ratingOrder], 200);
+        return response()->json(['success' => true, 'courses' => $courses], 200);
 
     } catch (TokenExpiredException $e) {
         return response()->json(['error' => 'Token has expired', 'message' => 'Please refresh your token or login again.'], 401);
@@ -265,6 +261,7 @@ public function courses(Request $request)
         return response()->json(['error' => 'Token not provided', 'message' => 'Authorization token is missing from your request.'], 400);
     }
 }
+
 
 
 
