@@ -186,10 +186,10 @@ public function courses(Request $request)
                 },
             ])
             // Sorting
-           // ->orderBy('updated_at', $uploadDate) // Default: uploadDate
-            ->orderBy('ratting', $ratingOrder)  // Sort by rating
-            ->orderBy('duration', $durationOrder) // Sort by duration
-            ->get()
+            ->orderByRaw("CASE WHEN ? = 'desc' THEN updated_at END DESC, CASE WHEN ? = 'asc' THEN updated_at END ASC", [$uploadDate, $uploadDate])
+    ->orderBy('ratting', $ratingOrder)
+    ->orderBy('duration', $durationOrder)
+    ->get()
             ->map(function ($course) {
                 $isFinishCourse = $course->courseActions->first()
                     ? $course->courseActions->first()->isFinishCourse == 1
