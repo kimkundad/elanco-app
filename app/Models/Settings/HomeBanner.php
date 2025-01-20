@@ -85,8 +85,8 @@ class HomeBanner extends Model
             'status' => $this->status,
             'order' => $this->order,
             'country' => $this->country ? $this->country->format() : null,
-            'createdBy' => $this->createdByUser ? $this->createdByUser->format() : null,
-            'updatedBy' => $this->updatedByUser ? $this->updatedByUser->format() : null,
+            'createdBy' => $this->createdByUser ? $this->createdByUser->formatIncludingCountry() : null,
+            'updatedBy' => $this->updatedByUser ? $this->updatedByUser->formatIncludingCountry() : null,
             'createdAt' => $this->created_at,
             'updatedAt' => $this->updated_at,
         ];

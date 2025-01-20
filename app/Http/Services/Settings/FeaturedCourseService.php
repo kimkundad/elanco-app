@@ -127,8 +127,8 @@ class FeaturedCourseService
     private function validateRequest(Request $request)
     {
         $request->validate([
-            'course_id' => 'required|exists:courses,id',
-            'country_id' => 'nullable|exists:countries,id',
+            'courseId' => 'required|exists:courses,id',
+            'countryId' => 'nullable|exists:countries,id',
             'status' => 'required|in:public,private',
             'order' => 'nullable|integer',
         ]);

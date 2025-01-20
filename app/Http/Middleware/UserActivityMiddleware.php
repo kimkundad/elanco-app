@@ -27,6 +27,10 @@ class UserActivityMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
+        if (!Auth::check()) {
+            return $next($request);
+        }
+
         $response = $next($request);
         $this->logUserActivity($request);
 
