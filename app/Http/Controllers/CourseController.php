@@ -455,6 +455,7 @@ class CourseController extends Controller
             ]);
         }
 
+
         $enrollmentReport = $enrollmentQuery->get()
             ->mapWithKeys(function ($row) {
                 return [date('M', mktime(0, 0, 0, $row->month, 1)) => $row->count];
