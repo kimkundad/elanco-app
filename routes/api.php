@@ -147,12 +147,12 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
 
     Route::get('/admin/settings/page-banners', [PageBannerController::class, 'index']);
     Route::post('/admin/settings/page-banners', [PageBannerController::class, 'store']);
-    Route::put('/admin/settings/page-banners/{id}', [PageBannerController::class, 'update']);
+    Route::post('/admin/settings/page-banners/edit/{id}', [PageBannerController::class, 'update']);
     Route::delete('/admin/settings/page-banners/{id}', [PageBannerController::class, 'destroy']);
 
     Route::get('/admin/settings/home-banners', [HomeBannerController::class, 'index']);
     Route::post('/admin/settings/home-banners', [HomeBannerController::class, 'store']);
-    Route::put('/admin/settings/home-banners/{id}', [HomeBannerController::class, 'update']);
+    Route::post('/admin/settings/home-banners/edit/{id}', [HomeBannerController::class, 'update']);
     Route::delete('/admin/settings/home-banners/{id}', [HomeBannerController::class, 'destroy']);
 
     Route::get('/admin/settings/featured-courses', [FeaturedCourseController::class, 'index']);
