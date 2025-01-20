@@ -150,6 +150,7 @@ public function courses(Request $request)
         $ratingOrder = $request->input('rating');
         $durationOrder = $request->input('duration');
 
+
         $courses = course::whereHas('countries', function ($query) use ($userCountryId) {
             $query->where('country_id', $userCountryId);
         })
