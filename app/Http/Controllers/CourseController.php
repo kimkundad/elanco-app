@@ -231,6 +231,10 @@ class CourseController extends Controller
         DB::beginTransaction();
 
         try {
+
+            $totalCourses = course::count();
+            $nextCourseNumber = $totalCourses + 1;
+
             // Save Course
             $filename = $this->uploadImage($request->file('course_img'), 'elanco/course');
             $course = new course();
@@ -246,6 +250,7 @@ class CourseController extends Controller
             $course->id_quiz = $request->id_quiz;
             $course->survey_id = $request->survey_id;
             $course->created_by = Auth::id();
+            $course->course_id = 'C' . str_pad($nextCourseNumber, 3, '0', STR_PAD_LEFT);
             $course->save();
 
             // Save ItemDes

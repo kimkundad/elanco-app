@@ -77,7 +77,6 @@ class QuizController extends Controller
         //
 
         $validator = Validator::make($request->all(), [
-            'quiz_id' => 'required|string|unique:quizzes,quiz_id',
             'expire_date' => 'nullable|date',
             'questions_title' => 'required|string|max:255',
             'pass_percentage' => 'required|integer|min:0|max:100',
@@ -97,8 +96,11 @@ class QuizController extends Controller
 
         try {
 
+            $totalQuizzes = Quiz::count();
+            $nextQuizNumber = $totalQuizzes + 1;
+
            $objs = new quiz();
-           $objs->quiz_id = $request->quiz_id;
+           $objs->quiz_id = 'Q' . str_pad($nextQuizNumber, 3, '0', STR_PAD_LEFT);
            $objs->expire_date = $request->expire_date;
            $objs->questions_title = $request->questions_title;
            $objs->pass_percentage = $request->pass_percentage;
@@ -254,7 +256,6 @@ class QuizController extends Controller
      //   dd($request->all());
 
         $validator = Validator::make($request->all(), [
-            'quiz_id' => 'required|string|max:255',
             'expire_date' => 'nullable|date',
             'questions_title' => 'required|string|max:255',
             'pass_percentage' => 'required|integer|min:0|max:100',
@@ -277,7 +278,6 @@ class QuizController extends Controller
        //     dd($request->all());
 
            $objs = quiz::find($id);
-           $objs->quiz_id = $request->quiz_id;
            $objs->expire_date = $request->expire_date;
            $objs->questions_title = $request->questions_title;
            $objs->pass_percentage = $request->pass_percentage;

@@ -78,7 +78,6 @@ class SurvayController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'survey_id' => 'required|string|unique:surveys,survey_id',
             'expire_date' => 'nullable|date',
             'survey_title' => 'required|string|max:255',
             'survey_detail' => 'nullable|string',
@@ -92,9 +91,12 @@ class SurvayController extends Controller
         }
 
         try {
+
+            $totalSurveys = Survey::count();
+            $nextSurveyNumber = $totalSurveys + 1;
             // สร้าง Survey
             $survey = new Survey();
-            $survey->survey_id = $request->survey_id;
+            $survey->survey_id = 'S' . str_pad($nextSurveyNumber, 3, '0', STR_PAD_LEFT);
             $survey->expire_date = Carbon::createFromFormat('d-m-Y', $request->expire_date)->format('Y-m-d');
             $survey->survey_title = $request->survey_title;
             $survey->survey_detail = $request->survey_detail;
@@ -381,7 +383,6 @@ class SurvayController extends Controller
     public function update(Request $request, string $id)
     {
         $request->validate([
-            'survey_id' => 'required|string|unique:surveys,survey_id,' . $id, // รหัส Survey ห้ามซ้ำ ยกเว้นตัวปัจจุบัน
             'expire_date' => 'nullable|date', // ตรวจสอบรูปแบบวันที่
             'survey_title' => 'required|string|max:255', // ชื่อ Survey ห้ามว่าง
             'survey_detail' => 'nullable|string', // รายละเอียด
@@ -392,7 +393,6 @@ class SurvayController extends Controller
             $survey = Survey::findOrFail($id);
 
             // อัปเดตข้อมูล
-            $survey->survey_id = $request->survey_id;
             $survey->expire_date = $request->expire_date
                 ? Carbon::createFromFormat('d-m-Y', $request->expire_date)->format('Y-m-d')
                 : $survey->expire_date;
