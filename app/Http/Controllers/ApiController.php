@@ -150,29 +150,26 @@ public function courses(Request $request)
         $ratingOrder = $request->input('rating', 'desc');
         $durationOrder = $request->input('duration', 'asc');
 
-        $courses = course::whereHas('countries', function ($query) use ($userCountryId) {
+        // Step 1: Base query
+        $coursesQuery = course::whereHas('countries', function ($query) use ($userCountryId) {
             $query->where('country_id', $userCountryId);
         })
-            // 1. Filter by search (search in course title or course ID)
             ->when(!empty($search), function ($query) use ($search) {
                 $query->where(function ($subQuery) use ($search) {
                     $subQuery->where('course_title', 'LIKE', "%$search%")
                         ->orWhere('course_id', 'LIKE', "%$search%");
                 });
             })
-            // 2. Filter by topic (mainCategories) if not "all"
             ->when($topic !== 'all', function ($query) use ($topic) {
                 $query->whereHas('mainCategories', function ($subQuery) use ($topic) {
                     $subQuery->where('name', 'LIKE', "%$topic%");
                 });
             })
-            // 3. Filter by animalType if not "all"
             ->when($animalType !== 'all', function ($query) use ($animalType) {
                 $query->whereHas('animalTypes', function ($subQuery) use ($animalType) {
                     $subQuery->where('name', 'LIKE', "%$animalType%");
                 });
             })
-            // Include relationships
             ->with([
                 'countries:id,name',
                 'mainCategories:id,name',
@@ -185,71 +182,76 @@ public function courses(Request $request)
                     $query->where('user_id', $user->id)->select('course_id', 'isFinishCourse');
                 },
             ])
-            // Sorting
-            ->orderByRaw("CASE WHEN ? = 'desc' THEN updated_at END DESC, CASE WHEN ? = 'asc' THEN updated_at END ASC", [$uploadDate, $uploadDate])
-    ->orderBy('ratting', $ratingOrder)
-    ->orderBy('duration', $durationOrder)
-    ->get()
-            ->map(function ($course) {
-                $isFinishCourse = $course->courseActions->first()
-                    ? $course->courseActions->first()->isFinishCourse == 1
-                    : false;
+            ->orderBy('updated_at', $uploadDate) // จัดลำดับตาม updated_at
+            ->get(); // ดึงข้อมูลทั้งหมดออกมา
 
-                $course->thumbnail = $course->course_img;
-                unset($course->course_img);
+        // Step 2: Sorting within the collection
+        $courses = $coursesQuery->sortByDesc('ratting') // กรองตาม ratting
+            ->sortBy($durationOrder === 'asc' ? 'duration' : function ($course) {
+                return -$course->duration; // จัดลำดับตาม duration
+            })->values(); // รีเซ็ตดัชนีใหม่
 
-                return [
-                    'id' => $course->id,
-                    'course_id' => $course->course_id,
-                    'course_title' => $course->course_title,
-                    'course_description' => $course->course_description,
-                    'course_preview' => $course->course_preview,
-                    'duration' => $course->duration,
-                    'url_video' => $course->url_video,
-                    'status' => $course->status,
-                    'ratting' => number_format($course->ratting, 1),
-                    'created_at' => $course->created_at,
-                    'updated_at' => $course->updated_at,
-                    'id_quiz' => $course->id_quiz,
-                    'thumbnail' => $course->thumbnail,
-                    'isFinishCourse' => $isFinishCourse,
-                    'countries' => $course->countries->map(function ($country) {
-                        return ['name' => $country->name];
-                    }),
-                    'main_categories' => $course->mainCategories->map(function ($category) {
-                        return ['name' => $category->name];
-                    }),
-                    'sub_categories' => $course->subCategories->map(function ($subcategory) {
-                        return ['name' => $subcategory->name];
-                    }),
-                    'animal_types' => $course->animalTypes->map(function ($animal) {
-                        return ['name' => $animal->name];
-                    }),
-                    'item_des' => $course->itemDes->map(function ($item) {
-                        return ['detail' => $item->detail];
-                    }),
-                    'speakers' => $course->Speaker->map(function ($speaker) {
-                        return [
-                            'id' => $speaker->id,
-                            'name' => $speaker->name,
-                            'avatar' => $speaker->avatar,
-                            'job_position' => $speaker->job_position,
-                            'country' => $speaker->countryDetails ? $speaker->countryDetails->name : null,
-                            'file' => $speaker->file,
-                            'description' => $speaker->description,
-                        ];
-                    }),
-                    'referances' => $course->referances->map(function ($referance) {
-                        return [
-                            'id' => $referance->id,
-                            'title' => $referance->title,
-                            'image' => $referance->image,
-                            'file' => $referance->file,
-                            'description' => $referance->description,
-                        ];
-                    }),
-                ];
-            });
+        // Step 3: Map the results
+        $courses = $courses->map(function ($course) {
+            $isFinishCourse = $course->courseActions->first()
+                ? $course->courseActions->first()->isFinishCourse == 1
+                : false;
+
+            $course->thumbnail = $course->course_img;
+            unset($course->course_img);
+
+            return [
+                'id' => $course->id,
+                'course_id' => $course->course_id,
+                'course_title' => $course->course_title,
+                'course_description' => $course->course_description,
+                'course_preview' => $course->course_preview,
+                'duration' => $course->duration,
+                'url_video' => $course->url_video,
+                'status' => $course->status,
+                'ratting' => number_format($course->ratting, 1),
+                'created_at' => $course->created_at,
+                'updated_at' => $course->updated_at,
+                'id_quiz' => $course->id_quiz,
+                'thumbnail' => $course->thumbnail,
+                'isFinishCourse' => $isFinishCourse,
+                'countries' => $course->countries->map(function ($country) {
+                    return ['name' => $country->name];
+                }),
+                'main_categories' => $course->mainCategories->map(function ($category) {
+                    return ['name' => $category->name];
+                }),
+                'sub_categories' => $course->subCategories->map(function ($subcategory) {
+                    return ['name' => $subcategory->name];
+                }),
+                'animal_types' => $course->animalTypes->map(function ($animal) {
+                    return ['name' => $animal->name];
+                }),
+                'item_des' => $course->itemDes->map(function ($item) {
+                    return ['detail' => $item->detail];
+                }),
+                'speakers' => $course->Speaker->map(function ($speaker) {
+                    return [
+                        'id' => $speaker->id,
+                        'name' => $speaker->name,
+                        'avatar' => $speaker->avatar,
+                        'job_position' => $speaker->job_position,
+                        'country' => $speaker->countryDetails ? $speaker->countryDetails->name : null,
+                        'file' => $speaker->file,
+                        'description' => $speaker->description,
+                    ];
+                }),
+                'referances' => $course->referances->map(function ($referance) {
+                    return [
+                        'id' => $referance->id,
+                        'title' => $referance->title,
+                        'image' => $referance->image,
+                        'file' => $referance->file,
+                        'description' => $referance->description,
+                    ];
+                }),
+            ];
+        });
 
         return response()->json(['success' => true, 'courses' => $courses], 200);
 
@@ -261,6 +263,7 @@ public function courses(Request $request)
         return response()->json(['error' => 'Token not provided', 'message' => 'Authorization token is missing from your request.'], 400);
     }
 }
+
 
 
 
