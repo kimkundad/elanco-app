@@ -8,7 +8,7 @@ use App\Models\quiz;
 use App\Models\answer;
 use App\Models\question;
 use App\Models\QuizAttempt;
-use App\Models\course;
+use App\Models\QuizUserAnswer;
 use App\Models\CourseAction;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
@@ -131,29 +131,106 @@ class QuizController extends Controller
      * Display the specified resource.
      */
 
-    public function questionID(string $id){
+        public function questionID(string $id){
 
-        try {
-            // ดึงข้อมูล Question พร้อมคำตอบ (Answers)
-            $question = Question::with('answers:id,questions_id,answers,answers_status') // เลือกฟิลด์ที่ต้องการจาก answers
-                ->findOrFail($id); // ถ้าไม่เจอ Question จะส่ง 404
+            try {
+                // ดึงข้อมูล Question พร้อมคำตอบ (Answers)
+                $question = Question::with('answers:id,questions_id,answers,answers_status') // เลือกฟิลด์ที่ต้องการจาก answers
+                    ->findOrFail($id); // ถ้าไม่เจอ Question จะส่ง 404
 
-            // ส่งข้อมูลกลับในรูปแบบ JSON
-            return response()->json([
-                'success' => true,
-                'message' => 'Question details retrieved successfully.',
-                'data' => $question,
-            ], 200);
-        } catch (\Exception $e) {
-            // จัดการข้อผิดพลาดทั่วไป
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to retrieve question details.',
-                'error' => $e->getMessage(),
-            ], 500);
+                // ส่งข้อมูลกลับในรูปแบบ JSON
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Question details retrieved successfully.',
+                    'data' => $question,
+                ], 200);
+            } catch (\Exception $e) {
+                // จัดการข้อผิดพลาดทั่วไป
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to retrieve question details.',
+                    'error' => $e->getMessage(),
+                ], 500);
+            }
+
         }
 
+        public function quizQuestionList(Request $request, string $id)
+{
+    try {
+        $nameQuestion = $request->input('nameQuestion', ''); // ค้นหาชื่อคำถาม
+
+        // ดึง Quiz พร้อม Questions และ Answers
+        $quiz = Quiz::with(['questions.answers'])->findOrFail($id);
+
+        // จำนวนคนที่ทำ Quiz ทั้งหมด
+        $totalParticipants = QuizUserAnswer::where('quiz_id', $id)
+            ->distinct('user_id')
+            ->count('user_id');
+
+        // ดึง Questions พร้อมคำตอบและการคำนวณเปอร์เซ็นต์
+        $questions = $quiz->questions()
+            ->when($nameQuestion, function ($query, $nameQuestion) {
+                $query->where('detail', 'LIKE', "%$nameQuestion%");
+            })
+            ->with(['answers' => function ($query) use ($id) {
+                $query->withCount(['quizUserAnswers as selected_count' => function ($subQuery) use ($id) {
+                    $subQuery->where('quiz_id', $id); // นับจำนวนการเลือกคำตอบใน Quiz นี้
+                }]);
+            }])
+            ->paginate(5); // Pagination
+
+        // แปลงข้อมูล Questions และคำตอบ
+        $formattedQuestions = $questions->map(function ($question) use ($totalParticipants) {
+            return [
+                'id' => $question->id,
+                'question' => $question->detail,
+                'choices' => $question->answers->map(function ($answer) use ($totalParticipants) {
+                    $selectedCount = $answer->selected_count ?? 0; // จำนวนครั้งที่ถูกเลือก
+                    $percentage = $totalParticipants > 0
+                        ? round(($selectedCount / $totalParticipants) * 100, 2)
+                        : 0;
+
+                    return [
+                        'id' => $answer->id,
+                        'text' => $answer->answers,
+                        'selected_count' => $selectedCount,
+                        'percentage' => "{$percentage}%",
+                        'is_correct' => $answer->answers_status === 1,
+                    ];
+                }),
+            ];
+        });
+
+        // ส่งข้อมูลกลับ
+        return response()->json([
+            'success' => true,
+            'message' => 'Quiz questions retrieved successfully.',
+            'data' => [
+                'total_participants' => $totalParticipants,
+                'questions' => $formattedQuestions,
+                'pagination' => [
+                    'current_page' => $questions->currentPage(),
+                    'last_page' => $questions->lastPage(),
+                    'total' => $questions->total(),
+                ],
+            ],
+        ], 200);
+    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Quiz not found.',
+        ], 404);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'An error occurred while retrieving quiz details.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
+
+
 
     public function show(Request $request, string $id)
     {
