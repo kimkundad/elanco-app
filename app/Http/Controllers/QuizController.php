@@ -8,8 +8,12 @@ use App\Models\quiz;
 use App\Models\answer;
 use App\Models\question;
 use App\Models\QuizAttempt;
+use App\Models\course;
+use App\Models\CourseAction;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class QuizController extends Controller
 {
@@ -107,6 +111,7 @@ class QuizController extends Controller
            $objs->certificate = $request->certificate === 'Yes' ? true : false;
            $objs->point_cpd = $request->point_cpd;
            $objs->code_number = $request->code_number;
+           $objs->created_by = Auth::id(); // เพิ่ม ID ของผู้สร้าง
            $objs->save();
 
            return response()->json([
@@ -150,22 +155,125 @@ class QuizController extends Controller
 
     }
 
-    public function show(string $id)
+    public function show(Request $request, string $id)
     {
         try {
-            // ดึงข้อมูล Quiz พร้อม Question และ Answer
+            $startDate = $request->input('start_date'); // วันที่เริ่มต้น
+            $endDate = $request->input('end_date');    // วันที่สิ้นสุด
+
+            // ดึงข้อมูล Quiz พร้อม Question, Answer, และ Courses ที่เกี่ยวข้อง
             $quiz = Quiz::with([
                 'questions.answers' => function ($query) {
                     $query->select('id', 'questions_id', 'answers', 'answers_status'); // เลือกเฉพาะฟิลด์ที่ต้องการ
-                }
-            ])
-            ->findOrFail($id); // ถ้าไม่เจอ Quiz จะส่ง 404
+                },
+                'courses.animalTypes', // ดึง animalTypes ผ่าน courses
+                'creator' // ดึง creator
+            ])->findOrFail($id); // ถ้าไม่เจอ Quiz จะส่ง 404
+
+            // คำนวณจำนวนคำถามทั้งหมด
+            $totalQuestions = $quiz->questions->count();
+
+            // คำนวณจำนวนคนที่ทำ Quiz ทั้งหมด
+            $userMakeQuizCount = $quiz->courses->flatMap(function ($course) {
+                return $course->courseActions()->where('isFinishVideo', 1)->pluck('user_id');
+            })->unique()->count();
+
+            // คำนวณจำนวนคนที่ผ่าน Quiz
+            $passedCount = $quiz->courses->flatMap(function ($course) {
+                return $course->courseActions()->where('isFinishQuiz', 1)->pluck('user_id');
+            })->unique()->count();
+
+            // คำนวณเปอร์เซ็นต์คนที่ผ่าน
+            $passedPercentage = $userMakeQuizCount > 0 ? round(($passedCount / $userMakeQuizCount) * 100) : 0;
+
+            // คำนวณจำนวนคนที่ได้รับ Certificate
+            $certificateReceivedCount = $quiz->courses->flatMap(function ($course) {
+                return $course->courseActions()->where('isFinishCourse', 1)->pluck('user_id');
+            })->unique()->count();
+
+            // ข้อมูลสำหรับกราฟแท่ง: จำนวนคนทำ Quiz ในแต่ละเดือน (6 เดือนล่าสุดหรือในช่วง Date Range)
+            $startDate = $startDate ? Carbon::parse($startDate)->startOfDay() : now()->subMonths(6)->startOfMonth();
+            $endDate = $endDate ? Carbon::parse($endDate)->endOfDay() : now()->endOfMonth();
+
+            $quizActivityQuery = CourseAction::whereIn('course_id', $quiz->courses->pluck('id'))
+                ->where('isFinishQuiz', 1) // เฉพาะคนที่ทำ Quiz เสร็จ
+                ->selectRaw('MONTH(created_at) as month, COUNT(*) as count')
+                ->groupBy('month')
+                ->orderBy('month');
+
+            // เพิ่ม Date Range ในการกรองข้อมูล
+            if ($startDate && $endDate) {
+                $quizActivityQuery->whereBetween('created_at', [$startDate, $endDate]);
+            }
+
+            $quizActivity = $quizActivityQuery->get()
+                ->mapWithKeys(function ($row) {
+                    return [date('M', mktime(0, 0, 0, $row->month, 1)) => $row->count];
+                });
+
+
+                // ดึง Courses ที่เกี่ยวข้องกับ Quiz นี้
+                // ดึง Courses ที่เกี่ยวข้องกับ Quiz นี้
+$courses = $quiz->courses->map(function ($course) {
+    // ดึงจำนวนผู้ลงทะเบียนทั้งหมด
+    $totalEnrolled = $course->courseActions()->count();
+
+    // ดึงจำนวนคนที่เรียนจบ (isFinishCourse = 1)
+    $completedCount = $course->courseActions()->where('isFinishCourse', 1)->count();
+
+    // คำนวณเปอร์เซ็นต์การเรียนจบ
+    $completedPercentage = $totalEnrolled > 0 ? round(($completedCount / $totalEnrolled) * 100) : 0;
+
+    // ดึงคะแนน Rating
+    $rating = number_format($course->ratting, 1);
+
+    // ดึงวันที่ล่าสุดที่มีคนเรียนจบ
+    $lastCompletionDate = $course->courseActions()
+        ->where('isFinishCourse', 1)
+        ->latest('updated_at')
+        ->value('updated_at');
+
+    return [
+        'course_id' => $course->course_id,
+        'course_title' => $course->course_title,
+        'course_description' => $course->course_description,
+        'rating' => $rating, // คะแนน Rating
+        'total_enrolled' => $totalEnrolled, // จำนวนผู้ลงทะเบียนทั้งหมด
+        'completed_percentage' => $completedPercentage, // % ของคนที่เรียนจบ
+        'last_completion_date' => $lastCompletionDate ? $lastCompletionDate->format('d M Y') : null, // วันที่ล่าสุดที่มีคนเรียนจบ
+        'countries' => $course->countries->map(function ($country) {
+            return [
+                'id' => $country->id,
+                'name' => $country->name,
+            ];
+        }),
+        'mainCategories' => $course->mainCategories->map(function ($category) {
+            return [
+                'id' => $category->id,
+                'name' => $category->name,
+            ];
+        }),
+    ];
+});
+
 
             // ส่งข้อมูลกลับในรูปแบบ JSON
             return response()->json([
                 'success' => true,
                 'message' => 'Quiz details retrieved successfully.',
-                'data' => $quiz,
+                'data' => [
+                    'quiz' => $quiz,
+                    'animal_types' => $quiz->courses->flatMap(function ($course) {
+                        return $course->animalTypes;
+                    })->unique('id')->values(), // รวม animalTypes ที่เกี่ยวข้องและลบซ้ำ
+                    'total_questions' => $totalQuestions,
+                    'user_make_quiz_count' => $userMakeQuizCount,
+                    'passed_count' => $passedCount,
+                    'passed_percentage' => $passedPercentage,
+                    'certificate_received_count' => $certificateReceivedCount,
+                    'quiz_activity_chart' => $quizActivity, // ข้อมูลสำหรับกราฟแท่ง
+                    'course_link' => $courses,
+                ],
             ], 200);
         } catch (\Exception $e) {
             // จัดการข้อผิดพลาด
@@ -176,6 +284,9 @@ class QuizController extends Controller
             ], 500);
         }
     }
+
+
+
 
 
     /**
