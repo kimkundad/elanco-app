@@ -179,7 +179,7 @@ class HomeBannerService
             'mobileImage' => 'nullable|file|image',
             'status' => 'required|in:public,private',
             'order' => 'nullable|integer',
-            'country_id' => 'nullable|exists:countries,id',
+            'countryId' => 'nullable|exists:countries,id',
         ]);
     }
 
