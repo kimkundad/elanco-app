@@ -20,9 +20,13 @@ class HomeBannerService
         $this->homeBannerRepository = $homeBannerRepository;
     }
 
-    public function findAll()
+    public function findAll(array $queryParams)
     {
-        return $this->homeBannerRepository->findAll()->map->formatIncludingCreatedUserAndUpdatedUserAndCountry();
+        $queryParams = ArrayKeyConverter::convertToSnakeCase($queryParams);
+
+        return $this->homeBannerRepository
+            ->findAll($queryParams)
+            ->map->formatIncludingCreatedUserAndUpdatedUserAndCountry();
     }
 
     public function create(Request $request)
@@ -144,6 +148,7 @@ class HomeBannerService
                 $banner->mobile_image,
             ]);
 
+            $this->homeBannerRepository->shiftOrderRange($banner->order + 1, null, -1);
             $this->homeBannerRepository->delete($id);
 
             $deletedFiles = [];

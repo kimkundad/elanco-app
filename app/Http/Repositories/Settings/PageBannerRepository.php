@@ -4,7 +4,7 @@ namespace App\Http\Repositories\Settings;
 
 interface PageBannerRepository
 {
-    public function findAll();
+    public function findAll(array $queryParams);
 
     public function findById($id);
 
