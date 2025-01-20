@@ -95,6 +95,7 @@ class ApiController extends Controller
                     'isFinishCourse' => true,
                 ]
             );
+
             // เพิ่ม point_cpd ให้กับ users.ce_credit
             if ($course->quiz && $course->quiz->point_cpd > 0) {
                 $user->increment('ce_credit', $course->quiz->point_cpd);
