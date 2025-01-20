@@ -186,7 +186,7 @@ public function courses(Request $request)
                 },
             ])
             // Sorting
-            ->orderBy('updated_at', $uploadDate) // Default: uploadDate
+           // ->orderBy('updated_at', $uploadDate) // Default: uploadDate
             ->orderBy('ratting', $ratingOrder)  // Sort by rating
             ->orderBy('duration', $durationOrder) // Sort by duration
             ->get()
