@@ -114,6 +114,7 @@ class FeaturedCourseService
                 throw new Exception('Featured course not found.');
             }
 
+            $this->featuredCourseRepository->shiftOrderRange($featuredCourse->order + 1, null, -1);
             $this->featuredCourseRepository->delete($id);
 
             DB::commit();

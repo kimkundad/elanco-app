@@ -46,10 +46,15 @@ class HomeBannerRepositoryImpl implements HomeBannerRepository
 
     public function shiftOrderRange($start, $end, $increment)
     {
-        HomeBanner::whereBetween('order', [$start, $end])
-            ->update([
-                'order' => DB::raw("`order` + $increment")
-            ]);
+        $query = HomeBanner::where('order', '>=', $start);
+
+        if (!is_null($end)) {
+            $query->where('order', '<=', $end);
+        }
+
+        $query->update([
+            'order' => DB::raw("`order` + $increment")
+        ]);
     }
 
     public function delete($id)

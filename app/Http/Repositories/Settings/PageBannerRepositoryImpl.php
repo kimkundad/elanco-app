@@ -46,10 +46,15 @@ class PageBannerRepositoryImpl implements PageBannerRepository
 
     public function shiftOrderRange($start, $end, $increment)
     {
-        PageBanner::whereBetween('order', [$start, $end])
-            ->update([
-                'order' => DB::raw("`order` + $increment")
-            ]);
+        $query = PageBanner::where('order', '>=', $start);
+
+        if (!is_null($end)) {
+            $query->where('order', '<=', $end);
+        }
+
+        $query->update([
+            'order' => DB::raw("`order` + $increment")
+        ]);
     }
 
     public function delete($id)

@@ -148,6 +148,7 @@ class HomeBannerService
                 $banner->mobile_image,
             ]);
 
+            $this->homeBannerRepository->shiftOrderRange($banner->order + 1, null, -1);
             $this->homeBannerRepository->delete($id);
 
             $deletedFiles = [];

@@ -148,6 +148,7 @@ class PageBannerService
                 $banner->mobile_image,
             ]);
 
+            $this->pageBannerRepository->shiftOrderRange($banner->order + 1, null, -1);
             $this->pageBannerRepository->delete($id);
 
             $deletedFiles = [];

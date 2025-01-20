@@ -54,10 +54,15 @@ class FeaturedCourseRepositoryImpl implements FeaturedCourseRepository
 
     public function shiftOrderRange($start, $end, $increment)
     {
-        FeaturedCourse::whereBetween('order', [$start, $end])
-            ->update([
-                'order' => DB::raw("`order` + $increment")
-            ]);
+        $query = FeaturedCourse::where('order', '>=', $start);
+
+        if (!is_null($end)) {
+            $query->where('order', '<=', $end);
+        }
+
+        $query->update([
+            'order' => DB::raw("`order` + $increment")
+        ]);
     }
 
     public function delete($id)
