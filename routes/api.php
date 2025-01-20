@@ -152,12 +152,12 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
 
     Route::get('/admin/settings/home-banners', [HomeBannerController::class, 'index']);
     Route::post('/admin/settings/home-banners', [HomeBannerController::class, 'store']);
-    Route::put('/admin/settings/home-banners', [HomeBannerController::class, 'update']);
+    Route::put('/admin/settings/home-banners/{id}', [HomeBannerController::class, 'update']);
     Route::delete('/admin/settings/home-banners', [HomeBannerController::class, 'destroy']);
 
     Route::get('/admin/settings/featured-courses', [FeaturedCourseController::class, 'index']);
     Route::post('/admin/settings/featured-courses', [FeaturedCourseController::class, 'store']);
-    Route::put('/admin/settings/featured-courses', [FeaturedCourseController::class, 'update']);
+    Route::put('/admin/settings/featured-courses/{id}', [FeaturedCourseController::class, 'update']);
     Route::delete('/admin/settings/featured-courses', [FeaturedCourseController::class, 'destroy']);
 
     Route::get('/admin/settings', [\App\Http\Controllers\Settings\SettingController::class, 'index']);
