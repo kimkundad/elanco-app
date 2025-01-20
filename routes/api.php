@@ -94,6 +94,7 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
     Route::get('/admin/quiz', [QuizController::class, 'index']);
     Route::get('/admin/quiz/{id}', [QuizController::class, 'show']);
     Route::get('/admin/quizQuestionList/{id}', [QuizController::class, 'quizQuestionList']);
+    Route::get('/admin/quizParticipants/{id}', [QuizController::class, 'getQuizParticipants']);
     Route::middleware(['log.system'])->group(function () {
         Route::post('/admin/quiz', [QuizController::class, 'store']);
         Route::put('/admin/quiz/{id}', [QuizController::class, 'update']);
