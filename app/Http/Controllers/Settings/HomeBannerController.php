@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\Controller;
 use App\Http\Services\Settings\HomeBannerService;
 use Exception;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 
 class HomeBannerController extends Controller
@@ -31,7 +32,7 @@ class HomeBannerController extends Controller
             return response()->json([
                 'status' => ['status' => 'error', 'message' => $e->getMessage()],
                 'data' => null
-            ]);
+            ], 500);
         }
     }
 
@@ -83,11 +84,16 @@ class HomeBannerController extends Controller
         try {
             $response = $this->homeBannerService->update($id, $request);
             return response()->json($response);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => ['status' => 'error', 'message' => 'Home banner not found.'],
+                'data' => null
+            ], 404);
         } catch (Exception $e) {
             return response()->json([
                 'status' => ['status' => 'error', 'message' => $e->getMessage()],
                 'data' => null
-            ]);
+            ], 500);
         }
     }
 
@@ -99,11 +105,16 @@ class HomeBannerController extends Controller
         try {
             $response = $this->homeBannerService->delete($id);
             return response()->json($response);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => ['status' => 'error', 'message' => 'Home banner not found.'],
+                'data' => null
+            ], 404);
         } catch (Exception $e) {
             return response()->json([
                 'status' => ['status' => 'error', 'message' => $e->getMessage()],
                 'data' => null
-            ]);
+            ], 500);
         }
     }
 }

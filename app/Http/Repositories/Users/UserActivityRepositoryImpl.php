@@ -11,6 +11,11 @@ class UserActivityRepositoryImpl implements UserActivityRepository
         return UserActivity::with('user.countryDetails')->get();
     }
 
+    public function findById(int $id)
+    {
+        return UserActivity::with('user.countryDetails')->findOrFail($id);
+    }
+
     public function findPaginated()
     {
         return UserActivity::with('user.countryDetails');

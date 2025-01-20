@@ -31,7 +31,7 @@ class SettingController extends Controller
             return response()->json([
                 'status' => ['status' => 'error', 'message' => $e->getMessage()],
                 'data' => null
-            ]);
+            ], 500);
         }
     }
 

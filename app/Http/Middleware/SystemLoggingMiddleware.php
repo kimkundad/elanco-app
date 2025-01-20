@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Http\Services\SystemLogs\SystemLogService;
 use Closure;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,18 +27,25 @@ class SystemLoggingMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $response = $next($request);
+        try {
+            $response = $next($request);
 
-        if (!Auth::check()) {
+            if (!Auth::check()) {
+                return $response;
+            }
+
+            if ($response->status() === 200) {
+                $this->systemLogService->saveAction($request, 'success');
+            } else {
+                $this->systemLogService->saveAction($request, 'error', $response->getContent());
+            }
+
             return $response;
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => ['status' => 'error', 'message' => $e->getMessage()],
+                'data' => null,
+            ], 500);
         }
-
-        if ($response->status() === 200) {
-            $this->systemLogService->saveAction($request, 'success');
-        } else {
-            $this->systemLogService->saveAction($request, 'error', $response->getContent());
-        }
-
-        return $response;
     }
 }

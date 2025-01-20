@@ -22,6 +22,11 @@ class UserActivityService
             }, $queryParams);
     }
 
+    public function findById($id)
+    {
+        return $this->userActivityRepository->findById($id)->format();
+    }
+
     public function logActivity($userId, $activity, $detail, $ipAddress, $device, $browser)
     {
         $data = [

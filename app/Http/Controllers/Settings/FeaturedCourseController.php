@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\Controller;
 use App\Http\Services\Settings\FeaturedCourseService;
 use Exception;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 
 class FeaturedCourseController extends Controller
@@ -31,7 +32,7 @@ class FeaturedCourseController extends Controller
             return response()->json([
                 'status' => ['status' => 'error', 'message' => $e->getMessage()],
                 'data' => null
-            ]);
+            ], 500);
         }
     }
 
@@ -83,11 +84,16 @@ class FeaturedCourseController extends Controller
         try {
             $response = $this->featuredCourseService->update($id, $request);
             return response()->json($response);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => ['status' => 'error', 'message' => 'Featured course not found.'],
+                'data' => null
+            ], 404);
         } catch (Exception $e) {
             return response()->json([
                 'status' => ['status' => 'error', 'message' => $e->getMessage()],
                 'data' => null
-            ]);
+            ], 500);
         }
     }
 
@@ -99,11 +105,16 @@ class FeaturedCourseController extends Controller
         try {
             $response = $this->featuredCourseService->delete($id);
             return response()->json($response);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => ['status' => 'error', 'message' => 'Featured course not found.'],
+                'data' => null
+            ], 404);
         } catch (Exception $e) {
             return response()->json([
                 'status' => ['status' => 'error', 'message' => $e->getMessage()],
                 'data' => null
-            ]);
+            ], 500);
         }
     }
 }
