@@ -146,9 +146,9 @@ public function courses(Request $request)
         $search = $request->input('search');
         $topic = $request->input('topic');
         $animalType = $request->input('animalType');
-        $uploadDate = $request->input('uploadDate', 'desc');
-        $ratingOrder = $request->input('rating', 'desc');
-        $durationOrder = $request->input('duration', 'asc');
+        $uploadDate = $request->input('uploadDate');
+        $ratingOrder = $request->input('rating');
+        $durationOrder = $request->input('duration');
 
         $courses = course::whereHas('countries', function ($query) use ($userCountryId) {
             $query->where('country_id', $userCountryId);
