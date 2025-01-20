@@ -132,7 +132,6 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
     Route::put('/admin/adminUser/{id}', [AdminController::class, 'update']);
     Route::delete('/admin/adminUser/{id}', [AdminController::class, 'destroy']);
 
-
     Route::get('/admin/getCountry', [SettingController::class, 'getCountry']);
     Route::get('/admin/getItemForCourse ', [SettingController::class, 'getItemForCourse']);
     Route::get('/admin/getMainCategory', [SettingController::class, 'getMainCategory']);
