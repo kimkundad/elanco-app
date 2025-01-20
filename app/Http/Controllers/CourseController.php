@@ -433,12 +433,12 @@ class CourseController extends Controller
             $rating = $course->courseActions()->avg('rating'); // คะแนนเฉลี่ย
             $ratingCount = $course->courseActions()->where('rating', '!=', 0)->count();
             $passedCount = $course->courseActions()->where('isFinishQuiz', 1)->count(); // จำนวนผู้ที่ผ่าน
-            $userMakeQuizCount = $course->courseActions()->where('isFinishVideo', 1)->count(); // จำนวนผู้ที่ผ่าน
+            $userMakeQuizCount = $course->courseActions()->where('isFinishVideo', 1)->count(); // จำนวนผู้ทำข้อสอบ
             $surveySummit = $course->survey ? $course->survey->responses()->count() : 0; // จำนวนผู้ที่ตอบ Survey
             $course->ce_point = $course->quiz->point_cpd;
             // คำนวณเปอร์เซ็นต์
             $completePercentage = $totalEnrolled > 0 ? round(($completedEnrolled / $totalEnrolled) * 100) : 0;
-            $passedPercentage = $totalEnrolled > 0 ? round(($passedCount / $totalEnrolled) * 100) : 0;
+            $passedPercentage = $totalEnrolled > 0 ? round(($passedCount / $userMakeQuizCount) * 100) : 0;
             $surveyPercentage = $totalEnrolled > 0 ? round(($surveySummit / $totalEnrolled) * 100) : 0;
 
             // กราฟแท่งแสดงจำนวนผู้ลงทะเบียนในแต่ละเดือน โดยมีการใช้ Date Range
