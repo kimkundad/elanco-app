@@ -842,7 +842,6 @@ public function courses(Request $request)
         $validatedData = $request->validate([
             'answers' => 'required|array', // รับ array ของคำตอบ
             'answers.*' => 'integer|exists:answers,id', // แต่ละคำตอบต้องมี id ที่อยู่ในตาราง answers
-            'course_id' => 'required'
         ]);
 
     try {
