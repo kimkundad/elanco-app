@@ -163,6 +163,7 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
     Route::get('/admin/settings', [\App\Http\Controllers\Settings\SettingController::class, 'index']);
 
     Route::get('/admin/user-activities', [UserActivityController::class, 'index']);
+    Route::get('/admin/user-activities/{id}', [UserActivityController::class, 'show']);
 });
 
 

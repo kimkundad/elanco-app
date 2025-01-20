@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Users;
 use App\Http\Controllers\Controller;
 use App\Http\Services\Users\UserActivityService;
 use Exception;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 
 class UserActivityController extends Controller
@@ -28,7 +29,7 @@ class UserActivityController extends Controller
             return response()->json([
                 'status' => ['status' => 'error', 'message' => $e->getMessage()],
                 'data' => null
-            ]);
+            ], 500);
         }
     }
 
@@ -53,7 +54,23 @@ class UserActivityController extends Controller
      */
     public function show(string $id)
     {
-        //
+        try {
+            $systemLog = $this->userActivityService->findById($id);
+            return response()->json([
+                'status' => ['status' => 'success', 'message' => null],
+                'data' => $systemLog
+            ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => ['status' => 'error', 'message' => 'User activity not found.'],
+                'data' => null
+            ], 404);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => ['status' => 'error', 'message' => $e->getMessage()],
+                'data' => null
+            ], 500);
+        }
     }
 
     /**
