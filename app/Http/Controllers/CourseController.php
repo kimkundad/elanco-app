@@ -431,7 +431,9 @@ class CourseController extends Controller
             $totalEnrolled = $course->courseActions()->count(); // จำนวนผู้ลงทะเบียนทั้งหมด
             $completedEnrolled = $course->courseActions()->where('isFinishCourse', 1)->count(); // จำนวนผู้เรียนจบ
             $rating = $course->courseActions()->avg('rating'); // คะแนนเฉลี่ย
+            $ratingCount = $course->courseActions()->where('rating', '!=', 0)->count();
             $passedCount = $course->courseActions()->where('isFinishQuiz', 1)->count(); // จำนวนผู้ที่ผ่าน
+            $userMakeQuizCount = $course->courseActions()->where('isFinishVideo', 1)->count(); // จำนวนผู้ที่ผ่าน
             $surveySummit = $course->survey ? $course->survey->responses()->count() : 0; // จำนวนผู้ที่ตอบ Survey
             $course->ce_point = $course->quiz->point_cpd;
             // คำนวณเปอร์เซ็นต์
@@ -466,10 +468,12 @@ class CourseController extends Controller
                     'completed' => $completedEnrolled,
                     'total_enrolled' => $totalEnrolled,
                     'rating' => round($rating, 1),
+                    'rating_count' => $ratingCount,
                     'passed_percentage' => $passedPercentage,
                     'passed_count' => $passedCount,
                     'survey_summit' => $surveySummit,
                     'survey_percentage' => $surveyPercentage,
+                    'userMakeQuizCount' => $userMakeQuizCount
                 ],
                 'enrollment_report' => $enrollmentReport,
                 'created_by' => $course->creator ? [
