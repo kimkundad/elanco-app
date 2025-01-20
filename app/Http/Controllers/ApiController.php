@@ -254,7 +254,7 @@ public function courses(Request $request)
                 ];
             });
 
-        return response()->json(['success' => true, 'courses' => $courses], 200);
+        return response()->json(['success' => true, 'courses' => $courses, 'ratingOrder' => $ratingOrder], 200);
 
     } catch (TokenExpiredException $e) {
         return response()->json(['error' => 'Token has expired', 'message' => 'Please refresh your token or login again.'], 401);
