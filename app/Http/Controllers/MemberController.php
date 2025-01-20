@@ -149,6 +149,105 @@ class MemberController extends Controller
         return view('admin.members.edit', $data);
     }
 
+
+    public function getLearningHistory(Request $request, $id)
+{
+    try {
+        // ดึงข้อมูล User ตาม $id
+        $user = User::findOrFail($id);
+
+        // รับตัวกรอง (ค้นหา/สถานะ/จำนวนต่อหน้า)
+        $search = $request->input('search', '');
+        $status = $request->input('status', 'all'); // all, learning, completed
+        $perPage = $request->input('perPage', 10);
+
+        // Query ประวัติการเรียนของ User
+        $query = CourseAction::with([
+            'course' => function ($query) {
+                $query->select('id', 'course_id', 'course_title', 'course_description', 'duration', 'course_img'); // เลือกฟิลด์ที่เกี่ยวข้อง
+            }
+        ])
+            ->where('user_id', $user->id) // กรองเฉพาะไอดีผู้ใช้
+            ->when(!empty($search), function ($query, $search) {
+                $query->whereHas('course', function ($subQuery) use ($search) {
+                    $subQuery->where('course_id', 'LIKE', "%$search%")
+                        ->orWhere('course_title', 'LIKE', "%$search%");
+                });
+            })
+            ->when($status !== 'all', function ($query) use ($status) {
+                if ($status === 'learning') {
+                    $query->where('isFinishCourse', 0); // กำลังเรียน
+                } elseif ($status === 'completed') {
+                    $query->where('isFinishCourse', 1); // เรียนจบ
+                }
+            })
+            ->paginate($perPage);
+
+        // จัดการข้อมูลการเรียน
+        $learningHistory = $query->map(function ($action) {
+            $course = $action->course;
+
+            // สถานะ Complete หรือ Learning
+            if ($action->isFinishCourse) {
+                $status = 'Complete';
+                $passRate = '100%';
+            } else {
+                // คำนวณเปอร์เซ็นต์
+                $completedItems = collect([
+                    $action->isFinishVideo,
+                    $action->isFinishQuiz,
+                    $action->isDownloadCertificate,
+                    $action->isReview,
+                    $action->rating > 0 ? 1 : 0, // นับ rating > 0 เป็นสำเร็จ
+                ])->sum();
+
+                $totalItems = 5; // เงื่อนไขทั้งหมด
+                $passRate = round(($completedItems / $totalItems) * 100) . '%';
+                $status = 'Learning';
+            }
+
+            return [
+                'id' => $course->id,
+                'course_id' => $course->course_id,
+                'course_title' => $course->course_title,
+                'course_description' => $course->course_description,
+                'course_image' => $course->course_img,
+                'status' => $status,
+                'pass_rate' => $passRate,
+                'start_date' => $action->created_at->format('d M Y | H:i A'),
+                'end_date' => $action->updated_at->format('d M Y | H:i A'),
+            ];
+        });
+
+        // ส่งข้อมูล JSON
+        return response()->json([
+            'success' => true,
+            'message' => 'Learning history retrieved successfully.',
+            'data' => $learningHistory,
+            'pagination' => [
+                'current_page' => $query->currentPage(),
+                'per_page' => $query->perPage(),
+                'total' => $query->total(),
+            ],
+        ], 200);
+    } catch (ModelNotFoundException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'User not found.',
+            'error' => $e->getMessage(),
+        ], 404);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to retrieve learning history.',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
+
+
+
+
     /**
      * Update the specified resource in storage.
      */
@@ -164,11 +263,21 @@ class MemberController extends Controller
                 'animalTypes',    // ประเภทสัตว์
             ])->findOrFail($id); // ถ้าไม่เจอ User จะ throw Exception
 
+            $learningCourses = CourseAction::where('user_id', $id)->where('isFinishCourse', 0)->count();
+            $completedCourses = CourseAction::where('user_id', $id)->where('isFinishCourse', 1)->count();
+
             // Response สำเร็จ
             return response()->json([
                 'success' => true,
                 'message' => 'Member details retrieved successfully.',
                 'data' => $user,
+                'stats' => [
+                    'learning_courses' => $learningCourses, // จำนวนคอร์สที่กำลังเรียน
+                    'completed_courses' => $completedCourses, // จำนวนคอร์สที่เรียนจบ
+                    'ce_credits' => $user->ce_credit, // CE Credits จากคอลัมน์ ce_credit
+                ],
+                'membership_date' => $user->created_at,
+                'last_activity_date' => $user->last_active_at,
             ], 200);
 
         } catch (\Exception $e) {

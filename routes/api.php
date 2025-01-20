@@ -125,6 +125,7 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
     Route::post('/admin/members/{id}', [MemberController::class, 'update']);
     Route::delete('/admin/members/{id}', [MemberController::class, 'softDelete']);
     Route::get('/admin/userStatus/{id}', [MemberController::class, 'toggleUserStatus']);
+    Route::get('/admin/member/{id}/learning-history', [MemberController::class, 'getLearningHistory']);
 
     Route::get('/admin/adminUser', [AdminController::class, 'index']);
     Route::post('/admin/adminUser', [AdminController::class, 'store']);
