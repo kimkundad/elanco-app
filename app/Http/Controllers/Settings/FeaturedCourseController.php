@@ -20,10 +20,10 @@ class FeaturedCourseController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $featuredCourses = $this->featuredCourseService->findAll();
+            $featuredCourses = $this->featuredCourseService->findAll($request->query());
             return response()->json([
                 'status' => ['status' => 'success', 'message' => null],
                 'data' => $featuredCourses

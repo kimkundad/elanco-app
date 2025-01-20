@@ -7,9 +7,15 @@ use Illuminate\Support\Facades\DB;
 
 class HomeBannerRepositoryImpl implements HomeBannerRepository
 {
-    public function findAll()
+    public function findAll(array $queryParams)
     {
-        return HomeBanner::with(['createdByUser.countryDetails', 'updatedByUser.countryDetails', 'country'])->get();
+        $query = HomeBanner::with(['createdByUser.countryDetails', 'updatedByUser.countryDetails', 'country']);
+
+        foreach ($queryParams as $key => $value) {
+            $query->where($key, 'LIKE', '%' . $value . '%');
+        }
+
+        return $query->get();
     }
 
     public function findById($id)
@@ -40,10 +46,15 @@ class HomeBannerRepositoryImpl implements HomeBannerRepository
 
     public function shiftOrderRange($start, $end, $increment)
     {
-        HomeBanner::whereBetween('order', [$start, $end])
-            ->update([
-                'order' => DB::raw("`order` + $increment")
-            ]);
+        $query = HomeBanner::where('order', '>=', $start);
+
+        if (!is_null($end)) {
+            $query->where('order', '<=', $end);
+        }
+
+        $query->update([
+            'order' => DB::raw("`order` + $increment")
+        ]);
     }
 
     public function delete($id)

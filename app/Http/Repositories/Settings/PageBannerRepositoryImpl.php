@@ -7,9 +7,15 @@ use Illuminate\Support\Facades\DB;
 
 class PageBannerRepositoryImpl implements PageBannerRepository
 {
-    public function findAll()
+    public function findAll(array $queryParams)
     {
-        return PageBanner::with(['createdByUser.countryDetails', 'updatedByUser.countryDetails', 'country'])->get();
+        $query = PageBanner::with(['createdByUser.countryDetails', 'updatedByUser.countryDetails', 'country']);
+
+        foreach ($queryParams as $key => $value) {
+            $query->where($key, 'LIKE', '%' . $value . '%');
+        }
+
+        return $query->get();
     }
 
     public function findById($id)
@@ -40,10 +46,15 @@ class PageBannerRepositoryImpl implements PageBannerRepository
 
     public function shiftOrderRange($start, $end, $increment)
     {
-        PageBanner::whereBetween('order', [$start, $end])
-            ->update([
-                'order' => DB::raw("`order` + $increment")
-            ]);
+        $query = PageBanner::where('order', '>=', $start);
+
+        if (!is_null($end)) {
+            $query->where('order', '<=', $end);
+        }
+
+        $query->update([
+            'order' => DB::raw("`order` + $increment")
+        ]);
     }
 
     public function delete($id)

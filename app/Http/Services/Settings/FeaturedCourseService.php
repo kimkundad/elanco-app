@@ -18,9 +18,13 @@ class FeaturedCourseService
         $this->featuredCourseRepository = $featuredCourseRepository;
     }
 
-    public function findAll()
+    public function findAll(array $queryParams)
     {
-        return $this->featuredCourseRepository->findAll()->map->formatIncludingCourseAndCountry();
+        $queryParams = ArrayKeyConverter::convertToSnakeCase($queryParams);
+
+        return $this->featuredCourseRepository
+            ->findAll($queryParams)
+            ->map->formatIncludingCourseAndCountry();
     }
 
     public function create(Request $request)
@@ -110,6 +114,7 @@ class FeaturedCourseService
                 throw new Exception('Featured course not found.');
             }
 
+            $this->featuredCourseRepository->shiftOrderRange($featuredCourse->order + 1, null, -1);
             $this->featuredCourseRepository->delete($id);
 
             DB::commit();

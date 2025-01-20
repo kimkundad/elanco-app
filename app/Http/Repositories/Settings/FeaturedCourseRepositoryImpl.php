@@ -7,9 +7,23 @@ use Illuminate\Support\Facades\DB;
 
 class FeaturedCourseRepositoryImpl implements FeaturedCourseRepository
 {
-    public function findAll()
+    public function findAll(array $queryParams)
     {
-        return FeaturedCourse::with(['createdByUser.countryDetails', 'updatedByUser.countryDetails', 'country'])->get();
+        $query = FeaturedCourse::with(['createdByUser.countryDetails', 'updatedByUser.countryDetails', 'country', 'course']);
+
+        if (!empty($queryParams['course_title'])) {
+            $query->whereHas('course', function ($query) use ($queryParams) {
+                $query->where('course_title', 'LIKE', '%' . $queryParams['course_title'] . '%');
+            });
+        }
+
+        foreach ($queryParams as $key => $value) {
+            if ($key !== 'course_title') {
+                $query->where($key, 'LIKE', '%' . $value . '%');
+            }
+        }
+
+        return $query->get();
     }
 
     public function findById($id)
@@ -40,10 +54,15 @@ class FeaturedCourseRepositoryImpl implements FeaturedCourseRepository
 
     public function shiftOrderRange($start, $end, $increment)
     {
-        FeaturedCourse::whereBetween('order', [$start, $end])
-            ->update([
-                'order' => DB::raw("`order` + $increment")
-            ]);
+        $query = FeaturedCourse::where('order', '>=', $start);
+
+        if (!is_null($end)) {
+            $query->where('order', '<=', $end);
+        }
+
+        $query->update([
+            'order' => DB::raw("`order` + $increment")
+        ]);
     }
 
     public function delete($id)

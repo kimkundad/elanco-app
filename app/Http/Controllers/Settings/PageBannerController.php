@@ -20,10 +20,10 @@ class PageBannerController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $pageBanners = $this->pageBannerService->findAll();
+            $pageBanners = $this->pageBannerService->findAll($request->query());
             return response()->json([
                 'status' => ['status' => 'success', 'message' => null],
                 'data' => $pageBanners
