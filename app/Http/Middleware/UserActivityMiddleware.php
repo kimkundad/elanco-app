@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Http\Repositories\Courses\CourseRepository;
 use App\Http\Services\Users\UserActivityService;
 use Closure;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
@@ -27,14 +28,21 @@ class UserActivityMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!Auth::check()) {
-            return $next($request);
+        try {
+            if (!Auth::check()) {
+                return $next($request);
+            }
+
+            $response = $next($request);
+            $this->logUserActivity($request);
+
+            return $response;
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => ['status' => 'error', 'message' => $e->getMessage()],
+                'data' => null,
+            ], 500);
         }
-
-        $response = $next($request);
-        $this->logUserActivity($request);
-
-        return $response;
     }
 
     private function logUserActivity(Request $request)
