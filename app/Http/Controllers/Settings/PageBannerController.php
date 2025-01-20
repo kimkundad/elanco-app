@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\Controller;
 use App\Http\Services\Settings\PageBannerService;
 use Exception;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 
 class PageBannerController extends Controller
@@ -31,7 +32,7 @@ class PageBannerController extends Controller
             return response()->json([
                 'status' => ['status' => 'error', 'message' => $e->getMessage()],
                 'data' => null
-            ]);
+            ], 500);
         }
     }
 
@@ -83,11 +84,16 @@ class PageBannerController extends Controller
         try {
             $response = $this->pageBannerService->update($id, $request);
             return response()->json($response);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => ['status' => 'error', 'message' => 'Page banner not found.'],
+                'data' => null
+            ], 404);
         } catch (Exception $e) {
             return response()->json([
                 'status' => ['status' => 'error', 'message' => $e->getMessage()],
                 'data' => null
-            ]);
+            ], 500);
         }
     }
 
@@ -99,11 +105,16 @@ class PageBannerController extends Controller
         try {
             $response = $this->pageBannerService->delete($id);
             return response()->json($response);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => ['status' => 'error', 'message' => 'Page banner not found.'],
+                'data' => null
+            ], 404);
         } catch (Exception $e) {
             return response()->json([
                 'status' => ['status' => 'error', 'message' => $e->getMessage()],
                 'data' => null
-            ]);
+            ], 500);
         }
     }
 }
