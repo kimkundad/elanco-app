@@ -122,6 +122,93 @@ class SurvayController extends Controller
     /**
      * Display the specified resource.
      */
+
+     public function getSurveyAnsList(Request $request, string $id)
+     {
+         try {
+             $search = $request->input('search', ''); // ค้นหาคำถาม
+             $courseId = $request->input('course_id'); // รับ course_id สำหรับกรองข้อมูล
+
+             // ดึง Survey พร้อม Questions และ Answers
+             $survey = Survey::with(['questions.answers'])->findOrFail($id);
+
+             // จำนวนผู้ตอบ Survey ทั้งหมด
+             $totalParticipants = SurveyResponse::where('survey_id', $id)
+                 ->when($courseId, function ($query) use ($courseId) {
+                     $query->whereHas('surveyResponseAnswers', function ($subQuery) use ($courseId) {
+                         $subQuery->where('course_id', $courseId);
+                     });
+                 })
+                 ->distinct('user_id')
+                 ->count('user_id');
+
+             // ดึง Questions พร้อมคำตอบและคำนวณเปอร์เซ็นต์การเลือก
+             $questions = $survey->questions()
+                 ->when($search, function ($query, $search) {
+                     $query->where('question_detail', 'LIKE', "%$search%");
+                 })
+                 ->with(['answers' => function ($query) use ($id, $courseId) {
+                     $query->withCount(['surveyResponseAnswers as selected_count' => function ($subQuery) use ($id, $courseId) {
+                         $subQuery->whereHas('surveyResponse', function ($responseQuery) use ($id, $courseId) {
+                             $responseQuery->where('survey_id', $id);
+                             if ($courseId) {
+                                 $responseQuery->where('course_id', $courseId);
+                             }
+                         });
+                     }]);
+                 }])
+                 ->paginate(5); // Pagination
+
+             // แปลงข้อมูลคำถามและคำตอบ
+             $formattedQuestions = $questions->map(function ($question) use ($totalParticipants) {
+                 return [
+                     'id' => $question->id,
+                     'question' => $question->question_detail,
+                     'choices' => $question->answers->map(function ($answer) use ($totalParticipants) {
+                         $selectedCount = $answer->selected_count ?? 0;
+                         $percentage = $totalParticipants > 0
+                             ? round(($selectedCount / $totalParticipants) * 100, 2)
+                             : 0;
+
+                         return [
+                             'id' => $answer->id,
+                             'text' => $answer->answer_text,
+                             'selected_count' => $selectedCount,
+                             'percentage' => "{$percentage}%",
+                         ];
+                     }),
+                 ];
+             });
+
+             // ส่งข้อมูลกลับ
+             return response()->json([
+                 'success' => true,
+                 'message' => 'Survey questions retrieved successfully.',
+                 'data' => [
+                     'total_participants' => $totalParticipants,
+                     'questions' => $formattedQuestions,
+                     'pagination' => [
+                         'current_page' => $questions->currentPage(),
+                         'last_page' => $questions->lastPage(),
+                         'total' => $questions->total(),
+                     ],
+                 ],
+             ], 200);
+         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+             return response()->json([
+                 'success' => false,
+                 'message' => 'Survey not found.',
+             ], 404);
+         } catch (\Exception $e) {
+             return response()->json([
+                 'success' => false,
+                 'message' => 'An error occurred while retrieving survey questions.',
+                 'error' => $e->getMessage(),
+             ], 500);
+         }
+     }
+
+
     public function show(Request $request, string $id)
     {
         try {

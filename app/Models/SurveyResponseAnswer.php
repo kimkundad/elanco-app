@@ -15,4 +15,14 @@ class SurveyResponseAnswer extends Model
         'survey_answer_id',   // ฟิลด์ survey_answer_id
         'custom_answer',      // ฟิลด์ custom_answer
     ];
+
+    public function surveyResponse()
+    {
+        return $this->belongsTo(SurveyResponse::class, 'survey_response_id');
+    }
+
+    public function course()
+    {
+        return $this->belongsTo(Course::class, 'course_id');
+    }
 }

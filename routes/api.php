@@ -87,7 +87,6 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
         Route::post('/admin/course', [CourseController::class, 'store']);
         Route::post('/admin/course/{id}', [CourseController::class, 'update']);
         Route::delete('/admin/course/{id}', [CourseController::class, 'destroy']);
-
     });
 
     Route::post('/admin/uploadImg', [SettingController::class, 'upPicUrl']);
@@ -110,8 +109,11 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
     Route::delete('/admin/question/{id}', [QuizController::class, 'questionDelete']);
     Route::delete('/admin/deleteAnswer/{id}', [SurvayController::class, 'deleteAnswerQuiz']);
 
+    Route::get('/admin/getSurveyAnsList/{id}', [SurvayController::class, 'getSurveyAnsList']);
     Route::get('/admin/survey', [SurvayController::class, 'index']);
     Route::get('/admin/survey/{id}', [SurvayController::class, 'show']);
+
+
     Route::middleware(['log.system'])->group(function () {
         Route::post('/admin/survey', [SurvayController::class, 'store']);
         Route::put('/admin/survey/{id}', [SurvayController::class, 'update']);
@@ -151,15 +153,14 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
     Route::get('/admin/system-logs', [SystemLogController::class, 'index']);
     Route::get('/admin/system-logs/export', [SystemLogController::class, 'exportSystemLogs']);
 
-
     Route::get('/admin/settings/page-banners', [PageBannerController::class, 'index']);
     Route::post('/admin/settings/page-banners', [PageBannerController::class, 'store']);
-    Route::post('/admin/settings/page-banners/edit/{id}', [PageBannerController::class, 'update']);
+    Route::post('/admin/settings/page-banners/{id}/edit', [PageBannerController::class, 'update']);
     Route::delete('/admin/settings/page-banners/{id}', [PageBannerController::class, 'destroy']);
 
     Route::get('/admin/settings/home-banners', [HomeBannerController::class, 'index']);
     Route::post('/admin/settings/home-banners', [HomeBannerController::class, 'store']);
-    Route::post('/admin/settings/home-banners/edit/{id}', [HomeBannerController::class, 'update']);
+    Route::post('/admin/settings/home-banners/{id}/edit', [HomeBannerController::class, 'update']);
     Route::delete('/admin/settings/home-banners/{id}', [HomeBannerController::class, 'destroy']);
 
     Route::get('/admin/settings/featured-courses', [FeaturedCourseController::class, 'index']);
