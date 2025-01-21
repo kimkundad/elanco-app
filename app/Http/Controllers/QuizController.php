@@ -338,7 +338,7 @@ class QuizController extends Controller
         $formattedQuestions = $questions->map(function ($question) use ($totalParticipants) {
             return [
                 'id' => $question->id,
-                'question' => $question->question,
+                'question' => $question->detail,
                 'choices' => $question->answers->map(function ($answer) use ($totalParticipants) {
                     $selectedCount = $answer->selected_count ?? 0; // จำนวนครั้งที่ถูกเลือก
                     $percentage = $totalParticipants > 0
