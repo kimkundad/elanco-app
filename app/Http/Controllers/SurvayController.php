@@ -8,6 +8,7 @@ use App\Models\SurveyQuestion;
 use App\Models\SurveyAnswer;
 use App\Models\SurveyResponseAnswer;
 use App\Models\SurveyResponse;
+use App\Models\CourseAction;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Validator;
@@ -131,16 +132,16 @@ class SurvayController extends Controller
 
              // ดึง Survey พร้อม Questions และ Answers
              $survey = Survey::with(['questions.answers'])->findOrFail($id);
-
+             $enrolled = CourseAction::count();
              // จำนวนผู้ตอบ Survey ทั้งหมด
              $totalParticipants = SurveyResponse::where('survey_id', $id)
-                 ->when($courseId, function ($query) use ($courseId) {
-                     $query->whereHas('surveyResponseAnswers', function ($subQuery) use ($courseId) {
-                         $subQuery->where('course_id', $courseId);
-                     });
-                 })
-                 ->distinct('user_id')
-                 ->count('user_id');
+                ->when($courseId, function ($query) use ($courseId) {
+                    $query->whereHas('surveyResponseAnswers', function ($subQuery) use ($courseId) {
+                        $subQuery->where('course_id', $courseId);
+                    });
+                })
+                ->distinct('user_id')
+                ->count('user_id');
 
              // ดึง Questions พร้อมคำตอบและคำนวณเปอร์เซ็นต์การเลือก
              $questions = $survey->questions()
@@ -186,6 +187,7 @@ class SurvayController extends Controller
                  'message' => 'Survey questions retrieved successfully.',
                  'data' => [
                      'total_participants' => $totalParticipants,
+                     'total_enrolled' => $enrolled,
                      'questions' => $formattedQuestions,
                      'pagination' => [
                          'current_page' => $questions->currentPage(),
