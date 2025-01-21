@@ -3,6 +3,7 @@
 namespace App\Http\Services\SystemLogs;
 
 use App\Http\Repositories\SystemLogs\SystemLogRepository;
+use App\Http\Utils\ArrayKeyConverter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -15,10 +16,11 @@ class SystemLogService
         $this->systemLogRepository = $systemLogRepository;
     }
 
-    public function findAll()
+    public function findAll(array $queryParams)
     {
-        $queryParams = request()->query();
-        return $this->systemLogRepository->findPaginated()
+        $queryParams = ArrayKeyConverter::convertToSnakeCase($queryParams);
+
+        return $this->systemLogRepository->findPaginated($queryParams)
             ->customPaginate(function ($items) {
                 return collect($items)->map->format(); // ใช้ format จาก Model
             }, $queryParams);
