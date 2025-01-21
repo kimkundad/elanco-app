@@ -2,12 +2,18 @@
 
 namespace App\Models;
 
+use App\Scopes\Courses\CourseScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class course extends Model
 {
     use HasFactory;
+
+    protected static function booted()
+    {
+        static::addGlobalScope(new CourseScope());
+    }
 
     protected $fillable = [
         'course_title', 'course_id', 'course_img', 'course_preview', 'duration', 'url_video', 'status', 'ratting'
