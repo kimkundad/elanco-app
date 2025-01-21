@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\SurveyParticipantsExport;
 use Illuminate\Http\Request;
 use App\Models\Survey;
 use App\Models\SurveyQuestion;
@@ -13,56 +14,56 @@ use App\Models\CourseAction;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel;
 
-class SurvayController extends Controller
+class SurveyController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
-{
-    $search = $request->input('search');
+    {
+        $search = $request->input('search');
 
-    try {
-        $objs = Survey::with([
-            'courses.countries' => function ($query) {
-                $query->select('countries.id', 'countries.name', 'countries.flag'); // ดึงเฉพาะ field ที่ต้องการ
-            }
-        ])
-        ->withCount([
-            'courses as total_courses', // นับจำนวน Courses ที่เชื่อมโยงกับ Survey
-            'responses as total_responses', // นับจำนวน Responses ของ Survey
-        ])
-        ->when($search, function ($query, $search) {
-            $query->where('survey_title', 'LIKE', "%$search%") // ค้นหาชื่อ Survey
-                  ->orWhere('survey_id', 'LIKE', "%$search%") // ค้นหารหัส Survey
-                  ->orWhere('expire_date', 'LIKE', "%$search%"); // ค้นหาวันหมดอายุ
-        })
-        ->paginate(10); // ใช้ pagination (10 รายการต่อหน้า)
+        try {
+            $objs = Survey::with([
+                'courses.countries' => function ($query) {
+                    $query->select('countries.id', 'countries.name', 'countries.flag'); // ดึงเฉพาะ field ที่ต้องการ
+                }
+            ])
+                ->withCount([
+                    'courses as total_courses', // นับจำนวน Courses ที่เชื่อมโยงกับ Survey
+                    'responses as total_responses', // นับจำนวน Responses ของ Survey
+                ])
+                ->when($search, function ($query, $search) {
+                    $query->where('survey_title', 'LIKE', "%$search%") // ค้นหาชื่อ Survey
+                    ->orWhere('survey_id', 'LIKE', "%$search%") // ค้นหารหัส Survey
+                    ->orWhere('expire_date', 'LIKE', "%$search%"); // ค้นหาวันหมดอายุ
+                })
+                ->paginate(10); // ใช้ pagination (10 รายการต่อหน้า)
 
-        // Filter เฉพาะ countries ที่เกี่ยวข้อง
-        $objs->transform(function ($survey) {
-            $countries = $survey->courses->pluck('countries')->flatten()->unique('id'); // รวม countries จาก courses
-            $survey->countries = $countries; // เพิ่ม attribute `countries` ให้ Survey
-            unset($survey->courses); // ลบ courses ออกจาก response (ถ้าไม่ต้องการ)
-            return $survey;
-        });
+            // Filter เฉพาะ countries ที่เกี่ยวข้อง
+            $objs->transform(function ($survey) {
+                $countries = $survey->courses->pluck('countries')->flatten()->unique('id'); // รวม countries จาก courses
+                $survey->countries = $countries; // เพิ่ม attribute `countries` ให้ Survey
+                unset($survey->courses); // ลบ courses ออกจาก response (ถ้าไม่ต้องการ)
+                return $survey;
+            });
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Surveys retrieved successfully.',
-            'data' => $objs,
-        ], 200);
+            return response()->json([
+                'success' => true,
+                'message' => 'Surveys retrieved successfully.',
+                'data' => $objs,
+            ], 200);
 
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Internal Server Error',
-            'error' => $e->getMessage(),
-        ], 500);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Internal Server Error',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
-}
-
 
     /**
      * Show the form for creating a new resource.
@@ -119,12 +120,11 @@ class SurvayController extends Controller
         }
     }
 
-
     /**
      * Display the specified resource.
      */
 
-     private function calculateDuration($startDate, $completionDate)
+    private function calculateDuration($startDate, $completionDate)
     {
         $start = Carbon::parse($startDate);
         $completion = Carbon::parse($completionDate);
@@ -136,7 +136,7 @@ class SurvayController extends Controller
         return sprintf('%dD %dHrs %dMins', $days, $hours, $minutes);
     }
 
-     public function getSurveyParticipants(Request $request, string $id)
+    public function getSurveyParticipants(Request $request, string $id)
     {
         try {
             // ตัวกรองข้อมูล
@@ -249,18 +249,23 @@ class SurvayController extends Controller
         }
     }
 
+    public function exportSurveyParticipants($id)
+    {
+        $fileName = 'survey_participants_' . $id . '_' . now()->format('Y_m_d_H_i_s') . '.xlsx';
+        return Excel::download(new SurveyParticipantsExport($id), $fileName);
+    }
 
-     public function getSurveyAnsList(Request $request, string $id)
-     {
-         try {
-             $search = $request->input('search', ''); // ค้นหาคำถาม
-             $courseId = $request->input('course_id'); // รับ course_id สำหรับกรองข้อมูล
+    public function getSurveyAnsList(Request $request, string $id)
+    {
+        try {
+            $search = $request->input('search', ''); // ค้นหาคำถาม
+            $courseId = $request->input('course_id'); // รับ course_id สำหรับกรองข้อมูล
 
-             // ดึง Survey พร้อม Questions และ Answers
-             $survey = Survey::with(['questions.answers'])->findOrFail($id);
-             $enrolled = CourseAction::count();
-             // จำนวนผู้ตอบ Survey ทั้งหมด
-             $totalParticipants = SurveyResponse::where('survey_id', $id)
+            // ดึง Survey พร้อม Questions และ Answers
+            $survey = Survey::with(['questions.answers'])->findOrFail($id);
+            $enrolled = CourseAction::count();
+            // จำนวนผู้ตอบ Survey ทั้งหมด
+            $totalParticipants = SurveyResponse::where('survey_id', $id)
                 ->when($courseId, function ($query) use ($courseId) {
                     $query->whereHas('surveyResponseAnswers', function ($subQuery) use ($courseId) {
                         $subQuery->where('course_id', $courseId);
@@ -269,45 +274,45 @@ class SurvayController extends Controller
                 ->distinct('user_id')
                 ->count('user_id');
 
-             // ดึง Questions พร้อมคำตอบและคำนวณเปอร์เซ็นต์การเลือก
-             $questions = $survey->questions()
-                 ->when($search, function ($query, $search) {
-                     $query->where('question_detail', 'LIKE', "%$search%");
-                 })
-                 ->with(['answers' => function ($query) use ($id, $courseId) {
-                     $query->withCount(['surveyResponseAnswers as selected_count' => function ($subQuery) use ($id, $courseId) {
-                         $subQuery->whereHas('surveyResponse', function ($responseQuery) use ($id, $courseId) {
-                             $responseQuery->where('survey_id', $id);
-                             if ($courseId) {
-                                 $responseQuery->where('course_id', $courseId);
-                             }
-                         });
-                     }]);
-                 }])
-                 ->paginate(5); // Pagination
+            // ดึง Questions พร้อมคำตอบและคำนวณเปอร์เซ็นต์การเลือก
+            $questions = $survey->questions()
+                ->when($search, function ($query, $search) {
+                    $query->where('question_detail', 'LIKE', "%$search%");
+                })
+                ->with(['answers' => function ($query) use ($id, $courseId) {
+                    $query->withCount(['surveyResponseAnswers as selected_count' => function ($subQuery) use ($id, $courseId) {
+                        $subQuery->whereHas('surveyResponse', function ($responseQuery) use ($id, $courseId) {
+                            $responseQuery->where('survey_id', $id);
+                            if ($courseId) {
+                                $responseQuery->where('course_id', $courseId);
+                            }
+                        });
+                    }]);
+                }])
+                ->paginate(5); // Pagination
 
-             // แปลงข้อมูลคำถามและคำตอบ
-             $formattedQuestions = $questions->map(function ($question) use ($totalParticipants) {
-                 return [
-                     'id' => $question->id,
-                     'question' => $question->question_detail,
-                     'choices' => $question->answers->map(function ($answer) use ($totalParticipants) {
-                         $selectedCount = $answer->selected_count ?? 0;
-                         $percentage = $totalParticipants > 0
-                             ? round(($selectedCount / $totalParticipants) * 100, 2)
-                             : 0;
+            // แปลงข้อมูลคำถามและคำตอบ
+            $formattedQuestions = $questions->map(function ($question) use ($totalParticipants) {
+                return [
+                    'id' => $question->id,
+                    'question' => $question->question_detail,
+                    'choices' => $question->answers->map(function ($answer) use ($totalParticipants) {
+                        $selectedCount = $answer->selected_count ?? 0;
+                        $percentage = $totalParticipants > 0
+                            ? round(($selectedCount / $totalParticipants) * 100, 2)
+                            : 0;
 
-                         return [
-                             'id' => $answer->id,
-                             'text' => $answer->answer_text,
-                             'selected_count' => $selectedCount,
-                             'percentage' => "{$percentage}%",
-                         ];
-                     }),
-                 ];
-             });
+                        return [
+                            'id' => $answer->id,
+                            'text' => $answer->answer_text,
+                            'selected_count' => $selectedCount,
+                            'percentage' => "{$percentage}%",
+                        ];
+                    }),
+                ];
+            });
 
-             $courseLinked = $survey->courses->map(function ($course) {
+            $courseLinked = $survey->courses->map(function ($course) {
                 return [
                     'id' => $course->id,
                     'course_id' => $course->course_id,
@@ -329,36 +334,35 @@ class SurvayController extends Controller
                 ];
             });
 
-             // ส่งข้อมูลกลับ
-             return response()->json([
-                 'success' => true,
-                 'message' => 'Survey questions retrieved successfully.',
-                 'data' => [
-                     'total_participants' => $totalParticipants,
-                     'total_enrolled' => $enrolled,
-                     'questions' => $formattedQuestions,
-                     'pagination' => [
-                         'current_page' => $questions->currentPage(),
-                         'last_page' => $questions->lastPage(),
-                         'total' => $questions->total(),
-                     ],
-                     'courseLinked' => $courseLinked
-                 ],
-             ], 200);
-         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-             return response()->json([
-                 'success' => false,
-                 'message' => 'Survey not found.',
-             ], 404);
-         } catch (\Exception $e) {
-             return response()->json([
-                 'success' => false,
-                 'message' => 'An error occurred while retrieving survey questions.',
-                 'error' => $e->getMessage(),
-             ], 500);
-         }
-     }
-
+            // ส่งข้อมูลกลับ
+            return response()->json([
+                'success' => true,
+                'message' => 'Survey questions retrieved successfully.',
+                'data' => [
+                    'total_participants' => $totalParticipants,
+                    'total_enrolled' => $enrolled,
+                    'questions' => $formattedQuestions,
+                    'pagination' => [
+                        'current_page' => $questions->currentPage(),
+                        'last_page' => $questions->lastPage(),
+                        'total' => $questions->total(),
+                    ],
+                    'courseLinked' => $courseLinked
+                ],
+            ], 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Survey not found.',
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving survey questions.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 
     public function show(Request $request, string $id)
     {
@@ -373,16 +377,16 @@ class SurvayController extends Controller
                 'creator',
                 'courses' => function ($query) {
                     $query->with(['countries']) // ดึงข้อมูลประเทศของคอร์ส
-                        ->withCount([
-                            'courseActions as Enrolled', // จำนวนผู้ลงทะเบียนทั้งหมด
-                            'courseActions as SummitCompleted' => function ($subQuery) {
-                                $subQuery->where('isFinishCourse', 1); // จำนวนผู้ลงทะเบียนสำเร็จ
-                            }
-                        ]);
+                    ->withCount([
+                        'courseActions as Enrolled', // จำนวนผู้ลงทะเบียนทั้งหมด
+                        'courseActions as SummitCompleted' => function ($subQuery) {
+                            $subQuery->where('isFinishCourse', 1); // จำนวนผู้ลงทะเบียนสำเร็จ
+                        }
+                    ]);
                 }
             ])
-            ->withCount('responses as total_responses') // นับจำนวนผู้ตอบ Survey
-            ->findOrFail($id);
+                ->withCount('responses as total_responses') // นับจำนวนผู้ตอบ Survey
+                ->findOrFail($id);
 
             // จำนวนผู้ตอบ Survey ทั้งหมด
             $summitReport = SurveyResponse::where('survey_id', $id)->count();
@@ -417,17 +421,17 @@ class SurvayController extends Controller
                 DB::raw('YEAR(created_at) as year'), // ปี
                 DB::raw('COUNT(id) as total_responses') // จำนวนผู้ตอบ Survey
             )
-            ->where('survey_id', $id) // เฉพาะ Survey ID นี้
-            ->when($startDate, function ($query) use ($startDate) {
-                $query->whereDate('created_at', '>=', $startDate); // เริ่มจาก start_date
-            })
-            ->when($endDate, function ($query) use ($endDate) {
-                $query->whereDate('created_at', '<=', $endDate); // ถึง end_date
-            })
-            ->groupBy(DB::raw('YEAR(created_at)'), DB::raw('MONTH(created_at)')) // จัดกลุ่มตามปีและเดือน
-            ->orderBy(DB::raw('YEAR(created_at)'), 'DESC') // เรียงลำดับปี
-            ->orderBy(DB::raw('MONTH(created_at)'), 'DESC') // เรียงลำดับเดือน
-            ->get();
+                ->where('survey_id', $id) // เฉพาะ Survey ID นี้
+                ->when($startDate, function ($query) use ($startDate) {
+                    $query->whereDate('created_at', '>=', $startDate); // เริ่มจาก start_date
+                })
+                ->when($endDate, function ($query) use ($endDate) {
+                    $query->whereDate('created_at', '<=', $endDate); // ถึง end_date
+                })
+                ->groupBy(DB::raw('YEAR(created_at)'), DB::raw('MONTH(created_at)')) // จัดกลุ่มตามปีและเดือน
+                ->orderBy(DB::raw('YEAR(created_at)'), 'DESC') // เรียงลำดับปี
+                ->orderBy(DB::raw('MONTH(created_at)'), 'DESC') // เรียงลำดับเดือน
+                ->get();
 
             // เตรียมข้อมูลกราฟแท่ง
             $barChartData = $surveyResponsesByMonth->map(function ($item) {
@@ -460,12 +464,6 @@ class SurvayController extends Controller
         }
     }
 
-
-
-
-
-
-
     /**
      * Show the form for editing the specified resource.
      */
@@ -473,54 +471,50 @@ class SurvayController extends Controller
     {
         //
         $objs = Survey::find($id);
-        $data['url'] = url('admin/survey/'.$id);
+        $data['url'] = url('admin/survey/' . $id);
         $data['method'] = "put";
         $data['objs'] = $objs;
         return view('admin.survey.edit', $data);
     }
 
-
     public function deleteAnswer(string $answerId)
-{
-    DB::beginTransaction();
+    {
+        DB::beginTransaction();
 
-    try {
-        // ค้นหา Answer ที่ต้องการลบ
-        $answer = SurveyAnswer::findOrFail($answerId);
+        try {
+            // ค้นหา Answer ที่ต้องการลบ
+            $answer = SurveyAnswer::findOrFail($answerId);
 
-        // ตรวจสอบว่า Answer ถูกใช้ใน SurveyResponseAnswer หรือไม่
-        $isUsed = SurveyResponseAnswer::where('survey_answer_id', $answer->id)->exists();
+            // ตรวจสอบว่า Answer ถูกใช้ใน SurveyResponseAnswer หรือไม่
+            $isUsed = SurveyResponseAnswer::where('survey_answer_id', $answer->id)->exists();
 
-        if ($isUsed) {
+            if ($isUsed) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot delete the answer because it is used in survey responses.',
+                ], 400);
+            }
+
+            // ลบ Answer
+            $answer->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Answer deleted successfully.',
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
             return response()->json([
                 'success' => false,
-                'message' => 'Cannot delete the answer because it is used in survey responses.',
-            ], 400);
+                'message' => 'Failed to delete answer.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        // ลบ Answer
-        $answer->delete();
-
-        DB::commit();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Answer deleted successfully.',
-        ], 200);
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to delete answer.',
-            'error' => $e->getMessage(),
-        ], 500);
     }
-}
-
-
-
 
     public function updateSurveyQuestion(Request $request, string $id)
     {
@@ -589,7 +583,6 @@ class SurvayController extends Controller
         }
     }
 
-
     /**
      * Update the specified resource in storage.
      */
@@ -647,8 +640,6 @@ class SurvayController extends Controller
         }
     }
 
-
-
     public function update(Request $request, string $id)
     {
         $request->validate([
@@ -684,8 +675,6 @@ class SurvayController extends Controller
             ], 500);
         }
     }
-
-
 
     /**
      * Remove the specified resource from storage.
@@ -733,7 +722,6 @@ class SurvayController extends Controller
         }
     }
 
-
     public function destroyQuestion($id)
     {
         DB::beginTransaction();
@@ -768,6 +756,4 @@ class SurvayController extends Controller
             ], 500);
         }
     }
-
-
 }

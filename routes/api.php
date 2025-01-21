@@ -12,7 +12,7 @@ use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\QuizController;
-use App\Http\Controllers\SurvayController;
+use App\Http\Controllers\SurveyController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\AdminController;
 
@@ -108,24 +108,24 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
     Route::get('/admin/question/{id}', [QuizController::class, 'questionID']);
     Route::post('/admin/question/{id}', [QuizController::class, 'questionUpdate']);
     Route::delete('/admin/question/{id}', [QuizController::class, 'questionDelete']);
-    Route::delete('/admin/deleteAnswer/{id}', [SurvayController::class, 'deleteAnswerQuiz']);
+    Route::delete('/admin/deleteAnswer/{id}', [SurveyController::class, 'deleteAnswerQuiz']);
 
-    Route::get('/admin/getSurveyAnsList/{id}', [SurvayController::class, 'getSurveyAnsList']);
-    Route::get('/admin/surveyParticipants/{id}', [SurvayController::class, 'getSurveyParticipants']);
-    Route::get('/admin/survey', [SurvayController::class, 'index']);
-    Route::get('/admin/survey/{id}', [SurvayController::class, 'show']);
-
+    Route::get('/admin/getSurveyAnsList/{id}', [SurveyController::class, 'getSurveyAnsList']);
+    Route::get('/admin/surveyParticipants/{id}', [SurveyController::class, 'getSurveyParticipants']);
+    Route::get('/admin/surveyParticipants/{id}/export', [SurveyController::class, 'exportSurveyParticipants']);
+    Route::get('/admin/survey', [SurveyController::class, 'index']);
+    Route::get('/admin/survey/{id}', [SurveyController::class, 'show']);
 
     Route::middleware(['log.system'])->group(function () {
-        Route::post('/admin/survey', [SurvayController::class, 'store']);
-        Route::put('/admin/survey/{id}', [SurvayController::class, 'update']);
-        Route::delete('/admin/survey/{id}', [SurvayController::class, 'destroy']);
-        Route::delete('/admin/del-question-survey/{id}', [SurvayController::class, 'destroyQuestion']);
+        Route::post('/admin/survey', [SurveyController::class, 'store']);
+        Route::put('/admin/survey/{id}', [SurveyController::class, 'update']);
+        Route::delete('/admin/survey/{id}', [SurveyController::class, 'destroy']);
+        Route::delete('/admin/del-question-survey/{id}', [SurveyController::class, 'destroyQuestion']);
     });
 
-    Route::post('/admin/postSurveyQuestion/{id}', [SurvayController::class, 'SurveyQuestion']);
-    Route::put('/admin/survey-question/{id}', [SurvayController::class, 'updateSurveyQuestion']);
-    Route::delete('/admin/answer/{id}', [SurvayController::class, 'deleteAnswer']);
+    Route::post('/admin/postSurveyQuestion/{id}', [SurveyController::class, 'SurveyQuestion']);
+    Route::put('/admin/survey-question/{id}', [SurveyController::class, 'updateSurveyQuestion']);
+    Route::delete('/admin/answer/{id}', [SurveyController::class, 'deleteAnswer']);
 
     Route::get('/admin/members', [MemberController::class, 'index']);
     Route::get('/admin/member/{id}', [MemberController::class, 'getMemberDetail']);

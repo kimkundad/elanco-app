@@ -88,7 +88,7 @@ class HomeBannerService
 
             $maxOrder = $this->homeBannerRepository->findMaxOrder();
             if ($newOrder > $maxOrder) {
-                $newOrder = $currentOrder;
+                $newOrder = $maxOrder;
             }
 
             if ($newOrder !== $currentOrder) {

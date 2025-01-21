@@ -88,7 +88,7 @@ class PageBannerService
 
             $maxOrder = $this->pageBannerRepository->findMaxOrder();
             if ($newOrder > $maxOrder) {
-                $newOrder = $currentOrder;
+                $newOrder = $maxOrder;
             }
 
             if ($newOrder !== $currentOrder) {
