@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\CourseReviewExport;
 use Illuminate\Http\Request;
 use App\Models\course;
 use App\Models\Country;
@@ -21,6 +22,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Maatwebsite\Excel\Facades\Excel;
 
 class CourseController extends Controller
 {
@@ -336,8 +338,7 @@ class CourseController extends Controller
     /**
      * Display the specified resource.
      */
-
-     public function courseReview(Request $request, string $id)
+    public function courseReview(Request $request, string $id)
     {
         try {
             $search = $request->input('search'); // คำค้นหา
@@ -345,7 +346,7 @@ class CourseController extends Controller
 
             // ดึงข้อมูล Rating จาก courseActions
             $ratings = CourseAction::with(['user.countryDetails']) // ดึงข้อมูล User และประเทศ
-                ->where('course_id', $id)
+            ->where('course_id', $id)
                 ->when($search, function ($query, $search) {
                     // ค้นหาจากชื่อผู้ใช้ (firstName, lastName) หรืออีเมล
                     $query->whereHas('user', function ($userQuery) use ($search) {
@@ -403,9 +404,14 @@ class CourseController extends Controller
         }
     }
 
-
-
-
+    /**
+     * Export system logs to a CSV file.
+     */
+    public function exportCourseReview($id)
+    {
+        $fileName = 'course_reviews_' . $id . '_' . now()->format('Y_m_d_H_i_s') . '.xlsx';
+        return Excel::download(new CourseReviewExport($id), $fileName);
+    }
 
     public function show(Request $request, string $id)
     {
@@ -442,24 +448,23 @@ class CourseController extends Controller
             $surveyPercentage = $totalEnrolled > 0 ? round(($surveySummit / $totalEnrolled) * 100) : 0;
 
             // กราฟแท่งแสดงจำนวนผู้ลงทะเบียนในแต่ละเดือน โดยมีการใช้ Date Range
-        $enrollmentQuery = $course->courseActions()
-        ->selectRaw('MONTH(created_at) as month, COUNT(*) as count')
-        ->groupBy('month')
-        ->orderBy('month');
+            $enrollmentQuery = $course->courseActions()
+                ->selectRaw('MONTH(created_at) as month, COUNT(*) as count')
+                ->groupBy('month')
+                ->orderBy('month');
 
-        // เพิ่มการกรองตาม Date Range
-        if ($startDate && $endDate) {
-            $enrollmentQuery->whereBetween('created_at', [
-                Carbon::parse($startDate)->startOfDay(),
-                Carbon::parse($endDate)->endOfDay()
-            ]);
-        }
+            // เพิ่มการกรองตาม Date Range
+            if ($startDate && $endDate) {
+                $enrollmentQuery->whereBetween('created_at', [
+                    Carbon::parse($startDate)->startOfDay(),
+                    Carbon::parse($endDate)->endOfDay()
+                ]);
+            }
 
-
-        $enrollmentReport = $enrollmentQuery->get()
-            ->mapWithKeys(function ($row) {
-                return [date('M', mktime(0, 0, 0, $row->month, 1)) => $row->count];
-            });
+            $enrollmentReport = $enrollmentQuery->get()
+                ->mapWithKeys(function ($row) {
+                    return [date('M', mktime(0, 0, 0, $row->month, 1)) => $row->count];
+                });
 
             // สร้าง Response Data
             $response = [
@@ -767,32 +772,31 @@ class CourseController extends Controller
     }
 
     public function courseStatus($id)
-{
-    try {
-        // Find the course by its ID
-        $course = course::findOrFail($id);
+    {
+        try {
+            // Find the course by its ID
+            $course = course::findOrFail($id);
 
-        // Toggle the status (if 1, set to 0; if 0, set to 1)
-        $course->status = $course->status == 1 ? 0 : 1;
+            // Toggle the status (if 1, set to 0; if 0, set to 1)
+            $course->status = $course->status == 1 ? 0 : 1;
 
-        // Save the updated status
-        $course->save();
+            // Save the updated status
+            $course->save();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Course status updated successfully.',
-            'data' => [
-                'course_id' => $course->id,
-                'status' => $course->status // Return the new status
-            ]
-        ], 200);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to update course status.',
-            'error' => $e->getMessage()
-        ], 500);
+            return response()->json([
+                'success' => true,
+                'message' => 'Course status updated successfully.',
+                'data' => [
+                    'course_id' => $course->id,
+                    'status' => $course->status // Return the new status
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update course status.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
-}
-
 }

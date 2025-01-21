@@ -87,7 +87,9 @@ class PageBannerService
             $newOrder = max(1, $newOrder);
 
             $maxOrder = $this->pageBannerRepository->findMaxOrder();
-            $newOrder = min($newOrder, $maxOrder + 1);
+            if ($newOrder > $maxOrder) {
+                $newOrder = $currentOrder;
+            }
 
             if ($newOrder !== $currentOrder) {
                 if ($newOrder > $currentOrder) {
@@ -105,10 +107,10 @@ class PageBannerService
             $uploadedImages = $this->uploadImages($request, $id);
             $data = array_merge($data, $uploadedImages);
 
+            $data['order'] = $newOrder;
             $updatedBanner = $this->pageBannerRepository->update($id, $data);
 
             $filesToRemove = array_intersect_key($oldImages, $uploadedImages);
-
             if (!empty($filesToRemove)) {
                 ImageUploadService::removeFiles(array_values($filesToRemove));
             }
@@ -122,7 +124,7 @@ class PageBannerService
         } catch (Exception $e) {
             DB::rollBack();
 
-            foreach ($filesToRemove ?? [] as $key => $filePath) {
+            foreach ($filesToRemove ?? [] as $filePath) {
                 if (!Storage::disk('do_spaces')->exists($filePath)) {
                     $content = file_get_contents($filePath);
                     ImageUploadService::restoreImage($filePath, $content);

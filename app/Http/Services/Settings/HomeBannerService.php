@@ -87,7 +87,9 @@ class HomeBannerService
             $newOrder = max(1, $newOrder);
 
             $maxOrder = $this->homeBannerRepository->findMaxOrder();
-            $newOrder = min($newOrder, $maxOrder + 1);
+            if ($newOrder > $maxOrder) {
+                $newOrder = $currentOrder;
+            }
 
             if ($newOrder !== $currentOrder) {
                 if ($newOrder > $currentOrder) {
@@ -105,10 +107,10 @@ class HomeBannerService
             $uploadedImages = $this->uploadImages($request, $id);
             $data = array_merge($data, $uploadedImages);
 
+            $data['order'] = $newOrder;
             $updatedBanner = $this->homeBannerRepository->update($id, $data);
 
             $filesToRemove = array_intersect_key($oldImages, $uploadedImages);
-
             if (!empty($filesToRemove)) {
                 ImageUploadService::removeFiles(array_values($filesToRemove));
             }
