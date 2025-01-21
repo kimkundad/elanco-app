@@ -456,6 +456,7 @@ $courses = $quiz->courses->map(function ($course) {
     return [
         'course_id' => $course->course_id,
         'course_title' => $course->course_title,
+        'course_img' => $course->course_img,
         'course_description' => $course->course_description,
         'rating' => $rating, // คะแนน Rating
         'total_enrolled' => $totalEnrolled, // จำนวนผู้ลงทะเบียนทั้งหมด
