@@ -75,6 +75,7 @@ Route::middleware(['auth:api'])->group(function () {
     });
 });
 
+
 Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () {
 
     Route::get('/admin/course', [CourseController::class, 'index']);
