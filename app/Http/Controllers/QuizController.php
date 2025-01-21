@@ -170,7 +170,8 @@ class QuizController extends Controller
         // ดึงคอร์สที่เกี่ยวข้องกับ Quiz
         $courses = $quiz->courses->map(function ($course) {
             return [
-                'course_id' => $course->id,
+                'id' => $course->id,
+                'course_id' => $course->course_id,
                 'course_title' => $course->course_title,
                 'course_img' => $course->course_img,
                 'main_categories' => $course->mainCategories->pluck('name'),
@@ -465,6 +466,7 @@ $courses = $quiz->courses->map(function ($course) {
         ->value('updated_at');
 
     return [
+        'id' => $course->id,
         'course_id' => $course->course_id,
         'course_title' => $course->course_title,
         'course_img' => $course->course_img,
