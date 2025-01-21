@@ -3,6 +3,7 @@
 namespace App\Http\Services\Users;
 
 use App\Http\Repositories\Users\UserActivityRepository;
+use App\Http\Utils\ArrayKeyConverter;
 
 class UserActivityService
 {
@@ -13,13 +14,18 @@ class UserActivityService
         $this->userActivityRepository = $userActivityRepository;
     }
 
-    public function findAll()
+    public function findAll(array $queryParams)
     {
-        $queryParams = request()->query();
-        return $this->userActivityRepository->findPaginated()
+        $paginationParams = array_filter($queryParams, function ($key) {
+            return in_array($key, ['page', 'per_page']);
+        }, ARRAY_FILTER_USE_KEY);
+
+        $queryParams = ArrayKeyConverter::convertToSnakeCase($queryParams);
+
+        return $this->userActivityRepository->findPaginated($queryParams)
             ->customPaginate(function ($items) {
                 return collect($items)->map->format(); // ใช้ format จาก Model
-            }, $queryParams);
+            }, $paginationParams);
     }
 
     public function findById($id)
