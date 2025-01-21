@@ -21,10 +21,10 @@ class SystemLogController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $response = $this->systemLogService->findAll();
+            $response = $this->systemLogService->findAll($request->query());
             return response()->json($response);
         } catch (Exception $e) {
             return response()->json([
