@@ -10,4 +10,9 @@ class SurveyAnswer extends Model
     use HasFactory;
 
     protected $fillable = ['survey_question_id', 'answer_text', 'sort_order'];
+
+    public function surveyResponseAnswers()
+    {
+        return $this->hasMany(SurveyResponseAnswer::class, 'survey_answer_id');
+    }
 }

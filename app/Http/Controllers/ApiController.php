@@ -956,6 +956,7 @@ public function courses(Request $request)
             'answers.*.question_id' => 'required|integer|exists:survey_questions,id', // ตรวจสอบว่า question_id มีอยู่ในฐานข้อมูล
             'answers.*.answer_id' => 'nullable|integer|exists:survey_answers,id', // answer_id (ถ้ามี) ต้องมีอยู่ในฐานข้อมูล
             'answers.*.custom_answer' => 'nullable|string', // custom_answer (ถ้ามี)
+            'answers.*.course_id' => 'nullable',
         ]);
 
         try {
@@ -983,6 +984,7 @@ public function courses(Request $request)
             foreach ($validatedData['answers'] as $answerData) {
                 SurveyResponseAnswer::create([
                     'survey_response_id' => $surveyResponse->id,
+                    'course_id' => $answerData['course_id'],
                     'survey_question_id' => $answerData['question_id'],
                     'survey_answer_id' => $answerData['answer_id'] ?? null, // ถ้าเป็น null แปลว่าผู้ใช้กรอก custom_answer
                     'custom_answer' => $answerData['custom_answer'] ?? null,

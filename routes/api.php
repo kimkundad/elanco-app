@@ -108,8 +108,11 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
     Route::delete('/admin/question/{id}', [QuizController::class, 'questionDelete']);
     Route::delete('/admin/deleteAnswer/{id}', [SurvayController::class, 'deleteAnswerQuiz']);
 
+    Route::get('/admin/getSurveyAnsList/{id}', [SurvayController::class, 'getSurveyAnsList']);
     Route::get('/admin/survey', [SurvayController::class, 'index']);
     Route::get('/admin/survey/{id}', [SurvayController::class, 'show']);
+
+
     Route::middleware(['log.system'])->group(function () {
         Route::post('/admin/survey', [SurvayController::class, 'store']);
         Route::put('/admin/survey/{id}', [SurvayController::class, 'update']);
