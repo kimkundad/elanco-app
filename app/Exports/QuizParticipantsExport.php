@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use App\Http\Utils\TimeDurationCalculator;
 use App\Models\CourseAction;
 use App\Models\QuizUserAnswer;
 use Illuminate\Support\Carbon;
@@ -50,11 +51,7 @@ class QuizParticipantsExport implements FromCollection, WithHeadings
                 $startDate = Carbon::parse($participant->created_at);
                 $completionDate = Carbon::parse($participant->updated_at);
 
-                $days = $startDate->diffInDays($completionDate);
-                $hours = $startDate->diffInHours($completionDate) % 24;
-                $minutes = $startDate->diffInMinutes($completionDate) % 60;
-
-                $duration = sprintf('%dD %dHrs %dMins', $days, $hours, $minutes);
+                $duration = TimeDurationCalculator::calculateTimeDuration($startDate, $completionDate);
 
                 return [
                     'Country Name' => $participant->user->countryDetails->name ?? 'N/A',
