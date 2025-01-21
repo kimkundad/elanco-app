@@ -13,4 +13,9 @@ class SurveyResponse extends Model
         'survey_id',  // ฟิลด์ survey_id
         'user_id',    // ฟิลด์ user_id
     ];
+
+    public function surveyResponseAnswers()
+    {
+        return $this->hasMany(SurveyResponseAnswer::class, 'survey_response_id');
+    }
 }

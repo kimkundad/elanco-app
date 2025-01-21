@@ -14,6 +14,7 @@ class SurveyResponseAnswer extends Model
         'survey_question_id', // ฟิลด์ survey_question_id
         'survey_answer_id',   // ฟิลด์ survey_answer_id
         'custom_answer',      // ฟิลด์ custom_answer
+        'course_id'
     ];
 
     public function surveyResponse()

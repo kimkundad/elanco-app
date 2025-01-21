@@ -981,7 +981,9 @@ public function courses(Request $request)
             ]);
 
             // บันทึกคำตอบของผู้ใช้
+
             foreach ($validatedData['answers'] as $answerData) {
+
                 SurveyResponseAnswer::create([
                     'survey_response_id' => $surveyResponse->id,
                     'course_id' => $answerData['course_id'],
