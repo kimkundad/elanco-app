@@ -172,6 +172,7 @@ class QuizController extends Controller
             return [
                 'course_id' => $course->id,
                 'course_title' => $course->course_title,
+                'course_img' => $course->course_img,
                 'main_categories' => $course->mainCategories->pluck('name'),
             ];
         });
