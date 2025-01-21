@@ -148,6 +148,7 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
 
     Route::get('/admin/system-logs', [SystemLogController::class, 'index']);
 
+
     Route::get('/admin/settings/page-banners', [PageBannerController::class, 'index']);
     Route::post('/admin/settings/page-banners', [PageBannerController::class, 'store']);
     Route::post('/admin/settings/page-banners/edit/{id}', [PageBannerController::class, 'update']);
