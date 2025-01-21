@@ -881,10 +881,12 @@ public function courses(Request $request)
 
             $correctAnswer = $question->answers->firstWhere('answers_status', 1);
 
+
             // บันทึกคำตอบของ User
             DB::table('quiz_user_answers')->insert([
                 'user_id' => $user->id,
                 'quiz_id' => $quiz->id,
+                'course_id' => $request->course_id,
                 'question_id' => $question->id,
                 'answer_id' => $submittedAnswerId,
                 'created_at' => now(),
