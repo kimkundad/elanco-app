@@ -8,8 +8,12 @@ use App\Models\quiz;
 use App\Models\answer;
 use App\Models\question;
 use App\Models\QuizAttempt;
+use App\Models\QuizUserAnswer;
+use App\Models\CourseAction;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class QuizController extends Controller
 {
@@ -107,6 +111,7 @@ class QuizController extends Controller
            $objs->certificate = $request->certificate === 'Yes' ? true : false;
            $objs->point_cpd = $request->point_cpd;
            $objs->code_number = $request->code_number;
+           $objs->created_by = Auth::id(); // เพิ่ม ID ของผู้สร้าง
            $objs->save();
 
            return response()->json([
@@ -126,46 +131,384 @@ class QuizController extends Controller
      * Display the specified resource.
      */
 
-    public function questionID(string $id){
+        public function questionID(string $id){
 
-        try {
-            // ดึงข้อมูล Question พร้อมคำตอบ (Answers)
-            $question = Question::with('answers:id,questions_id,answers,answers_status') // เลือกฟิลด์ที่ต้องการจาก answers
-                ->findOrFail($id); // ถ้าไม่เจอ Question จะส่ง 404
+            try {
+                // ดึงข้อมูล Question พร้อมคำตอบ (Answers)
+                $question = Question::with('answers:id,questions_id,answers,answers_status') // เลือกฟิลด์ที่ต้องการจาก answers
+                    ->findOrFail($id); // ถ้าไม่เจอ Question จะส่ง 404
 
-            // ส่งข้อมูลกลับในรูปแบบ JSON
-            return response()->json([
-                'success' => true,
-                'message' => 'Question details retrieved successfully.',
-                'data' => $question,
-            ], 200);
-        } catch (\Exception $e) {
-            // จัดการข้อผิดพลาดทั่วไป
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to retrieve question details.',
-                'error' => $e->getMessage(),
-            ], 500);
+                // ส่งข้อมูลกลับในรูปแบบ JSON
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Question details retrieved successfully.',
+                    'data' => $question,
+                ], 200);
+            } catch (\Exception $e) {
+                // จัดการข้อผิดพลาดทั่วไป
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to retrieve question details.',
+                    'error' => $e->getMessage(),
+                ], 500);
+            }
+
         }
 
-    }
 
-    public function show(string $id)
+        public function getQuizParticipants(Request $request, string $quizId)
+{
+    try {
+        // ตัวกรองข้อมูล
+        $search = $request->input('search', ''); // ค้นหาชื่อผู้ใช้
+        $courseId = $request->input('course_id', null); // ค้นหาด้วย course_id
+        $sortByPass = $request->input('sortByPass', 'desc'); // การเรียงลำดับ pass %
+
+        // ดึงข้อมูล Quiz
+        $quiz = quiz::with('courses.mainCategories')->findOrFail($quizId);
+
+        // ดึงคอร์สที่เกี่ยวข้องกับ Quiz
+        $courses = $quiz->courses->map(function ($course) {
+            return [
+                'id' => $course->id,
+                'course_id' => $course->course_id,
+                'course_title' => $course->course_title,
+                'course_img' => $course->course_img,
+                'main_categories' => $course->mainCategories->pluck('name'),
+            ];
+        });
+
+        // จำนวนคนที่เข้าร่วม Quiz
+        $totalParticipants = QuizUserAnswer::where('quiz_id', $quizId)
+            ->when($courseId, function ($query) use ($courseId) {
+                $query->where('course_id', $courseId); // กรองเฉพาะ course_id ที่ส่งมา
+            })
+            ->distinct('user_id')
+            ->count('user_id');
+
+        // จำนวนคนที่ผ่าน Quiz
+        $totalPassed = CourseAction::whereHas('course', function ($query) use ($quizId) {
+                $query->where('id_quiz', $quizId);
+            })
+            ->when($courseId, function ($query) use ($courseId) {
+                $query->where('course_id', $courseId); // กรองเฉพาะ course_id ที่ส่งมา
+            })
+            ->where('isFinishQuiz', 1)
+            ->count();
+
+        // ข้อมูลการเข้าร่วม Quiz
+        $participants = CourseAction::with(['user.countryDetails', 'course.mainCategories'])
+            ->whereHas('course', function ($query) use ($quizId) {
+                $query->where('id_quiz', $quizId); // กรองเฉพาะคอร์สที่เชื่อมโยงกับ Quiz นี้
+            })
+            ->when($courseId, function ($query) use ($courseId) {
+                $query->where('course_id', $courseId); // กรองด้วย course_id
+            })
+            ->when($search, function ($query, $search) {
+                $query->whereHas('user', function ($subQuery) use ($search) {
+                    $subQuery->where('firstName', 'LIKE', "%$search%")
+                        ->orWhere('lastName', 'LIKE', "%$search%");
+                });
+            })
+            ->get()
+            ->map(function ($participant) {
+                // ดึง `id_quiz` จาก Course
+                $quizId = $participant->course->id_quiz;
+
+                // คำนวณคำตอบที่ถูกต้อง
+                $correctAnswers = QuizUserAnswer::where('quiz_id', $quizId)
+                    ->where('user_id', $participant->user_id)
+                    ->whereHas('answer', function ($query) {
+                        $query->where('answers_status', 1); // เฉพาะคำตอบที่ถูกต้อง
+                    })
+                    ->count();
+
+                // คำนวณคำตอบที่ผิด
+                $incorrectAnswers = QuizUserAnswer::where('quiz_id', $quizId)
+                    ->where('user_id', $participant->user_id)
+                    ->whereHas('answer', function ($query) {
+                        $query->where('answers_status', 0); // เฉพาะคำตอบที่ผิด
+                    })
+                    ->count();
+
+                // คำนวณเปอร์เซ็นต์ผ่าน
+                $totalQuestions = $correctAnswers + $incorrectAnswers;
+                $passPercentage = $totalQuestions > 0 ? round(($correctAnswers / $totalQuestions) * 100) : 0;
+
+                $startDate = Carbon::parse($participant->created_at);
+                $completionDate = Carbon::parse($participant->updated_at);
+
+                // คำนวณระยะเวลา
+                $days = $startDate->diffInDays($completionDate);
+                $hours = $startDate->diffInHours($completionDate) % 24;
+                $minutes = $startDate->diffInMinutes($completionDate) % 60;
+
+                // แปลงระยะเวลาเป็นข้อความ
+                $duration = sprintf('%dD %dHrs %dMins', $days, $hours, $minutes);
+
+                return [
+                    'name' => "{$participant->user->firstName} {$participant->user->lastName}",
+                    'country' => $participant->user->countryDetails->name ?? null,
+                    'country_img' => $participant->user->countryDetails->img ?? null,
+                    'clinic' => $participant->user->clinic ?? 'N/A',
+                    'attempts' => 1, // กำหนดให้เป็นค่า default
+                    'correct' => $correctAnswers,
+                    'incorrect' => $incorrectAnswers,
+                    'pass_percentage' => $passPercentage,
+                    'start_date' => $participant->created_at->format('d M Y | h:i A'),
+                    'completion_date' => $participant->updated_at->format('d M Y | h:i A'),
+                    'duration' => $duration,
+                ];
+            });
+
+        // การเรียงลำดับโดย Pass %
+        $sortedParticipants = $sortByPass === 'asc'
+            ? $participants->sortBy('pass_percentage')->values() // เรียงจากน้อยไปมาก
+            : $participants->sortByDesc('pass_percentage')->values(); // เรียงจากมากไปน้อย
+
+        // ส่งข้อมูลกลับ
+        return response()->json([
+            'success' => true,
+            'message' => 'Participants data retrieved successfully.',
+            'data' => [
+                'total_participants' => $totalParticipants,
+                'total_passed' => $totalPassed,
+                'participants' => $sortedParticipants, // คืนค่าแบบ array ที่เรียงแล้ว
+                'course_link' => $courses, // เพิ่มข้อมูลคอร์สที่เกี่ยวข้อง
+            ],
+        ], 200);
+    } catch (\Exception $e) {
+        // จัดการข้อผิดพลาด
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to retrieve participants data.',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
+
+
+
+
+
+
+        public function quizQuestionList(Request $request, string $id)
+{
+    try {
+        $nameQuestion = $request->input('nameQuestion', ''); // ค้นหาชื่อคำถาม
+        $courseId = $request->input('course_id'); // ดึง course_id จาก Request
+
+        // ดึง Quiz พร้อม Questions และ Answers
+        $quiz = Quiz::with(['questions.answers'])->findOrFail($id);
+
+        // จำนวนคนที่ทำ Quiz ทั้งหมด (เฉพาะ course_id ที่ส่งมา)
+        $totalParticipants = QuizUserAnswer::where('quiz_id', $id)
+            ->when($courseId, function ($query) use ($courseId) {
+                $query->where('course_id', $courseId);
+            })
+            ->distinct('user_id')
+            ->count('user_id');
+
+            $totalPassed = CourseAction::whereHas('course', function ($query) use ($id, $courseId) {
+                $query->where('id_quiz', $id);
+                if ($courseId) {
+                    $query->where('id', $courseId); // กรองเฉพาะ course_id
+                }
+            })
+            ->where('isFinishQuiz', 1)
+            ->distinct('user_id')
+            ->count('user_id');
+
+        // ดึง Questions พร้อมคำตอบและการคำนวณเปอร์เซ็นต์
+        $questions = $quiz->questions()
+            ->when($nameQuestion, function ($query, $nameQuestion) {
+                $query->where('detail', 'LIKE', "%$nameQuestion%");
+            })
+            ->with(['answers' => function ($query) use ($id, $courseId) {
+                $query->withCount(['quizUserAnswers as selected_count' => function ($subQuery) use ($id, $courseId) {
+                    $subQuery->where('quiz_id', $id);
+                    if ($courseId) {
+                        $subQuery->where('course_id', $courseId); // กรองเฉพาะ course_id
+                    }
+                }]);
+            }])
+            ->paginate(5); // Pagination
+
+        // แปลงข้อมูล Questions และคำตอบ
+        $formattedQuestions = $questions->map(function ($question) use ($totalParticipants) {
+            return [
+                'id' => $question->id,
+                'question' => $question->detail,
+                'choices' => $question->answers->map(function ($answer) use ($totalParticipants) {
+                    $selectedCount = $answer->selected_count ?? 0; // จำนวนครั้งที่ถูกเลือก
+                    $percentage = $totalParticipants > 0
+                        ? round(($selectedCount / $totalParticipants) * 100, 2)
+                        : 0;
+
+                    return [
+                        'id' => $answer->id,
+                        'text' => $answer->answers,
+                        'selected_count' => $selectedCount,
+                        'percentage' => "{$percentage}%",
+                        'is_correct' => $answer->answers_status === 1,
+                    ];
+                }),
+            ];
+        });
+
+        // ส่งข้อมูลกลับ
+        return response()->json([
+            'success' => true,
+            'message' => 'Quiz questions retrieved successfully.',
+            'data' => [
+                'total_participants' => $totalParticipants,
+                'total_passed' => $totalPassed, // เพิ่มจำนวนคนที่สอบผ่าน
+                'questions' => $formattedQuestions,
+                'pagination' => [
+                    'current_page' => $questions->currentPage(),
+                    'last_page' => $questions->lastPage(),
+                    'total' => $questions->total(),
+                ],
+            ],
+        ], 200);
+    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Quiz not found.',
+        ], 404);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'An error occurred while retrieving quiz details.',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
+
+
+
+
+    public function show(Request $request, string $id)
     {
         try {
-            // ดึงข้อมูล Quiz พร้อม Question และ Answer
+            $startDate = $request->input('start_date'); // วันที่เริ่มต้น
+            $endDate = $request->input('end_date');    // วันที่สิ้นสุด
+
+            // ดึงข้อมูล Quiz พร้อม Question, Answer, และ Courses ที่เกี่ยวข้อง
             $quiz = Quiz::with([
                 'questions.answers' => function ($query) {
                     $query->select('id', 'questions_id', 'answers', 'answers_status'); // เลือกเฉพาะฟิลด์ที่ต้องการ
-                }
-            ])
-            ->findOrFail($id); // ถ้าไม่เจอ Quiz จะส่ง 404
+                },
+                'courses.animalTypes', // ดึง animalTypes ผ่าน courses
+                'creator' // ดึง creator
+            ])->findOrFail($id); // ถ้าไม่เจอ Quiz จะส่ง 404
+
+            // คำนวณจำนวนคำถามทั้งหมด
+            $totalQuestions = $quiz->questions->count();
+
+            // คำนวณจำนวนคนที่ทำ Quiz ทั้งหมด
+            $userMakeQuizCount = $quiz->courses->flatMap(function ($course) {
+                return $course->courseActions()->where('isFinishVideo', 1)->pluck('user_id');
+            })->unique()->count();
+
+            // คำนวณจำนวนคนที่ผ่าน Quiz
+            $passedCount = $quiz->courses->flatMap(function ($course) {
+                return $course->courseActions()->where('isFinishQuiz', 1)->pluck('user_id');
+            })->unique()->count();
+
+            // คำนวณเปอร์เซ็นต์คนที่ผ่าน
+            $passedPercentage = $userMakeQuizCount > 0 ? round(($passedCount / $userMakeQuizCount) * 100) : 0;
+
+            // คำนวณจำนวนคนที่ได้รับ Certificate
+            $certificateReceivedCount = $quiz->courses->flatMap(function ($course) {
+                return $course->courseActions()->where('isFinishCourse', 1)->pluck('user_id');
+            })->unique()->count();
+
+            // ข้อมูลสำหรับกราฟแท่ง: จำนวนคนทำ Quiz ในแต่ละเดือน (6 เดือนล่าสุดหรือในช่วง Date Range)
+            $startDate = $startDate ? Carbon::parse($startDate)->startOfDay() : now()->subMonths(6)->startOfMonth();
+            $endDate = $endDate ? Carbon::parse($endDate)->endOfDay() : now()->endOfMonth();
+
+            $quizActivityQuery = CourseAction::whereIn('course_id', $quiz->courses->pluck('id'))
+                ->where('isFinishQuiz', 1) // เฉพาะคนที่ทำ Quiz เสร็จ
+                ->selectRaw('MONTH(created_at) as month, COUNT(*) as count')
+                ->groupBy('month')
+                ->orderBy('month');
+
+            // เพิ่ม Date Range ในการกรองข้อมูล
+            if ($startDate && $endDate) {
+                $quizActivityQuery->whereBetween('created_at', [$startDate, $endDate]);
+            }
+
+            $quizActivity = $quizActivityQuery->get()
+                ->mapWithKeys(function ($row) {
+                    return [date('M', mktime(0, 0, 0, $row->month, 1)) => $row->count];
+                });
+
+
+                // ดึง Courses ที่เกี่ยวข้องกับ Quiz นี้
+                // ดึง Courses ที่เกี่ยวข้องกับ Quiz นี้
+$courses = $quiz->courses->map(function ($course) {
+    // ดึงจำนวนผู้ลงทะเบียนทั้งหมด
+    $totalEnrolled = $course->courseActions()->count();
+
+    // ดึงจำนวนคนที่เรียนจบ (isFinishCourse = 1)
+    $completedCount = $course->courseActions()->where('isFinishCourse', 1)->count();
+
+    // คำนวณเปอร์เซ็นต์การเรียนจบ
+    $completedPercentage = $totalEnrolled > 0 ? round(($completedCount / $totalEnrolled) * 100) : 0;
+
+    // ดึงคะแนน Rating
+    $rating = number_format($course->ratting, 1);
+
+    // ดึงวันที่ล่าสุดที่มีคนเรียนจบ
+    $lastCompletionDate = $course->courseActions()
+        ->where('isFinishCourse', 1)
+        ->latest('updated_at')
+        ->value('updated_at');
+
+    return [
+        'id' => $course->id,
+        'course_id' => $course->course_id,
+        'course_title' => $course->course_title,
+        'course_img' => $course->course_img,
+        'course_description' => $course->course_description,
+        'rating' => $rating, // คะแนน Rating
+        'total_enrolled' => $totalEnrolled, // จำนวนผู้ลงทะเบียนทั้งหมด
+        'completed_percentage' => $completedPercentage, // % ของคนที่เรียนจบ
+        'last_completion_date' => $lastCompletionDate ? $lastCompletionDate->format('d M Y') : null, // วันที่ล่าสุดที่มีคนเรียนจบ
+        'countries' => $course->countries->map(function ($country) {
+            return [
+                'id' => $country->id,
+                'name' => $country->name,
+            ];
+        }),
+        'mainCategories' => $course->mainCategories->map(function ($category) {
+            return [
+                'id' => $category->id,
+                'name' => $category->name,
+            ];
+        }),
+    ];
+});
+
 
             // ส่งข้อมูลกลับในรูปแบบ JSON
             return response()->json([
                 'success' => true,
                 'message' => 'Quiz details retrieved successfully.',
-                'data' => $quiz,
+                'data' => [
+                    'quiz' => $quiz,
+                    'animal_types' => $quiz->courses->flatMap(function ($course) {
+                        return $course->animalTypes;
+                    })->unique('id')->values(), // รวม animalTypes ที่เกี่ยวข้องและลบซ้ำ
+                    'total_questions' => $totalQuestions,
+                    'user_make_quiz_count' => $userMakeQuizCount,
+                    'passed_count' => $passedCount,
+                    'passed_percentage' => $passedPercentage,
+                    'certificate_received_count' => $certificateReceivedCount,
+                    'quiz_activity_chart' => $quizActivity, // ข้อมูลสำหรับกราฟแท่ง
+                    'course_link' => $courses,
+                ],
             ], 200);
         } catch (\Exception $e) {
             // จัดการข้อผิดพลาด
@@ -176,6 +519,9 @@ class QuizController extends Controller
             ], 500);
         }
     }
+
+
+
 
 
     /**

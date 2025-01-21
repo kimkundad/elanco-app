@@ -144,129 +144,142 @@ class ApiController extends Controller
         }
     }
 
-    public function courses(Request $request)
-    {
-        try {
-            $user = JWTAuth::parseToken()->authenticate();
-            $userCountryId = $user->country;
 
-            // Get filter inputs
-            $search = $request->input('search', '');
-            $topic = $request->input('topic', 'all');
-            $animalType = $request->input('animalType', 'all');
-            $uploadDate = $request->input('uploadDate', 'desc');
-            $ratingOrder = $request->input('rating', 'desc');
-            $durationOrder = $request->input('duration', 'asc');
 
-            // Step 1: Base query
-            $coursesQuery = course::whereHas('countries', function ($query) use ($userCountryId) {
-                $query->where('country_id', $userCountryId);
+public function courses(Request $request)
+{
+    try {
+        $user = JWTAuth::parseToken()->authenticate();
+        $userCountryId = $user->country;
+
+        // Get filter inputs
+        $search = $request->input('search', '');
+        $topic = $request->input('topic', 'all');
+        $animalType = $request->input('animalType', 'all');
+        $uploadDate = $request->input('uploadDate', 'desc');
+        $ratingOrder = $request->input('rating', 'desc');
+        $durationOrder = $request->input('duration', 'asc');
+
+        // Step 1: Base query
+        $coursesQuery = course::whereHas('countries', function ($query) use ($userCountryId) {
+            $query->where('country_id', $userCountryId);
+        })
+            ->when(!empty($search), function ($query) use ($search) {
+                $query->where(function ($subQuery) use ($search) {
+                    $subQuery->where('course_title', 'LIKE', "%$search%")
+                        ->orWhere('course_id', 'LIKE', "%$search%");
+                });
             })
-                ->when(!empty($search), function ($query) use ($search) {
-                    $query->where(function ($subQuery) use ($search) {
-                        $subQuery->where('course_title', 'LIKE', "%$search%")
-                            ->orWhere('course_id', 'LIKE', "%$search%");
-                    });
-                })
-                ->when($topic !== 'all', function ($query) use ($topic) {
-                    $query->whereHas('mainCategories', function ($subQuery) use ($topic) {
-                        $subQuery->where('name', 'LIKE', "%$topic%");
-                    });
-                })
-                ->when($animalType !== 'all', function ($query) use ($animalType) {
-                    $query->whereHas('animalTypes', function ($subQuery) use ($animalType) {
-                        $subQuery->where('name', 'LIKE', "%$animalType%");
-                    });
-                })
-                ->with([
-                    'countries:id,name',
-                    'mainCategories:id,name',
-                    'subCategories:id,name',
-                    'animalTypes:id,name',
-                    'itemDes',
-                    'Speaker.countryDetails',
-                    'referances',
-                    'courseActions' => function ($query) use ($user) {
-                        $query->where('user_id', $user->id)->select('course_id', 'isFinishCourse');
-                    },
-                ])
-                ->orderBy('updated_at', $uploadDate)
-                ->orderBy('ratting', $ratingOrder)
-                ->orderBy('duration', $durationOrder);
+            ->when($topic !== 'all', function ($query) use ($topic) {
+                $query->whereHas('mainCategories', function ($subQuery) use ($topic) {
+                    $subQuery->where('name', 'LIKE', "%$topic%");
+                });
+            })
+            ->when($animalType !== 'all', function ($query) use ($animalType) {
+                $query->whereHas('animalTypes', function ($subQuery) use ($animalType) {
+                    $subQuery->where('name', 'LIKE', "%$animalType%");
+                });
+            })
+            ->with([
+                'countries:id,name',
+                'mainCategories:id,name',
+                'subCategories:id,name',
+                'animalTypes:id,name',
+                'itemDes',
+                'Speaker.countryDetails',
+                'referances',
+                'courseActions' => function ($query) use ($user) {
+                    $query->where('user_id', $user->id)->select('course_id', 'isFinishCourse');
+                },
+            ])
+            ->orderBy('updated_at', $uploadDate) // จัดลำดับตาม updated_at
+            ->get(); // ดึงข้อมูลทั้งหมดออกมา
 
-            // Step 2: Execute query
-            $courses = $coursesQuery->get();
+        // Step 2: Sorting within the collection
+        $courses = $coursesQuery->sortByDesc('ratting') // กรองตาม ratting
+            ->sortBy($durationOrder === 'asc' ? 'duration' : function ($course) {
+                return -$course->duration; // จัดลำดับตาม duration
+            })->values(); // รีเซ็ตดัชนีใหม่
 
-            // Step 3: Map the results
-            $courses = $courses->map(function ($course) {
-                $isFinishCourse = $course->courseActions->first() && $course->courseActions->first()->isFinishCourse == 1;
+        // Step 3: Map the results
+        $courses = $courses->map(function ($course) {
+            $isFinishCourse = $course->courseActions->first()
+                ? $course->courseActions->first()->isFinishCourse == 1
+                : false;
 
-                $course->thumbnail = $course->course_img;
-                unset($course->course_img);
+            $course->thumbnail = $course->course_img;
+            unset($course->course_img);
 
-                return [
-                    'id' => $course->id,
-                    'course_id' => $course->course_id,
-                    'course_title' => $course->course_title,
-                    'course_description' => $course->course_description,
-                    'course_preview' => $course->course_preview,
-                    'duration' => $course->duration,
-                    'url_video' => $course->url_video,
-                    'status' => $course->status,
-                    'ratting' => number_format($course->ratting, 1),
-                    'created_at' => $course->created_at,
-                    'updated_at' => $course->updated_at,
-                    'id_quiz' => $course->id_quiz,
-                    'thumbnail' => $course->thumbnail,
-                    'isFinishCourse' => $isFinishCourse,
-                    'countries' => $course->countries->map(function ($country) {
-                        return ['name' => $country->name];
-                    }),
-                    'main_categories' => $course->mainCategories->map(function ($category) {
-                        return ['name' => $category->name];
-                    }),
-                    'sub_categories' => $course->subCategories->map(function ($subcategory) {
-                        return ['name' => $subcategory->name];
-                    }),
-                    'animal_types' => $course->animalTypes->map(function ($animal) {
-                        return ['name' => $animal->name];
-                    }),
-                    'item_des' => $course->itemDes->map(function ($item) {
-                        return ['detail' => $item->detail];
-                    }),
-                    'speakers' => $course->Speaker->map(function ($speaker) {
-                        return [
-                            'id' => $speaker->id,
-                            'name' => $speaker->name,
-                            'avatar' => $speaker->avatar,
-                            'job_position' => $speaker->job_position,
-                            'country' => $speaker->countryDetails ? $speaker->countryDetails->name : null,
-                            'file' => $speaker->file,
-                            'description' => $speaker->description,
-                        ];
-                    }),
-                    'referances' => $course->referances->map(function ($referance) {
-                        return [
-                            'id' => $referance->id,
-                            'title' => $referance->title,
-                            'image' => $referance->image,
-                            'file' => $referance->file,
-                            'description' => $referance->description,
-                        ];
-                    }),
-                ];
-            });
+            return [
+                'id' => $course->id,
+                'course_id' => $course->course_id,
+                'course_title' => $course->course_title,
+                'course_description' => $course->course_description,
+                'course_preview' => $course->course_preview,
+                'duration' => $course->duration,
+                'url_video' => $course->url_video,
+                'status' => $course->status,
+                'ratting' => number_format($course->ratting, 1),
+                'created_at' => $course->created_at,
+                'updated_at' => $course->updated_at,
+                'id_quiz' => $course->id_quiz,
+                'thumbnail' => $course->thumbnail,
+                'isFinishCourse' => $isFinishCourse,
+                'countries' => $course->countries->map(function ($country) {
+                    return ['name' => $country->name];
+                }),
+                'main_categories' => $course->mainCategories->map(function ($category) {
+                    return ['name' => $category->name];
+                }),
+                'sub_categories' => $course->subCategories->map(function ($subcategory) {
+                    return ['name' => $subcategory->name];
+                }),
+                'animal_types' => $course->animalTypes->map(function ($animal) {
+                    return ['name' => $animal->name];
+                }),
+                'item_des' => $course->itemDes->map(function ($item) {
+                    return ['detail' => $item->detail];
+                }),
+                'speakers' => $course->Speaker->map(function ($speaker) {
+                    return [
+                        'id' => $speaker->id,
+                        'name' => $speaker->name,
+                        'avatar' => $speaker->avatar,
+                        'job_position' => $speaker->job_position,
+                        'country' => $speaker->countryDetails ? $speaker->countryDetails->name : null,
+                        'file' => $speaker->file,
+                        'description' => $speaker->description,
+                    ];
+                }),
+                'referances' => $course->referances->map(function ($referance) {
+                    return [
+                        'id' => $referance->id,
+                        'title' => $referance->title,
+                        'image' => $referance->image,
+                        'file' => $referance->file,
+                        'description' => $referance->description,
+                    ];
+                }),
+            ];
+        });
 
-            return response()->json(['success' => true, 'courses' => $courses], 200);
+        return response()->json(['success' => true, 'courses' => $courses], 200);
 
-        } catch (TokenExpiredException $e) {
-            return response()->json(['error' => 'Token has expired', 'message' => 'Please refresh your token or login again.'], 401);
-        } catch (TokenInvalidException $e) {
-            return response()->json(['error' => 'Token is invalid', 'message' => 'The provided token is not valid.'], 401);
-        } catch (JWTException $e) {
-            return response()->json(['error' => 'Token not provided', 'message' => 'Authorization token is missing from your request.'], 400);
-        }
+    } catch (TokenExpiredException $e) {
+        return response()->json(['error' => 'Token has expired', 'message' => 'Please refresh your token or login again.'], 401);
+    } catch (TokenInvalidException $e) {
+        return response()->json(['error' => 'Token is invalid', 'message' => 'The provided token is not valid.'], 401);
+    } catch (JWTException $e) {
+        return response()->json(['error' => 'Token not provided', 'message' => 'Authorization token is missing from your request.'], 400);
     }
+}
+
+
+
+
+
+
+
 
     public function highlightCourses(Request $request)
     {
@@ -831,107 +844,110 @@ class ApiController extends Controller
             'answers.*' => 'integer|exists:answers,id', // แต่ละคำตอบต้องมี id ที่อยู่ในตาราง answers
         ]);
 
-        try {
-            // ตรวจสอบผู้ใช้
-            $user = JWTAuth::parseToken()->authenticate();
+    try {
+        // ตรวจสอบผู้ใช้
+        $user = JWTAuth::parseToken()->authenticate();
 
-            // ดึงข้อมูล Quiz พร้อมคำถามและคำตอบ
-            $quiz = Quiz::with('questions.answers')->findOrFail($id);
+        // ดึงข้อมูล Quiz พร้อมคำถามและคำตอบ
+        $quiz = Quiz::with('questions.answers')->findOrFail($id);
 
-            if ($quiz->questions->isEmpty()) {
-                return response()->json([
-                    'error' => 'Invalid Quiz',
-                    'message' => 'The quiz has no questions.',
-                ], 400);
-            }
-
-            // ค้นหา Course ที่สัมพันธ์กับ Quiz
-            $course = course::where('id_quiz', $quiz->id)->first();
-            if (!$course) {
-                return response()->json([
-                    'error' => 'Invalid Quiz',
-                    'message' => 'No course associated with this quiz.',
-                ], 400);
-            }
-
-            $totalPoints = count($quiz->questions);  // คะแนนเต็มจาก point_cpd
-            $passPercentage = $quiz->pass_percentage; // เปอร์เซ็นต์ที่ต้องผ่าน
-            $correctPoints = 0;
-
-            // ลบคำตอบเก่าของ User ใน Quiz นี้ (หากมี)
-            DB::table('quiz_user_answers')->where('user_id', $user->id)->where('quiz_id', $quiz->id)->delete();
-
-            // ตรวจสอบคำตอบที่ส่งมาและบันทึกใน `quiz_user_answers`
-            foreach ($quiz->questions as $question) {
-                $submittedAnswerId = collect($request->answers)
-                    ->firstWhere(fn($answerId) => $question->answers->pluck('id')->contains($answerId));
-
-                $correctAnswer = $question->answers->firstWhere('answers_status', 1);
-
-                // บันทึกคำตอบของ User
-                DB::table('quiz_user_answers')->insert([
-                    'user_id' => $user->id,
-                    'quiz_id' => $quiz->id,
-                    'question_id' => $question->id,
-                    'answer_id' => $submittedAnswerId,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-
-                // ตรวจสอบว่าคำตอบถูกต้องหรือไม่
-                if ($correctAnswer && $submittedAnswerId == $correctAnswer->id) {
-                    $correctPoints++;
-                }
-            }
-
-            // คำนวณเปอร์เซ็นต์ที่ได้
-            $scorePercentage = ($correctPoints / $totalPoints) * 100;
-
-            // ตรวจสอบผ่านหรือไม่
-            $isPass = $scorePercentage >= $passPercentage;
-
-            // ตรวจสอบและจัดการ QuizAttempt
-            $attempt = QuizAttempt::updateOrCreate(
-                [
-                    'user_id' => $user->id,
-                    'quiz_id' => $quiz->id,
-                ],
-                [
-                    'score' => $correctPoints,
-                    'total_questions' => $totalPoints,
-                ]
-            );
-
-            // อัปเดตหรือสร้าง course_action
-            $courseAction = CourseAction::updateOrCreate(
-                [
-                    'course_id' => $course->id, // ใช้ course_id จาก Course
-                    'user_id' => $user->id,
-                ],
-                [
-                    'isFinishQuiz' => $isPass, // อัปเดตสถานะ isFinishQuiz
-                ]
-            );
-
-            // ส่งข้อมูลกลับ
+        if ($quiz->questions->isEmpty()) {
             return response()->json([
-                'message' => 'Quiz submitted successfully',
-                'score' => $correctPoints,
-                'total_points' => $totalPoints,
-                'isPass' => $isPass,
-            ], 200);
-
-        } catch (ModelNotFoundException $e) {
-            return response()->json([
-                'error' => 'Quiz not found',
-            ], 404);
-        } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Internal Server Error',
-                'message' => $e->getMessage(),
-            ], 500);
+                'error' => 'Invalid Quiz',
+                'message' => 'The quiz has no questions.',
+            ], 400);
         }
+
+        // ค้นหา Course ที่สัมพันธ์กับ Quiz
+        $course = course::where('id_quiz', $quiz->id)->first();
+        if (!$course) {
+            return response()->json([
+                'error' => 'Invalid Quiz',
+                'message' => 'No course associated with this quiz.',
+            ], 400);
+        }
+
+        $totalPoints = count($quiz->questions);  // คะแนนเต็มจาก point_cpd
+        $passPercentage = $quiz->pass_percentage; // เปอร์เซ็นต์ที่ต้องผ่าน
+        $correctPoints = 0;
+
+        // ลบคำตอบเก่าของ User ใน Quiz นี้ (หากมี)
+        DB::table('quiz_user_answers')->where('user_id', $user->id)->where('quiz_id', $quiz->id)->delete();
+
+        // ตรวจสอบคำตอบที่ส่งมาและบันทึกใน `quiz_user_answers`
+        foreach ($quiz->questions as $question) {
+            $submittedAnswerId = collect($request->answers)
+                ->firstWhere(fn($answerId) => $question->answers->pluck('id')->contains($answerId));
+
+            $correctAnswer = $question->answers->firstWhere('answers_status', 1);
+
+
+            // บันทึกคำตอบของ User
+            DB::table('quiz_user_answers')->insert([
+                'user_id' => $user->id,
+                'quiz_id' => $quiz->id,
+                'course_id' => $request->course_id,
+                'question_id' => $question->id,
+                'answer_id' => $submittedAnswerId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            // ตรวจสอบว่าคำตอบถูกต้องหรือไม่
+            if ($correctAnswer && $submittedAnswerId == $correctAnswer->id) {
+                $correctPoints++;
+            }
+        }
+
+        // คำนวณเปอร์เซ็นต์ที่ได้
+        $scorePercentage = ($correctPoints / $totalPoints) * 100;
+
+        // ตรวจสอบผ่านหรือไม่
+        $isPass = $scorePercentage >= $passPercentage;
+
+        // ตรวจสอบและจัดการ QuizAttempt
+        $attempt = QuizAttempt::updateOrCreate(
+            [
+                'user_id' => $user->id,
+                'quiz_id' => $quiz->id,
+            ],
+            [
+                'score' => $correctPoints,
+                'total_questions' => $totalPoints,
+            ]
+        );
+
+        // อัปเดตหรือสร้าง course_action
+        $courseAction = CourseAction::updateOrCreate(
+            [
+                'course_id' => $course->id, // ใช้ course_id จาก Course
+                'user_id' => $user->id,
+            ],
+            [
+                'isFinishQuiz' => $isPass, // อัปเดตสถานะ isFinishQuiz
+            ]
+        );
+
+        // ส่งข้อมูลกลับ
+        return response()->json([
+            'message' => 'Quiz submitted successfully',
+            'score' => $correctPoints,
+            'total_points' => $totalPoints,
+            'isPass' => $isPass,
+        ], 200);
+
+    } catch (ModelNotFoundException $e) {
+        return response()->json([
+            'error' => 'Quiz not found',
+        ], 404);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => 'Internal Server Error',
+            'message' => $e->getMessage(),
+        ], 500);
     }
+}
+
 
     public function submitSurvey(Request $request, $id)
     {

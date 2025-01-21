@@ -10,7 +10,7 @@ class quiz extends Model
     use HasFactory;
 
     protected $fillable = [
-        'quiz_id', 'expire_date', 'questions_title', 'pass_percentage', 'certificate', 'point_cpd'
+        'quiz_id', 'expire_date', 'questions_title', 'pass_percentage', 'certificate', 'point_cpd', 'created_by',
     ];
 
     public function questions()
@@ -26,6 +26,11 @@ class quiz extends Model
     public function quizAttempts()
     {
         return $this->hasMany(QuizAttempt::class, 'quiz_id');
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function countries()
