@@ -44,7 +44,6 @@ Route::get('/1test', function () {
     dd("test");
 });
 
-
 Route::middleware(['auth:api'])->group(function () {
     Route::get('/user', [ApiAuthController::class, 'user']);
     Route::get('/users/me', [ApiAuthController::class, 'user']);
