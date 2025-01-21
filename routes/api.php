@@ -79,9 +79,10 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
 
     Route::get('/admin/course', [CourseController::class, 'index']);
     Route::get('/admin/courseReview/{id}', [CourseController::class, 'courseReview']);
+    Route::get('/admin/courseReview/{id}/export', [CourseController::class, 'exportCourseReview']);
     Route::get('/admin/course/{id}', [CourseController::class, 'show']);
-    Route::middleware(['log.system'])->group(function () {
 
+    Route::middleware(['log.system'])->group(function () {
         Route::get('/admin/courseStatus/{id}', [CourseController::class, 'courseStatus']);
         Route::post('/admin/course', [CourseController::class, 'store']);
         Route::post('/admin/course/{id}', [CourseController::class, 'update']);
@@ -95,6 +96,7 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
     Route::get('/admin/quiz/{id}', [QuizController::class, 'show']);
     Route::get('/admin/quizQuestionList/{id}', [QuizController::class, 'quizQuestionList']);
     Route::get('/admin/quizParticipants/{id}', [QuizController::class, 'getQuizParticipants']);
+    Route::get('/admin/quizParticipants/{id}/export', [QuizController::class, 'exportQuizParticipants']);
     Route::middleware(['log.system'])->group(function () {
         Route::post('/admin/quiz', [QuizController::class, 'store']);
         Route::put('/admin/quiz/{id}', [QuizController::class, 'update']);
@@ -147,6 +149,7 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
     Route::get('/admin/overView', [SettingController::class, 'overView']);
 
     Route::get('/admin/system-logs', [SystemLogController::class, 'index']);
+    Route::get('/admin/system-logs/export', [SystemLogController::class, 'exportSystemLogs']);
 
 
     Route::get('/admin/settings/page-banners', [PageBannerController::class, 'index']);

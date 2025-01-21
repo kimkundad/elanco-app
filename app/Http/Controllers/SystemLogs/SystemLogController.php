@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\SystemLogs;
 
+use App\Exports\SystemLogsExport;
 use App\Http\Controllers\Controller;
 use App\Http\Services\SystemLogs\SystemLogService;
 use Exception;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
 
 class SystemLogController extends Controller
 {
@@ -78,5 +80,14 @@ class SystemLogController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+
+    /**
+     * Export system logs to a CSV file.
+     */
+    public function exportSystemLogs()
+    {
+        $fileName = 'system_logs_' . now()->format('Y_m_d_H_i_s') . '.csv';
+        return Excel::download(new SystemLogsExport, $fileName);
     }
 }
