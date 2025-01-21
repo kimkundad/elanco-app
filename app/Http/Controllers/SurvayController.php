@@ -142,8 +142,34 @@ class SurvayController extends Controller
                             }
                         ]);
                 }
-            ])->withCount('responses as total_responses') // นับจำนวนผู้ตอบ Survey
+            ])
+            ->withCount('responses as total_responses') // นับจำนวนผู้ตอบ Survey
             ->findOrFail($id);
+
+            // จำนวนผู้ตอบ Survey ทั้งหมด
+            $summitReport = SurveyResponse::where('survey_id', $id)->count();
+
+            // Course Linked
+            $courseLinked = $survey->courses->map(function ($course) {
+                return [
+                    'course_id' => $course->course_id,
+                    'course_title' => $course->course_title,
+                    'description' => $course->course_description,
+                    'rating' => number_format($course->ratting, 1),
+                    'enrolled' => $course->Enrolled,
+                    'summit_completed' => $course->SummitCompleted,
+                    'mainCategories' => $course->mainCategories->map(function ($category) {
+                        return $category->name; // ดึงชื่อหมวดหมู่หลัก
+                    })->toArray(), // เปลี่ยนเป็น array
+                    'last_summit' => $course->updated_at ? $course->updated_at->format('d M Y') : null,
+                    'country' => $course->countries->map(function ($country) {
+                        return [
+                            'name' => $country->name, // ชื่อประเทศ
+                            'img' => $country->img,  // ลิงก์รูปภาพธงประเทศ
+                        ];
+                    })->toArray(),
+                ];
+            });
 
             // ดึงข้อมูลจำนวนผู้ตอบ Survey แยกตามเดือน (ตามช่วงวันที่)
             $surveyResponsesByMonth = SurveyResponse::select(
@@ -178,6 +204,8 @@ class SurvayController extends Controller
                 'message' => 'Survey details retrieved successfully.',
                 'data' => [
                     'survey' => $survey,
+                    'summit_report' => $summitReport, // จำนวนผู้ตอบ Survey ทั้งหมด
+                    'course_link' => $courseLinked, // รายชื่อ Courses ที่เกี่ยวข้อง
                     'barChartData' => $barChartData, // ข้อมูลสำหรับกราฟแท่ง
                 ],
             ], 200);
@@ -191,6 +219,7 @@ class SurvayController extends Controller
             ], 500);
         }
     }
+
 
 
 
