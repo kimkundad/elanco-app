@@ -181,7 +181,6 @@ class SurvayController extends Controller
                  ];
              });
 
-
              // ส่งข้อมูลกลับ
              return response()->json([
                  'success' => true,
