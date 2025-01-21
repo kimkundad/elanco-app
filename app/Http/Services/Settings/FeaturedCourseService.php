@@ -80,7 +80,9 @@ class FeaturedCourseService
             $newOrder = max(1, $newOrder);
 
             $maxOrder = $this->featuredCourseRepository->findMaxOrder();
-            $newOrder = min($newOrder, $maxOrder + 1);
+            if ($newOrder > $maxOrder) {
+                $newOrder = $currentOrder;
+            }
 
             if ($newOrder !== $currentOrder) {
                 if ($newOrder > $currentOrder) {
@@ -90,6 +92,7 @@ class FeaturedCourseService
                 }
             }
 
+            $data['order'] = $newOrder;
             $updatedFeaturedCourse = $this->featuredCourseRepository->update($id, $data);
 
             DB::commit();

@@ -79,14 +79,14 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
 
     Route::get('/admin/course', [CourseController::class, 'index']);
     Route::get('/admin/courseReview/{id}', [CourseController::class, 'courseReview']);
+    Route::get('/admin/courseReview/{id}/export', [CourseController::class, 'exportCourseReview']);
     Route::get('/admin/course/{id}', [CourseController::class, 'show']);
-    Route::middleware(['log.system'])->group(function () {
 
+    Route::middleware(['log.system'])->group(function () {
         Route::get('/admin/courseStatus/{id}', [CourseController::class, 'courseStatus']);
         Route::post('/admin/course', [CourseController::class, 'store']);
         Route::post('/admin/course/{id}', [CourseController::class, 'update']);
         Route::delete('/admin/course/{id}', [CourseController::class, 'destroy']);
-
     });
 
     Route::post('/admin/uploadImg', [SettingController::class, 'upPicUrl']);
@@ -95,6 +95,7 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
     Route::get('/admin/quiz/{id}', [QuizController::class, 'show']);
     Route::get('/admin/quizQuestionList/{id}', [QuizController::class, 'quizQuestionList']);
     Route::get('/admin/quizParticipants/{id}', [QuizController::class, 'getQuizParticipants']);
+    Route::get('/admin/quizParticipants/{id}/export', [QuizController::class, 'exportQuizParticipants']);
     Route::middleware(['log.system'])->group(function () {
         Route::post('/admin/quiz', [QuizController::class, 'store']);
         Route::put('/admin/quiz/{id}', [QuizController::class, 'update']);
@@ -150,16 +151,16 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
     Route::get('/admin/overView', [SettingController::class, 'overView']);
 
     Route::get('/admin/system-logs', [SystemLogController::class, 'index']);
-
+    Route::get('/admin/system-logs/export', [SystemLogController::class, 'exportSystemLogs']);
 
     Route::get('/admin/settings/page-banners', [PageBannerController::class, 'index']);
     Route::post('/admin/settings/page-banners', [PageBannerController::class, 'store']);
-    Route::post('/admin/settings/page-banners/edit/{id}', [PageBannerController::class, 'update']);
+    Route::post('/admin/settings/page-banners/{id}/edit', [PageBannerController::class, 'update']);
     Route::delete('/admin/settings/page-banners/{id}', [PageBannerController::class, 'destroy']);
 
     Route::get('/admin/settings/home-banners', [HomeBannerController::class, 'index']);
     Route::post('/admin/settings/home-banners', [HomeBannerController::class, 'store']);
-    Route::post('/admin/settings/home-banners/edit/{id}', [HomeBannerController::class, 'update']);
+    Route::post('/admin/settings/home-banners/{id}/edit', [HomeBannerController::class, 'update']);
     Route::delete('/admin/settings/home-banners/{id}', [HomeBannerController::class, 'destroy']);
 
     Route::get('/admin/settings/featured-courses', [FeaturedCourseController::class, 'index']);
