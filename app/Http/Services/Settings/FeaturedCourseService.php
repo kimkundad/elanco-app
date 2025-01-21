@@ -81,7 +81,7 @@ class FeaturedCourseService
 
             $maxOrder = $this->featuredCourseRepository->findMaxOrder();
             if ($newOrder > $maxOrder) {
-                $newOrder = $currentOrder;
+                $newOrder = $maxOrder;
             }
 
             if ($newOrder !== $currentOrder) {
