@@ -5,12 +5,18 @@ namespace App\Models\Settings;
 use App\Models\Country;
 use App\Models\course;
 use App\Models\User;
+use App\Scopes\Country\CountryScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class FeaturedCourse extends Model
 {
     use HasFactory;
+
+    protected static function booted()
+    {
+        static::addGlobalScope(new CountryScope);
+    }
 
     protected $table = 'featured_courses';
 

@@ -18,12 +18,16 @@ class SystemLogService
 
     public function findAll(array $queryParams)
     {
+        $paginationParams = array_filter($queryParams, function ($key) {
+            return in_array($key, ['page', 'per_page']);
+        }, ARRAY_FILTER_USE_KEY);
+
         $queryParams = ArrayKeyConverter::convertToSnakeCase($queryParams);
 
         return $this->systemLogRepository->findPaginated($queryParams)
             ->customPaginate(function ($items) {
                 return collect($items)->map->format(); // ใช้ format จาก Model
-            }, $queryParams);
+            }, $paginationParams);
     }
 
     public function saveAction(Request $request, string $status = 'access', string $errorReason = null)
