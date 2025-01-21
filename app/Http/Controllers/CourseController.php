@@ -359,7 +359,7 @@ class CourseController extends Controller
                     // กรอง Rating ตามค่าที่ส่งมา
                     $query->where('rating', $ratingFilter);
                 })
-                ->paginate(10); // แบ่งหน้า
+                ->paginate(2); // แบ่งหน้า
 
             // คำนวณค่าเฉลี่ย Rating และจำนวน Review ทั้งหมด
             $averageRating = CourseAction::where('course_id', $id)->avg('rating');
@@ -441,7 +441,7 @@ class CourseController extends Controller
             $passedCount = $course->courseActions()->where('isFinishQuiz', 1)->count(); // จำนวนผู้ที่ผ่าน
             $userMakeQuizCount = $course->courseActions()->where('isFinishVideo', 1)->count(); // จำนวนผู้ทำข้อสอบ
             $surveySummit = $course->survey ? $course->survey->responses()->count() : 0; // จำนวนผู้ที่ตอบ Survey
-            $course->ce_point = $course->quiz->point_cpd;
+            $course->ce_point = isset($course->quiz->point_cpd) ? $course->quiz->point_cpd : 0;
             // คำนวณเปอร์เซ็นต์
             $completePercentage = $totalEnrolled > 0 ? round(($completedEnrolled / $totalEnrolled) * 100) : 0;
             $passedPercentage = $totalEnrolled > 0 ? round(($passedCount / $userMakeQuizCount) * 100) : 0;
