@@ -307,6 +307,16 @@ class QuizController extends Controller
             ->distinct('user_id')
             ->count('user_id');
 
+            $totalPassed = CourseAction::whereHas('course', function ($query) use ($id, $courseId) {
+                $query->where('id_quiz', $id);
+                if ($courseId) {
+                    $query->where('id', $courseId); // กรองเฉพาะ course_id
+                }
+            })
+            ->where('isFinishQuiz', 1)
+            ->distinct('user_id')
+            ->count('user_id');
+
         // ดึง Questions พร้อมคำตอบและการคำนวณเปอร์เซ็นต์
         $questions = $quiz->questions()
             ->when($nameQuestion, function ($query, $nameQuestion) {
@@ -350,6 +360,7 @@ class QuizController extends Controller
             'message' => 'Quiz questions retrieved successfully.',
             'data' => [
                 'total_participants' => $totalParticipants,
+                'total_passed' => $totalPassed, // เพิ่มจำนวนคนที่สอบผ่าน
                 'questions' => $formattedQuestions,
                 'pagination' => [
                     'current_page' => $questions->currentPage(),
