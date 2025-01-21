@@ -141,6 +141,11 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasOne(UserLogin::class, 'user_id', 'id')->latest('login_at');
     }
 
+    public function surveyResponses()
+    {
+        return $this->hasMany(SurveyResponse::class, 'user_id');
+    }
+
     public function formatIncludingCountry()
     {
         return [

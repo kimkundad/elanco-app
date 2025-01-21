@@ -124,6 +124,132 @@ class SurvayController extends Controller
      * Display the specified resource.
      */
 
+     private function calculateDuration($startDate, $completionDate)
+    {
+        $start = Carbon::parse($startDate);
+        $completion = Carbon::parse($completionDate);
+
+        $days = $start->diffInDays($completion);
+        $hours = $start->diffInHours($completion) % 24;
+        $minutes = $start->diffInMinutes($completion) % 60;
+
+        return sprintf('%dD %dHrs %dMins', $days, $hours, $minutes);
+    }
+
+     public function getSurveyParticipants(Request $request, string $id)
+    {
+        try {
+            // ตัวกรองข้อมูล
+            $search = $request->input('search', ''); // ค้นหาชื่อผู้ใช้
+            $courseId = $request->input('course_id'); // กรองตาม course_id
+
+            // ดึง Survey ที่ระบุ ID
+            $survey = Survey::findOrFail($id);
+
+            // จำนวนผู้ตอบ Survey ทั้งหมด
+            $summitReport = SurveyResponse::where('survey_id', $id)->count();
+            $enrolled = CourseAction::count();
+
+            // ดึงข้อมูลผู้ตอบ Survey พร้อมเงื่อนไขการกรอง
+            $participantsQuery = SurveyResponse::with(['user.countryDetails', 'surveyResponseAnswers'])
+                ->where('survey_id', $id)
+                ->when($courseId, function ($query) use ($courseId) {
+                    $query->whereHas('surveyResponseAnswers', function ($subQuery) use ($courseId) {
+                        $subQuery->where('course_id', $courseId);
+                    });
+                })
+                ->when($search, function ($query, $search) {
+                    $query->whereHas('user', function ($subQuery) use ($search) {
+                        $subQuery->where('firstName', 'LIKE', "%$search%")
+                            ->orWhere('lastName', 'LIKE', "%$search%");
+                    });
+                });
+
+            // ใช้ Pagination
+            $participants = $participantsQuery->paginate(10);
+
+            $courseLinked = $survey->courses->map(function ($course) {
+                return [
+                    'id' => $course->id,
+                    'course_id' => $course->course_id,
+                    'course_title' => $course->course_title,
+                    'course_img' => $course->course_img,
+                    'description' => $course->course_description,
+                    'rating' => number_format($course->ratting, 1),
+                    'enrolled' => $course->Enrolled,
+                    'summit_completed' => $course->SummitCompleted,
+                    'mainCategories' => $course->mainCategories->map(function ($category) {
+                        return $category->name; // ดึงชื่อหมวดหมู่หลัก
+                    })->toArray(), // เปลี่ยนเป็น array
+                    'country' => $course->countries->map(function ($country) {
+                        return [
+                            'name' => $country->name, // ชื่อประเทศ
+                            'img' => $country->img,  // ลิงก์รูปภาพธงประเทศ
+                        ];
+                    })->toArray(),
+                ];
+            });
+
+            // แปลงข้อมูลสำหรับส่งกลับ
+            $formattedParticipants = $participants->map(function ($participant) {
+                $surveyAnswers = $participant->surveyResponseAnswers;
+
+                // คำนวณ Pass Percentage
+                // $correctAnswers = $surveyAnswers->filter(function ($answer) {
+                //     return $answer->surveyAnswer && $answer->surveyAnswer->is_correct; // ตัวอย่าง: หากมีฟิลด์ `is_correct`
+                // })->count();
+
+                // $incorrectAnswers = $surveyAnswers->count() - $correctAnswers;
+                // $totalQuestions = $surveyAnswers->count();
+                // $passPercentage = $totalQuestions > 0 ? round(($correctAnswers / $totalQuestions) * 100) : 0;
+
+                // แปลงข้อมูลผู้ใช้
+                return [
+                    'name' => "{$participant->user->firstName} {$participant->user->lastName}",
+                    'country' => $participant->user->countryDetails->name ?? null,
+                    'country_img' => $participant->user->countryDetails->img ?? null,
+                    'clinic' => $participant->user->clinic ?? 'N/A',
+                    'attempts' => 1, // สมมติว่าเป็น 1 ครั้ง
+                    // 'correct' => $correctAnswers,
+                    // 'incorrect' => $incorrectAnswers,
+                    // 'pass_percentage' => "{$passPercentage}%",
+                    'start_date' => $participant->created_at->format('d M Y | h:i A'),
+                    'completion_date' => $participant->updated_at->format('d M Y | h:i A'),
+                    'duration' => $this->calculateDuration($participant->created_at, $participant->updated_at),
+                ];
+            });
+
+            // ส่งข้อมูลกลับ
+            return response()->json([
+                'success' => true,
+                'message' => 'Survey participants retrieved successfully.',
+                'data' => [
+                    'total_summit' => $summitReport,
+                    'total_enrolled' => $enrolled,
+                    'participants' => $formattedParticipants,
+                    'pagination' => [
+                        'current_page' => $participants->currentPage(),
+                        'last_page' => $participants->lastPage(),
+                        'total' => $participants->total(),
+                    ],
+                    'courseLinked' => $courseLinked
+                ],
+            ], 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Survey not found.',
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving survey participants.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
      public function getSurveyAnsList(Request $request, string $id)
      {
          try {
@@ -181,6 +307,28 @@ class SurvayController extends Controller
                  ];
              });
 
+             $courseLinked = $survey->courses->map(function ($course) {
+                return [
+                    'id' => $course->id,
+                    'course_id' => $course->course_id,
+                    'course_title' => $course->course_title,
+                    'course_img' => $course->course_img,
+                    'description' => $course->course_description,
+                    'rating' => number_format($course->ratting, 1),
+                    'enrolled' => $course->Enrolled,
+                    'summit_completed' => $course->SummitCompleted,
+                    'mainCategories' => $course->mainCategories->map(function ($category) {
+                        return $category->name; // ดึงชื่อหมวดหมู่หลัก
+                    })->toArray(), // เปลี่ยนเป็น array
+                    'country' => $course->countries->map(function ($country) {
+                        return [
+                            'name' => $country->name, // ชื่อประเทศ
+                            'img' => $country->img,  // ลิงก์รูปภาพธงประเทศ
+                        ];
+                    })->toArray(),
+                ];
+            });
+
              // ส่งข้อมูลกลับ
              return response()->json([
                  'success' => true,
@@ -194,6 +342,7 @@ class SurvayController extends Controller
                          'last_page' => $questions->lastPage(),
                          'total' => $questions->total(),
                      ],
+                     'courseLinked' => $courseLinked
                  ],
              ], 200);
          } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
@@ -241,8 +390,10 @@ class SurvayController extends Controller
             // Course Linked
             $courseLinked = $survey->courses->map(function ($course) {
                 return [
+                    'id' => $course->id,
                     'course_id' => $course->course_id,
                     'course_title' => $course->course_title,
+                    'course_img' => $course->course_img,
                     'description' => $course->course_description,
                     'rating' => number_format($course->ratting, 1),
                     'enrolled' => $course->Enrolled,
