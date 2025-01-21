@@ -26,18 +26,18 @@ class QuizUserAnswer extends Model
     // สัมพันธ์กับ Quizzes
     public function quiz()
     {
-        return $this->belongsTo(Quiz::class, 'quiz_id');
+        return $this->belongsTo(quiz::class, 'quiz_id');
     }
 
     // สัมพันธ์กับ Questions
     public function question()
     {
-        return $this->belongsTo(Question::class, 'question_id');
+        return $this->belongsTo(question::class, 'question_id');
     }
 
     // สัมพันธ์กับ Answers
     public function answer()
     {
-        return $this->belongsTo(Answer::class, 'answer_id');
+        return $this->belongsTo(answer::class, 'answer_id');
     }
 }
