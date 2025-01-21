@@ -165,7 +165,7 @@ class QuizController extends Controller
         $sortByPass = $request->input('sortByPass', 'desc'); // การเรียงลำดับ pass %
 
         // ดึงข้อมูล Quiz
-        $quiz = Quiz::with('courses.mainCategories')->findOrFail($quizId);
+        $quiz = quiz::with('courses.mainCategories')->findOrFail($quizId);
 
         // ดึงคอร์สที่เกี่ยวข้องกับ Quiz
         $courses = $quiz->courses->map(function ($course) {
