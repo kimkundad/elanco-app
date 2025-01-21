@@ -359,7 +359,7 @@ class CourseController extends Controller
                     // กรอง Rating ตามค่าที่ส่งมา
                     $query->where('rating', $ratingFilter);
                 })
-                ->paginate(2); // แบ่งหน้า
+                ->paginate(10); // แบ่งหน้า
 
             // คำนวณค่าเฉลี่ย Rating และจำนวน Review ทั้งหมด
             $averageRating = CourseAction::where('course_id', $id)->avg('rating');
@@ -412,6 +412,7 @@ class CourseController extends Controller
         $fileName = 'course_reviews_' . $id . '_' . now()->format('Y_m_d_H_i_s') . '.xlsx';
         return Excel::download(new CourseReviewExport($id), $fileName);
     }
+
 
     public function show(Request $request, string $id)
     {
