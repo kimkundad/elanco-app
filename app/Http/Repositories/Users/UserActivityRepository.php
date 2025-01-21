@@ -8,7 +8,7 @@ interface UserActivityRepository
 
     public function findById(int $id);
 
-    public function findPaginated();
+    public function findPaginated(array $queryParams);
 
     public function save(array $data);
 }

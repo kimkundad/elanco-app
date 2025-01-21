@@ -20,10 +20,10 @@ class UserActivityController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $response = $this->userActivityService->findAll();
+            $response = $this->userActivityService->findAll($request->query());
             return response()->json($response);
         } catch (Exception $e) {
             return response()->json([

@@ -16,9 +16,26 @@ class UserActivityRepositoryImpl implements UserActivityRepository
         return UserActivity::with('user.countryDetails')->findOrFail($id);
     }
 
-    public function findPaginated()
+    public function findPaginated(array $queryParams)
     {
-        return UserActivity::with('user.countryDetails');
+        $filterableColumns = [
+            'activity_type',
+            'activity_detail',
+            'device_type',
+            'browser_type',
+            'ip_address',
+            'activity_timestamp',
+        ];
+
+        $query = UserActivity::with('user.countryDetails');
+
+        foreach ($queryParams as $key => $value) {
+            if (in_array($key, $filterableColumns)) {
+                $query->where($key, 'LIKE', '%' . $value . '%');
+            }
+        }
+
+        return $query;
     }
 
     public function save(array $data)
