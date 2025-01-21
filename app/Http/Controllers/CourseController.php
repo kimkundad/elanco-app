@@ -359,7 +359,7 @@ class CourseController extends Controller
                     // กรอง Rating ตามค่าที่ส่งมา
                     $query->where('rating', $ratingFilter);
                 })
-                ->paginate(10); // แบ่งหน้า
+                ->paginate(2); // แบ่งหน้า
 
             // คำนวณค่าเฉลี่ย Rating และจำนวน Review ทั้งหมด
             $averageRating = CourseAction::where('course_id', $id)->avg('rating');
