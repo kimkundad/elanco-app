@@ -249,6 +249,7 @@ class QuizController extends Controller
                 return [
                     'name' => "{$participant->user->firstName} {$participant->user->lastName}",
                     'country' => $participant->user->countryDetails->name ?? null,
+                    'country_img' => $participant->user->countryDetails->img ?? null,
                     'clinic' => $participant->user->clinic ?? 'N/A',
                     'attempts' => 1, // กำหนดให้เป็นค่า default
                     'correct' => $correctAnswers,
