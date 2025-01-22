@@ -436,7 +436,9 @@ class ApiAuthController extends Controller
             // จัดรูปแบบข้อมูลสำหรับ Response
             // จัดรูปแบบข้อมูลสำหรับ Response
             return response()->json([
+                'id' => $user->id,
                 'userType' => $user->userType,
+                'email' => $user->email,
                 'prefix' => $user->prefix,
                 'firstName' => $user->firstName,
                 'lastName' => $user->lastName,
