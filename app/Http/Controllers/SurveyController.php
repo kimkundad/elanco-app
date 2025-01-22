@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\SurveyParticipantsExport;
+use App\Exports\SurveyQuestionsExport;
 use Illuminate\Http\Request;
 use App\Models\Survey;
 use App\Models\SurveyQuestion;
@@ -137,110 +138,109 @@ class SurveyController extends Controller
     }
 
     public function getSurveyParticipants(Request $request, string $id)
-{
-    try {
-        // ตัวกรองข้อมูล
-        $search = $request->input('search', ''); // ค้นหาชื่อผู้ใช้
-        $courseId = $request->input('course_id'); // กรองตาม course_id
+    {
+        try {
+            // ตัวกรองข้อมูล
+            $search = $request->input('search', ''); // ค้นหาชื่อผู้ใช้
+            $courseId = $request->input('course_id'); // กรองตาม course_id
 
-        // ดึง Survey ที่ระบุ ID
-        $survey = Survey::findOrFail($id);
+            // ดึง Survey ที่ระบุ ID
+            $survey = Survey::findOrFail($id);
 
-        // จำนวนผู้ตอบ Survey ทั้งหมด
-        $summitReport = SurveyResponse::where('survey_id', $id)->count();
-        $enrolled = CourseAction::count();
+            // จำนวนผู้ตอบ Survey ทั้งหมด
+            $summitReport = SurveyResponse::where('survey_id', $id)->count();
+            $enrolled = CourseAction::count();
 
-        // ดึงข้อมูลผู้ตอบ Survey พร้อมเงื่อนไขการกรอง
-        $participantsQuery = SurveyResponse::with(['user.countryDetails', 'surveyResponseAnswers'])
-            ->where('survey_id', $id)
-            ->when($courseId, function ($query) use ($courseId) {
-                $query->whereHas('surveyResponseAnswers', function ($subQuery) use ($courseId) {
-                    $subQuery->where('course_id', $courseId);
+            // ดึงข้อมูลผู้ตอบ Survey พร้อมเงื่อนไขการกรอง
+            $participantsQuery = SurveyResponse::with(['user.countryDetails', 'surveyResponseAnswers'])
+                ->where('survey_id', $id)
+                ->when($courseId, function ($query) use ($courseId) {
+                    $query->whereHas('surveyResponseAnswers', function ($subQuery) use ($courseId) {
+                        $subQuery->where('course_id', $courseId);
+                    });
+                })
+                ->when($search, function ($query, $search) {
+                    $query->whereHas('user', function ($subQuery) use ($search) {
+                        $subQuery->where('firstName', 'LIKE', "%$search%")
+                            ->orWhere('lastName', 'LIKE', "%$search%");
+                    });
                 });
-            })
-            ->when($search, function ($query, $search) {
-                $query->whereHas('user', function ($subQuery) use ($search) {
-                    $subQuery->where('firstName', 'LIKE', "%$search%")
-                        ->orWhere('lastName', 'LIKE', "%$search%");
-                });
+
+            // ใช้ Pagination
+            $paginatedParticipants = $participantsQuery->paginate(10);
+
+            // จัดการข้อมูลผู้ตอบ
+            $formattedParticipants = $paginatedParticipants->getCollection()->map(function ($participant) {
+                $user = $participant->user;
+
+                return [
+                    'name' => $user ? "{$user->firstName} {$user->lastName}" : 'Unknown User', // ตรวจสอบว่า user มีค่าหรือไม่
+                    'country' => $user->countryDetails->name ?? null,
+                    'country_img' => $user->countryDetails->img ?? null,
+                    'clinic' => $user->clinic ?? 'N/A',
+                    'attempts' => 1, // สมมติว่าเป็น 1 ครั้ง
+                    'start_date' => $participant->created_at->format('d M Y | h:i A'),
+                    'completion_date' => $participant->updated_at->format('d M Y | h:i A'),
+                    'duration' => $this->calculateDuration($participant->created_at, $participant->updated_at),
+                ];
             });
 
-        // ใช้ Pagination
-        $paginatedParticipants = $participantsQuery->paginate(10);
+            // เพิ่มข้อมูล Course Linked
+            $courseLinked = $survey->courses->map(function ($course) {
+                return [
+                    'id' => $course->id,
+                    'course_id' => $course->course_id,
+                    'course_title' => $course->course_title,
+                    'course_img' => $course->course_img,
+                    'description' => $course->course_description,
+                    'rating' => number_format($course->ratting, 1),
+                    'enrolled' => $course->Enrolled,
+                    'summit_completed' => $course->SummitCompleted,
+                    'mainCategories' => $course->mainCategories->pluck('name')->toArray(),
+                    'country' => $course->countries->map(function ($country) {
+                        return [
+                            'name' => $country->name,
+                            'img' => $country->img,
+                        ];
+                    })->toArray(),
+                ];
+            });
 
-        // จัดการข้อมูลผู้ตอบ
-        $formattedParticipants = $paginatedParticipants->getCollection()->map(function ($participant) {
-            $user = $participant->user;
-
-            return [
-                'name' => $user ? "{$user->firstName} {$user->lastName}" : 'Unknown User', // ตรวจสอบว่า user มีค่าหรือไม่
-                'country' => $user->countryDetails->name ?? null,
-                'country_img' => $user->countryDetails->img ?? null,
-                'clinic' => $user->clinic ?? 'N/A',
-                'attempts' => 1, // สมมติว่าเป็น 1 ครั้ง
-                'start_date' => $participant->created_at->format('d M Y | h:i A'),
-                'completion_date' => $participant->updated_at->format('d M Y | h:i A'),
-                'duration' => $this->calculateDuration($participant->created_at, $participant->updated_at),
-            ];
-        });
-
-        // เพิ่มข้อมูล Course Linked
-        $courseLinked = $survey->courses->map(function ($course) {
-            return [
-                'id' => $course->id,
-                'course_id' => $course->course_id,
-                'course_title' => $course->course_title,
-                'course_img' => $course->course_img,
-                'description' => $course->course_description,
-                'rating' => number_format($course->ratting, 1),
-                'enrolled' => $course->Enrolled,
-                'summit_completed' => $course->SummitCompleted,
-                'mainCategories' => $course->mainCategories->pluck('name')->toArray(),
-                'country' => $course->countries->map(function ($country) {
-                    return [
-                        'name' => $country->name,
-                        'img' => $country->img,
-                    ];
-                })->toArray(),
-            ];
-        });
-
-        // ส่งข้อมูลกลับ
-        return response()->json([
-            'success' => true,
-            'message' => 'Survey participants retrieved successfully.',
-            'data' => [
-                'total_summit' => $summitReport,
-                'total_enrolled' => $enrolled,
-                'participants' => [
-                    'data' => $formattedParticipants,
-                    'pagination' => [
-                        'current_page' => $paginatedParticipants->currentPage(),
-                        'last_page' => $paginatedParticipants->lastPage(),
-                        'total' => $paginatedParticipants->total(),
+            // ส่งข้อมูลกลับ
+            return response()->json([
+                'success' => true,
+                'message' => 'Survey participants retrieved successfully.',
+                'data' => [
+                    'total_summit' => $summitReport,
+                    'total_enrolled' => $enrolled,
+                    'participants' => [
+                        'data' => $formattedParticipants,
+                        'pagination' => [
+                            'current_page' => $paginatedParticipants->currentPage(),
+                            'last_page' => $paginatedParticipants->lastPage(),
+                            'total' => $paginatedParticipants->total(),
+                        ],
                     ],
+                    'courseLinked' => $courseLinked,
                 ],
-                'courseLinked' => $courseLinked,
-            ],
-        ], 200);
-    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Survey not found.',
-        ], 404);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'An error occurred while retrieving survey participants.',
-            'error' => $e->getMessage(),
-        ], 500);
+            ], 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Survey not found.',
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving survey participants.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
-}
-
 
     public function exportSurveyParticipants($id)
     {
-        $fileName = 'survey_participants_' . $id . '_' . now()->format('Y_m_d_H_i_s') . '.xlsx';
+        $fileName = 'survey_participants_' . $id . '_' . now()->format('Y_m_d_H_i_s') . '.csv';
         return Excel::download(new SurveyParticipantsExport($id), $fileName);
     }
 
@@ -351,6 +351,12 @@ class SurveyController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    public function exportSurveyQuestions($id)
+    {
+        $fileName = 'survey_questions_' . $id . '_' . now()->format('Y_m_d_H_i_s') . '.csv';
+        return Excel::download(new SurveyQuestionsExport($id), $fileName);
     }
 
     public function show(Request $request, string $id)

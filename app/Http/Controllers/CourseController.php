@@ -409,10 +409,9 @@ class CourseController extends Controller
      */
     public function exportCourseReview($id)
     {
-        $fileName = 'course_reviews_' . $id . '_' . now()->format('Y_m_d_H_i_s') . '.xlsx';
+        $fileName = 'course_reviews_' . $id . '_' . now()->format('Y_m_d_H_i_s') . '.csv';
         return Excel::download(new CourseReviewExport($id), $fileName);
     }
-
 
     public function show(Request $request, string $id)
     {

@@ -94,6 +94,7 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
     Route::get('/admin/quiz', [QuizController::class, 'index']);
     Route::get('/admin/quiz/{id}', [QuizController::class, 'show']);
     Route::get('/admin/quizQuestionList/{id}', [QuizController::class, 'quizQuestionList']);
+    Route::get('/admin/quiz-questions/{id}/export', [QuizController::class, 'exportQuizQuestions']);
     Route::get('/admin/quizParticipants/{id}', [QuizController::class, 'getQuizParticipants']);
     Route::get('/admin/quizParticipants/{id}/export', [QuizController::class, 'exportQuizParticipants']);
     Route::middleware(['log.system'])->group(function () {
@@ -110,6 +111,7 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
     Route::delete('/admin/deleteAnswer/{id}', [SurveyController::class, 'deleteAnswerQuiz']);
 
     Route::get('/admin/getSurveyAnsList/{id}', [SurveyController::class, 'getSurveyAnsList']);
+    Route::get('/admin/survey-questions/{id}/export', [SurveyController::class, 'exportSurveyQuestions']);
     Route::get('/admin/surveyParticipants/{id}', [SurveyController::class, 'getSurveyParticipants']);
     Route::get('/admin/surveyParticipants/{id}/export', [SurveyController::class, 'exportSurveyParticipants']);
     Route::get('/admin/survey', [SurveyController::class, 'index']);

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\QuizParticipantsExport;
+use App\Exports\QuizQuestionsExport;
 use Illuminate\Http\Request;
 use App\Models\quiz;
 
@@ -281,7 +282,7 @@ class QuizController extends Controller
 
     public function exportQuizParticipants($id)
     {
-        $fileName = 'quiz_participants_' . now()->format('Y_m_d_H_i_s') . '.xlsx'; // ตั้งชื่อไฟล์
+        $fileName = 'quiz_participants_' . now()->format('Y_m_d_H_i_s') . '.csv';
         return Excel::download(new QuizParticipantsExport($id), $fileName);
     }
 
@@ -376,6 +377,12 @@ class QuizController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    public function exportQuizQuestions($id)
+    {
+        $fileName = 'quiz_questions_' . $id . '_' . now()->format('Y_m_d_H_i_s') . '.csv';
+        return Excel::download(new QuizQuestionsExport($id), $fileName);
     }
 
     public function show(Request $request, string $id)
