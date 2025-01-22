@@ -19,7 +19,12 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'],
+    'allowed_origins' => [
+        'https://elanco-backoffice.vercel.app', // Origin สำหรับ production
+        'http://localhost',                    // สำหรับ localhost HTTP
+        'http://127.0.0.1',                    // สำหรับ localhost ด้วย IP
+        'http://localhost:8000',               // หากคุณใช้ Laravel dev server
+    ],
 
     'allowed_origins_patterns' => [],
 
