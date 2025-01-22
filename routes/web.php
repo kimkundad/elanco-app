@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApiController;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\MemberController;
 use App\Models\Quiz;
 
 /*
@@ -26,6 +27,7 @@ Auth::routes();
 
 Route::get('/getPdf', [HomeController::class, 'generateCertificate']);
 
+Route::get('/admin/export-members', [MemberController::class, 'exportMembers']);
 
     Route::get('/email/verify', [ApiController::class, 'verifyEmail'])->name('verification.verify');
 
