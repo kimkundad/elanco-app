@@ -37,7 +37,6 @@ Route::get('/admin/system-logs/export', [SystemLogController::class, 'exportSyst
 
     Route::get('/email/verify', [ApiController::class, 'verifyEmail'])->name('verification.verify');
 
-
     Route::get('/test-email', function () {
 
         $id = 4;
