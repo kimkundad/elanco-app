@@ -95,18 +95,21 @@ class SettingController extends Controller
 
             // Most Popular Categories
             $popularCategories = MainCategory::with(['courses' => function ($query) {
-                $query->withCount('courseActions'); // นับการลงทะเบียนในแต่ละคอร์ส
+                $query->withCount('courseActions'); // นับจำนวนการลงทะเบียนในแต่ละคอร์ส
             }])
             ->get()
             ->map(function ($category) use ($totalRegistrations) {
-                // รวมจำนวนการลงทะเบียนในคอร์สทั้งหมดที่เกี่ยวข้องกับ MainCategory
+                // รวมจำนวนการลงทะเบียนในคอร์สทั้งหมดที่เกี่ยวข้องกับหมวดหมู่นั้น ๆ
                 $categoryRegistrations = $category->courses->sum('course_actions_count');
+
+                // คำนวณเปอร์เซ็นต์
+                $percentage = $totalRegistrations > 0
+                    ? round(($categoryRegistrations / $totalRegistrations) * 100, 2)
+                    : 0;
 
                 return [
                     'name' => $category->name,
-                    'percentage' => $totalRegistrations > 0
-                        ? round(($categoryRegistrations / $totalRegistrations) * 100, 2) // คำนวณเปอร์เซ็นต์
-                        : 0,
+                    'percentage' => $percentage,
                 ];
             });
 

@@ -24,7 +24,6 @@ use App\Models\Quiz;
 
 
 Route::get('logout', '\App\Http\Controllers\Auth\LoginController@logout');
-
 Auth::routes();
 
 Route::get('/getPdf', [HomeController::class, 'generateCertificate']);
@@ -36,7 +35,6 @@ Route::get('/admin/quizParticipants/{id}/export', [QuizController::class, 'expor
 Route::get('/admin/system-logs/export', [SystemLogController::class, 'exportSystemLogs']);
 
     Route::get('/email/verify', [ApiController::class, 'verifyEmail'])->name('verification.verify');
-
 
     Route::get('/test-email', function () {
 
