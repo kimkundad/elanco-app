@@ -280,6 +280,7 @@ class ApiAuthController extends Controller
                 'petType' => 'array',
             ]);
 
+
             // ค้นหาผู้ใช้ที่ต้องการอัปเดต (สามารถเปลี่ยน logic ได้ เช่น ใช้ Auth::id())
             $user = JWTAuth::parseToken()->authenticate();
 
