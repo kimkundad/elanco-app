@@ -47,7 +47,11 @@ class SystemLogService
 
     private function getAction(Request $request): string
     {
-        $route = ltrim($request->path(), 'api/');
+        $route = $request->path();
+        if (str_starts_with($route, 'api/')) {
+            $route = substr($route, 4);
+        }
+
         $method = $request->method();
 
         $map = [
@@ -57,26 +61,48 @@ class SystemLogService
             'logout' => [
                 'POST' => 'Logout',
             ],
+            'register' => [
+                'POST' => 'Register',
+            ],
             'admin/course' => [
-                'POST' => 'Add Course',
-                'PUT' => 'Edit Course',
+                'POST' => function ($route) {
+                    return strpos($route, '{id}') !== false ? 'Edit Course' : 'Add Course';
+                },
                 'DELETE' => 'Delete Course',
             ],
             'admin/quiz' => [
-                'POST' => 'Add Quiz',
-                'PUT' => 'Edit Quiz',
+                'POST' => function ($route) {
+                    return strpos($route, '{id}') !== false ? 'Edit Quiz' : 'Add Quiz';
+                },
                 'DELETE' => 'Delete Quiz',
             ],
             'admin/survey' => [
-                'POST' => 'Add Survey',
-                'PUT' => 'Edit Survey',
-                'DELETE' => 'Delete Survey',
+                'POST' => function ($route) {
+                    return strpos($route, '{id}') !== false ? 'Edit Survey' : 'Add Survey';
+                },
+                'DELETE' => function ($route) {
+                    return str_contains($route, 'del-question-survey')
+                        ? 'Delete Survey Question'
+                        : 'Delete Survey';
+                },
+            ],
+            'admin/user-activities' => [
+                'GET' => 'View User Activities',
+            ],
+            'admin/system-logs' => [
+                'GET' => 'View System Logs',
             ],
         ];
 
         foreach ($map as $pattern => $methods) {
             if (fnmatch($pattern, $route) && isset($methods[$method])) {
-                return $methods[$method];
+                $action = $methods[$method];
+
+                if (is_callable($action)) {
+                    return $action($route);
+                }
+
+                return $action;
             }
         }
 
