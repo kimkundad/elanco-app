@@ -10,6 +10,7 @@ class QuizUserAnswer extends Model
     use HasFactory;
 
     protected $table = 'quiz_user_answers'; // กำหนดชื่อ Table
+
     protected $fillable = [
         'user_id',
         'quiz_id',

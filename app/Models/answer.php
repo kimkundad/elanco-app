@@ -13,7 +13,6 @@ class answer extends Model
         'questions_id', 'answers', 'answers_status'
     ];
 
-
     public function question()
     {
         return $this->belongsTo(question::class, 'questions_id');

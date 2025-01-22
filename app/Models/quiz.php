@@ -44,5 +44,4 @@ class quiz extends Model
             'id'                // Foreign key ใน Course ที่ชี้ไปยัง Country (ผ่าน Pivot)
         );
     }
-
 }
