@@ -9,7 +9,7 @@ use App\Models\Role;
 use App\Models\Country;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Facades\Image;
-
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 
 class AdminController extends Controller
@@ -68,8 +68,9 @@ class AdminController extends Controller
      */
     public function store(Request $request)
 {
-    // Validate ข้อมูล
-    $validated = $request->validate([
+
+
+    $validator = Validator::make($request->all(), [
         'firstName' => 'required|string|max:255',
         'lastName' => 'required|string|max:255',
         'email' => 'required|email|unique:users,email',
@@ -79,29 +80,36 @@ class AdminController extends Controller
         'avatar_img' => 'nullable|url',
     ]);
 
+    if ($validator->fails()) {
+        return response()->json([
+            'message' => 'Validation failed',
+            'errors' => $validator->errors()
+        ], 422);
+    }
+
     DB::beginTransaction();
 
     try {
-        // สร้าง User ใหม่
+        // สร้าง User ใหม่   $request->firstName
         $user = new User();
-        $user->name = $validated['firstName'].' '.$validated['lastName'];
-        $user->firstName = $validated['firstName'];
-        $user->lastName = $validated['lastName'];
-        $user->email = $validated['email'];
-        $user->password = bcrypt($validated['password']);
-        $user->country = $validated['country'];
+        $user->name = $request->firstName.' '.$request->lastName;
+        $user->firstName = $request->firstName;
+        $user->lastName = $request->lastName;
+        $user->email = $request->email;
+        $user->password = bcrypt($request->password);
+        $user->country = $request->country;
         $user->status = 1;
         $user->userType = 'admin'; // กำหนด userType เป็น admin
 
         // กำหนดค่า avatar เป็น Full URL
-        if (!empty($validated['avatar_img'])) {
-            $user->avatar = $validated['avatar_img'];
+        if (!empty($request->avatar_img)) {
+            $user->avatar = $request->avatar_img;
         }
 
         $user->save();
 
         // เพิ่ม Role ให้ User
-        $user->roles()->attach($validated['role_id']);
+        $user->roles()->attach($request->role_id);
 
         DB::commit();
 
@@ -163,7 +171,8 @@ class AdminController extends Controller
     public function update(Request $request, $id)
 {
     // Validate ข้อมูล
-    $validated = $request->validate([
+
+    $validator = Validator::make($request->all(), [
         'firstName' => 'required|string|max:255',
         'lastName' => 'required|string|max:255',
         'email' => 'required|email|unique:users,email,' . $id, // อีเมลต้องไม่ซ้ำกับผู้ใช้อื่น
@@ -173,6 +182,13 @@ class AdminController extends Controller
         'avatar_img' => 'nullable|url',
     ]);
 
+    if ($validator->fails()) {
+        return response()->json([
+            'message' => 'Validation failed',
+            'errors' => $validator->errors()
+        ], 422);
+    }
+
     DB::beginTransaction();
 
     try {
@@ -180,26 +196,26 @@ class AdminController extends Controller
         $user = User::findOrFail($id);
 
         // อัปเดตข้อมูลผู้ใช้
-        $user->firstName = $validated['firstName'];
-        $user->lastName = $validated['lastName'];
-        $user->email = $validated['email'];
+        $user->firstName = $request->firstName;
+        $user->lastName = $request->lastName;
+        $user->email = $request->email;
 
         // อัปเดตรหัสผ่าน (ถ้าส่งมา)
-        if (!empty($validated['password'])) {
-            $user->password = bcrypt($validated['password']);
+        if (!empty($request->password)) {
+            $user->password = bcrypt($request->password);
         }
 
-        $user->country = $validated['country'];
+        $user->country = $request->country;
 
         // อัปเดต Avatar
-        if (!empty($validated['avatar_img'])) {
-            $user->avatar = $validated['avatar_img'];
+        if (!empty($request->avatar_img)) {
+            $user->avatar = $request->avatar_img;
         }
 
         $user->save();
 
         // อัปเดต Role
-        $user->roles()->sync([$validated['role_id']]);
+        $user->roles()->sync([$request->role_id]);
 
         DB::commit();
 
