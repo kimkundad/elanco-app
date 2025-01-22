@@ -5,6 +5,9 @@ use App\Http\Controllers\ApiController;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MemberController;
+use App\Http\Controllers\SurveyController;
+use App\Http\Controllers\SystemLogs\SystemLogController;
+use App\Http\Controllers\QuizController;
 use App\Models\Quiz;
 
 /*
@@ -27,6 +30,10 @@ Auth::routes();
 Route::get('/getPdf', [HomeController::class, 'generateCertificate']);
 
 Route::get('/admin/export-members', [MemberController::class, 'exportMembers']);
+Route::get('/admin/system-logs/export', [SystemLogController::class, 'exportSystemLogs']);
+Route::get('/admin/surveyParticipants/{id}/export', [SurveyController::class, 'exportSurveyParticipants']);
+Route::get('/admin/quizParticipants/{id}/export', [QuizController::class, 'exportQuizParticipants']);
+Route::get('/admin/system-logs/export', [SystemLogController::class, 'exportSystemLogs']);
 
     Route::get('/email/verify', [ApiController::class, 'verifyEmail'])->name('verification.verify');
 
