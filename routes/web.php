@@ -24,7 +24,6 @@ use App\Models\Quiz;
 
 
 Route::get('logout', '\App\Http\Controllers\Auth\LoginController@logout');
-
 Auth::routes();
 
 Route::get('/getPdf', [HomeController::class, 'generateCertificate']);
