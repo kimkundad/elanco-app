@@ -1183,13 +1183,11 @@ public function courses(Request $request)
     }
 
     public function verifyEmail(Request $request)
-    {
-        // รับโทเค็นจาก Query String
+{
+    try {
         $verificationToken = $request->query('token');
 
-        // ค้นหาโทเค็นในฐานข้อมูล
         $record = DB::table('email_verifications')->where('token', $verificationToken)->first();
-
         if (!$record) {
             return response()->json(['message' => 'Invalid verification link.'], 403);
         }
@@ -1198,38 +1196,34 @@ public function courses(Request $request)
             return response()->json(['message' => 'Expired verification link.'], 403);
         }
 
-        // ค้นหาผู้ใช้
         $user = User::find($record->user_id);
         if (!$user) {
             return response()->json(['message' => 'User not found.'], 404);
         }
 
-        // ตรวจสอบว่าอีเมลได้รับการยืนยันแล้วหรือไม่
         if ($user->email_verified_at) {
-            // สร้าง access token และ refresh token
             $accessToken = JWTAuth::fromUser($user);
             $refreshToken = $this->generateRefreshToken($user);
-            //  dd($accessToken);
-            // ลบโทเค็นยืนยัน
+
             DB::table('email_verifications')->where('token', $verificationToken)->delete();
 
             return redirect("https://elanco-fe.vercel.app/login?accToken={$accessToken}&refreshToken={$refreshToken}");
         }
 
-        // อัปเดตสถานะอีเมลว่าได้รับการยืนยัน
         $user->update(['email_verified_at' => now()]);
 
-        // สร้าง access token และ refresh token
         $accessToken = JWTAuth::fromUser($user);
         $refreshToken = $this->generateRefreshToken($user);
-        //   dd($accessToken);
 
-        // ลบโทเค็นยืนยัน
         DB::table('email_verifications')->where('token', $verificationToken)->delete();
 
-        // Redirect พร้อม access token และ refresh token
         return redirect("https://elanco-fe.vercel.app/login?accToken={$accessToken}&refreshToken={$refreshToken}");
+    } catch (\Exception $e) {
+        \Log::error('Error in verifyEmail: ' . $e->getMessage());
+        return response()->json(['message' => 'An unexpected error occurred.'], 500);
     }
+}
+
 
     /**
      * Generate a refresh token for the user.
