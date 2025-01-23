@@ -9,19 +9,22 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 
 class QuizQuestionsExport implements FromCollection, WithHeadings
 {
-    private $quizId;
-    private $maxChoices;
+    private $id;
+    private $maxChoices = 0;
+    private $quiz;
 
-    public function __construct($quizId)
+    public function __construct($id)
     {
-        $this->quizId = $quizId;
-        $this->calculateMaxChoices();
+        $this->id = $id;
+        $this->quiz = quiz::with('questions.answers.quizUserAnswers')->find($this->id);
+        if ($this->quiz) {
+            $this->calculateMaxChoices();
+        }
     }
 
     private function calculateMaxChoices()
     {
-        $quiz = quiz::with('questions.answers')->findOrFail($this->quizId);
-        $this->maxChoices = $quiz->questions->reduce(function ($max, $question) {
+        $this->maxChoices = $this->quiz->questions->reduce(function ($max, $question) {
             return max($max, $question->answers->count());
         }, 0);
     }
@@ -31,13 +34,15 @@ class QuizQuestionsExport implements FromCollection, WithHeadings
      */
     public function collection()
     {
-        $quiz = quiz::with(['questions.answers.quizUserAnswers'])->findOrFail($this->quizId);
+        if (!$this->quiz) {
+            return collect([]);
+        }
 
-        $totalParticipants = QuizUserAnswer::where('quiz_id', $this->quizId)
+        $totalParticipants = QuizUserAnswer::where('quiz_id', $this->id)
             ->distinct('user_id')
             ->count('user_id');
 
-        return $quiz->questions->map(function ($question) use ($totalParticipants) {
+        return $this->quiz->questions->map(function ($question) use ($totalParticipants) {
             $row = [
                 'Question' => strip_tags($question->detail),
             ];
