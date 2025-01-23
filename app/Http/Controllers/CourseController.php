@@ -346,6 +346,7 @@ class CourseController extends Controller
 
             // ดึงข้อมูล Rating จาก courseActions
             $ratings = CourseAction::with(['user.countryDetails']) // ดึงข้อมูล User และประเทศ
+            ->where('isReview', 1)
             ->where('course_id', $id)
                 ->when($search, function ($query, $search) {
                     // ค้นหาจากชื่อผู้ใช้ (firstName, lastName) หรืออีเมล
@@ -372,6 +373,7 @@ class CourseController extends Controller
                 'total_reviews' => $totalReviews, // จำนวนรีวิวทั้งหมด
                 'ratings' => $ratings->map(function ($rating) {
                     return [
+                        'id' => $rating->user->id,
                         'name' => $rating->user ? $rating->user->firstName . ' ' . $rating->user->lastName : null,
                         'email' => $rating->user ? $rating->user->email : null,
                         'clinicName' => $rating->user ? $rating->user->clinic : null,
