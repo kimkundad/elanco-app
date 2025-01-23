@@ -21,9 +21,7 @@ class SystemLogRepositoryImpl implements SystemLogRepository
                 $subQuery->where('action', 'LIKE', '%' . $search . '%')
                     ->orWhere('ip_address', 'LIKE', '%' . $search . '%')
                     ->orWhereHas('user', function ($userQuery) use ($search) {
-                        $userQuery->where('firstName', 'LIKE', '%' . $search . '%')
-                            ->orWhere('lastName', 'LIKE', '%' . $search . '%')
-                            ->orWhereRaw("CONCAT(firstName, ' ', lastName) LIKE ?", ["%$search%"]);
+                        $userQuery->where('name', 'LIKE', '%' . $search . '%');
                     });
             });
         }
