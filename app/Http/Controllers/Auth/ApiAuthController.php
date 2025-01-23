@@ -94,6 +94,7 @@ class ApiAuthController extends Controller
             'verify' => 1,
             'last_active_at' => $user->last_active_at,
             'refresh_token' => $this->createRefreshToken($request->email),
+            'server' => 'by new server'
         ]);
     }
 
