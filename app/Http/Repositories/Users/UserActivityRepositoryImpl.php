@@ -18,24 +18,33 @@ class UserActivityRepositoryImpl implements UserActivityRepository
 
     public function findPaginated(array $queryParams)
     {
-        $filterableColumns = [
-            'activity_type',
-            'activity_detail',
-            'device_type',
-            'browser_type',
-            'ip_address',
-            'activity_timestamp',
-        ];
-
         $query = UserActivity::with('user.countryDetails');
 
-        foreach ($queryParams as $key => $value) {
-            if (in_array($key, $filterableColumns)) {
-                $query->where($key, 'LIKE', '%' . $value . '%');
-            }
+        if (isset($queryParams['search']) && $queryParams['search']) {
+            $search = $queryParams['search'];
+            $query->where(function ($subQuery) use ($search) {
+                $subQuery->where('activity_detail', 'LIKE', "%{$search}%")
+                    ->orWhere('device_type', 'LIKE', "%{$search}%")
+                    ->orWhere('browser_type', 'LIKE', "%{$search}%");
+            });
+        }
+
+        if (isset($queryParams['select_activity']) && $queryParams['select_activity']) {
+            $query->where('activity_type', $queryParams['select_activity']);
+        }
+
+        if (isset($queryParams['userId']) && $queryParams['userId']) {
+            $query->where('user_id', $queryParams['userId']);
         }
 
         return $query;
+    }
+
+    public function findTypes()
+    {
+        return UserActivity::distinct()
+            ->orderBy('activity_type', 'asc')
+            ->pluck('activity_type');
     }
 
     public function save(array $data)

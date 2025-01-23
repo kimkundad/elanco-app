@@ -96,4 +96,20 @@ class UserActivityController extends Controller
     {
         //
     }
+
+    public function getTypes()
+    {
+        try {
+            $types = $this->userActivityService->findTypes();
+            return response()->json([
+                'status' => ['status' => 'success', 'message' => null],
+                'data' => $types
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => ['status' => 'error', 'message' => $e->getMessage()],
+                'data' => null
+            ], 500);
+        }
+    }
 }
