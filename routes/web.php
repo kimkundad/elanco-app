@@ -41,11 +41,12 @@ Route::get('/admin/courseReview/1/export', [CourseController::class, 'courseRevi
 
     Route::get('/test-email', function () {
 
-        $id = 4;
-        $quiz = Quiz::with('questions.answers')->findOrFail($id);
-        dd(count($quiz->questions));
+        Mail::raw('This is a test email from Mailgun!', function ($message) {
+            $message->to('ighostzaa@gmail.com')
+                    ->subject('Test Email');
 
     });
+});
 
 Route::group(['middleware' => ['UserRole:superadmin|admin']], function() {
 
