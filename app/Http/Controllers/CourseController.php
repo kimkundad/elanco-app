@@ -414,103 +414,97 @@ class CourseController extends Controller
     }
 
     public function show(Request $request, string $id)
-    {
-        try {
+{
+    try {
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
 
-            $startDate = $request->input('start_date'); // วันที่เริ่มต้น
-            $endDate = $request->input('end_date');    // วันที่สิ้นสุด
+        $course = course::with([
+            'countries',
+            'mainCategories',
+            'subCategories',
+            'animalTypes',
+            'itemDes',
+            'referances',
+            'Speaker',
+            'Speaker.countryDetails',
+            'creator'
+        ])->findOrFail($id);
 
-            // ดึงข้อมูลคอร์สและความสัมพันธ์ที่เกี่ยวข้อง
-            $course = course::with([
-                'countries',
-                'mainCategories',
-                'subCategories',
-                'animalTypes',
-                'itemDes',
-                'referances',
-                'Speaker',
-                'Speaker.countryDetails',
-                'creator'
-            ])->findOrFail($id);
+        $totalEnrolled = $course->courseActions()->count();
+        $completedEnrolled = $course->courseActions()->where('isFinishCourse', 1)->count();
+        $rating = $course->courseActions()->avg('rating');
+        $ratingCount = $course->courseActions()->where('rating', '!=', 0)->count();
+        $passedCount = $course->courseActions()->where('isFinishQuiz', 1)->count();
+        $userMakeQuizCount = $course->courseActions()->where('isFinishVideo', 1)->count();
+        $surveySummit = $course->survey ? $course->survey->responses()->count() : 0;
+        $course->ce_point = isset($course->quiz->point_cpd) ? $course->quiz->point_cpd : 0;
 
-            // ข้อมูลเพิ่มเติมที่ต้องการคำนวณ
-            $totalEnrolled = $course->courseActions()->count(); // จำนวนผู้ลงทะเบียนทั้งหมด
-            $completedEnrolled = $course->courseActions()->where('isFinishCourse', 1)->count(); // จำนวนผู้เรียนจบ
-            $rating = $course->courseActions()->avg('rating'); // คะแนนเฉลี่ย
-            $ratingCount = $course->courseActions()->where('rating', '!=', 0)->count();
-            $passedCount = $course->courseActions()->where('isFinishQuiz', 1)->count(); // จำนวนผู้ที่ผ่าน
-            $userMakeQuizCount = $course->courseActions()->where('isFinishVideo', 1)->count(); // จำนวนผู้ทำข้อสอบ
-            $surveySummit = $course->survey ? $course->survey->responses()->count() : 0; // จำนวนผู้ที่ตอบ Survey
-            $course->ce_point = isset($course->quiz->point_cpd) ? $course->quiz->point_cpd : 0;
-            // คำนวณเปอร์เซ็นต์
-            $completePercentage = $totalEnrolled > 0 ? round(($completedEnrolled / $totalEnrolled) * 100) : 0;
-            $passedPercentage = $totalEnrolled > 0 ? round(($passedCount / $userMakeQuizCount) * 100) : 0;
-            $surveyPercentage = $totalEnrolled > 0 ? round(($surveySummit / $totalEnrolled) * 100) : 0;
+        $completePercentage = $totalEnrolled > 0 ? round(($completedEnrolled / $totalEnrolled) * 100) : 0;
+        $passedPercentage = ($userMakeQuizCount > 0 && $totalEnrolled > 0)
+            ? round(($passedCount / $userMakeQuizCount) * 100)
+            : 0;
+        $surveyPercentage = $totalEnrolled > 0 ? round(($surveySummit / $totalEnrolled) * 100) : 0;
 
-            // กราฟแท่งแสดงจำนวนผู้ลงทะเบียนในแต่ละเดือน โดยมีการใช้ Date Range
-            $enrollmentQuery = $course->courseActions()
-                ->selectRaw('MONTH(created_at) as month, COUNT(*) as count')
-                ->groupBy('month')
-                ->orderBy('month');
+        $enrollmentQuery = $course->courseActions()
+            ->selectRaw('MONTH(created_at) as month, COUNT(*) as count')
+            ->groupBy('month')
+            ->orderBy('month');
 
-            // เพิ่มการกรองตาม Date Range
-            if ($startDate && $endDate) {
-                $enrollmentQuery->whereBetween('created_at', [
-                    Carbon::parse($startDate)->startOfDay(),
-                    Carbon::parse($endDate)->endOfDay()
-                ]);
-            }
-
-            $enrollmentReport = $enrollmentQuery->get()
-                ->mapWithKeys(function ($row) {
-                    return [date('M', mktime(0, 0, 0, $row->month, 1)) => $row->count];
-                });
-
-            // สร้าง Response Data
-            $response = [
-                'course' => $course,
-                'stats' => [
-                    'complete_percentage' => $completePercentage,
-                    'completed' => $completedEnrolled,
-                    'total_enrolled' => $totalEnrolled,
-                    'rating' => round($rating, 1),
-                    'rating_count' => $ratingCount,
-                    'passed_percentage' => $passedPercentage,
-                    'passed_count' => $passedCount,
-                    'survey_summit' => $surveySummit,
-                    'survey_percentage' => $surveyPercentage,
-                    'userMakeQuizCount' => $userMakeQuizCount
-                ],
-                'enrollment_report' => $enrollmentReport,
-                'created_by' => $course->creator ? [
-                    'firstName' => $course->creator->firstName,
-                    'lastName' => $course->creator->lastName,
-                ] : null,
-            ];
-
-            // ส่งออกข้อมูลในรูปแบบ JSON
-            return response()->json([
-                'success' => true,
-                'message' => 'Course data retrieved successfully.',
-                'data' => $response
-            ], 200);
-
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            // กรณีไม่พบคอร์ส
-            return response()->json([
-                'success' => false,
-                'message' => 'Course not found.',
-                'error' => $e->getMessage()
-            ], 404);
-        } catch (\Exception $e) {
-            // กรณีเกิดข้อผิดพลาดอื่น ๆ
-            return response()->json([
-                'success' => false,
-                'message' => 'An error occurred while retrieving course data.',
-                'error' => $e->getMessage()
-            ], 500);
+        if ($startDate && $endDate) {
+            $enrollmentQuery->whereBetween('created_at', [
+                Carbon::parse($startDate)->startOfDay(),
+                Carbon::parse($endDate)->endOfDay()
+            ]);
         }
+
+        $enrollmentReport = $enrollmentQuery->get()
+            ->mapWithKeys(function ($row) {
+                return [date('M', mktime(0, 0, 0, $row->month, 1)) => $row->count];
+            });
+
+        $response = [
+            'course' => $course,
+            'stats' => [
+                'complete_percentage' => $completePercentage,
+                'completed' => $completedEnrolled,
+                'total_enrolled' => $totalEnrolled,
+                'rating' => round($rating, 1),
+                'rating_count' => $ratingCount,
+                'passed_percentage' => $passedPercentage,
+                'passed_count' => $passedCount,
+                'survey_summit' => $surveySummit,
+                'survey_percentage' => $surveyPercentage,
+                'userMakeQuizCount' => $userMakeQuizCount
+            ],
+            'enrollment_report' => $enrollmentReport,
+            'created_by' => $course->creator ? [
+                'firstName' => $course->creator->firstName,
+                'lastName' => $course->creator->lastName,
+            ] : null,
+        ];
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Course data retrieved successfully.',
+            'data' => $response
+        ], 200);
+
+    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Course not found.',
+            'error' => $e->getMessage()
+        ], 404);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'An error occurred while retrieving course data.',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
+
 
     /**
      * Show the form for editing the specified resource.
