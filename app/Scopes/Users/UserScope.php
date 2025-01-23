@@ -17,6 +17,8 @@ class UserScope implements Scope
      */
     public function apply(Builder $builder, Model $model)
     {
+        return;
+
         $countryFlag = request()->input('countryFlag');
 
         if ($countryFlag) {
