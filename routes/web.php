@@ -36,7 +36,6 @@ Route::get('/admin/quizParticipants/{id}/export', [QuizController::class, 'expor
 Route::get('/admin/system-logs/export', [SystemLogController::class, 'exportSystemLogs']);
 Route::get('/admin/courseReview/1/export', [CourseController::class, 'courseReview']);
 
-
     Route::get('/email/verify', [ApiController::class, 'verifyEmail'])->name('verification.verify');
 
     Route::get('/test-email', function () {
