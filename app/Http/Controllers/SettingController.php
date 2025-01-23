@@ -110,6 +110,7 @@ class SettingController extends Controller
                 return [
                     'name' => $category->name,
                     'percentage' => $percentage,
+                    'categoryRegistrations' => $categoryRegistrations,
                 ];
             });
 
