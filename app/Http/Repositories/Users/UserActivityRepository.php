@@ -10,5 +10,7 @@ interface UserActivityRepository
 
     public function findPaginated(array $queryParams);
 
+    public function findTypes();
+
     public function save(array $data);
 }

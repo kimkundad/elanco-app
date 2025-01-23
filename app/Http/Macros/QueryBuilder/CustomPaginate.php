@@ -21,11 +21,7 @@ class CustomPaginate
         $self = new static;
 
         Builder::macro('customPaginate', function ($formatCallback, $queryParams = []) use ($perPage, $self) {
-            $paginationParams = array_filter($queryParams, function ($key) {
-                return in_array($key, ['page', 'per_page']);
-            }, ARRAY_FILTER_USE_KEY);
-
-            $paginate = $this->paginate($perPage)->appends($paginationParams);
+            $paginate = $this->paginate($perPage)->appends($queryParams);
 
             return [
                 'status' => ['status' => 'success', 'message' => null],
