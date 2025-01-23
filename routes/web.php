@@ -44,7 +44,6 @@ Route::get('/admin/system-logs/export', [SystemLogController::class, 'exportSyst
 
     });
 
-
 Route::group(['middleware' => ['UserRole:superadmin|admin']], function() {
 
     Route::get('/', function () {
