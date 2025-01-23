@@ -28,11 +28,13 @@ class CourseReviewExport implements FromCollection, WithHeadings
             ->get()
             ->map(function ($review) {
                 return [
-                    'Country Name' => $review->user->countryDetails->name ?? 'N/A',
-                    'Name' => "{$review->user->firstName} {$review->user->lastName}",
-                    'Clinic / Hospital Name' => $review->user->clinic ?? 'N/A',
-                    'Type' => $review->user->userType ?? 'N/A',
-                    'Email' => $review->user->email ?? 'N/A',
+                    'Country Name' => optional($review->user->countryDetails)->name ?? 'N/A', // ใช้ optional()
+                    'Name' => isset($review->user)
+                        ? "{$review->user->firstName} {$review->user->lastName}"
+                        : 'N/A', // ตรวจสอบ $review->user ก่อนเข้าถึง
+                    'Clinic / Hospital Name' => optional($review->user)->clinic ?? 'N/A',
+                    'Type' => optional($review->user)->userType ?? 'N/A',
+                    'Email' => optional($review->user)->email ?? 'N/A',
                     'Rating' => (string)($review->rating ?? 'N/A'),
                     'Time Stamp' => $review->updated_at->format('Y-m-d H:i:s'),
                 ];
