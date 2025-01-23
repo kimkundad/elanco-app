@@ -16,9 +16,7 @@ class UserActivityService
 
     public function findAll(array $queryParams)
     {
-        $paginationParams = array_filter($queryParams, function ($key) {
-            return in_array($key, ['page', 'per_page']);
-        }, ARRAY_FILTER_USE_KEY);
+        $paginationParams = $queryParams;
 
         $queryParams = ArrayKeyConverter::convertToSnakeCase($queryParams);
 
@@ -46,5 +44,10 @@ class UserActivityService
         ];
 
         $this->userActivityRepository->save($data);
+    }
+
+    public function findTypes()
+    {
+        return $this->userActivityRepository->findTypes();
     }
 }

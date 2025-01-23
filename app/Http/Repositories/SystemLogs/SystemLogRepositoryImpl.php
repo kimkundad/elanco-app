@@ -13,14 +13,19 @@ class SystemLogRepositoryImpl implements SystemLogRepository
 
     public function findPaginated(array $queryParams)
     {
-        $filterableColumns = ['ip_address', 'action', 'status', 'error_reason', 'created_at', 'updated_at'];
-
         $query = SystemLog::with('user.countryDetails');
 
-        foreach ($queryParams as $key => $value) {
-            if (in_array($key, $filterableColumns)) {
-                $query->where($key, 'LIKE', '%' . $value . '%');
-            }
+        if (!empty($queryParams['search'])) {
+            $query->where(function ($subQuery) use ($queryParams) {
+                $search = $queryParams['search'];
+                $subQuery->where('action', 'LIKE', '%' . $search . '%')
+                    ->orWhere('ip_address', 'LIKE', '%' . $search . '%')
+                    ->orWhereHas('user', function ($userQuery) use ($search) {
+                        $userQuery->where('firstName', 'LIKE', '%' . $search . '%')
+                            ->orWhere('lastName', 'LIKE', '%' . $search . '%')
+                            ->orWhereRaw("CONCAT(firstName, ' ', lastName) LIKE ?", ["%$search%"]);
+                    });
+            });
         }
 
         return $query;
