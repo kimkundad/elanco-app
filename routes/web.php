@@ -8,6 +8,7 @@ use App\Http\Controllers\MemberController;
 use App\Http\Controllers\SurveyController;
 use App\Http\Controllers\SystemLogs\SystemLogController;
 use App\Http\Controllers\QuizController;
+use App\Http\Controllers\CourseController;
 use App\Models\Quiz;
 
 /*
@@ -33,6 +34,8 @@ Route::get('/admin/system-logs/export', [SystemLogController::class, 'exportSyst
 Route::get('/admin/surveyParticipants/{id}/export', [SurveyController::class, 'exportSurveyParticipants']);
 Route::get('/admin/quizParticipants/{id}/export', [QuizController::class, 'exportQuizParticipants']);
 Route::get('/admin/system-logs/export', [SystemLogController::class, 'exportSystemLogs']);
+Route::get('/admin/courseReview/1/export', [CourseController::class, 'courseReview']);
+
 
     Route::get('/email/verify', [ApiController::class, 'verifyEmail'])->name('verification.verify');
 
