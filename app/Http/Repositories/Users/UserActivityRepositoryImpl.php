@@ -33,6 +33,10 @@ class UserActivityRepositoryImpl implements UserActivityRepository
             $query->where('activity_type', $queryParams['select_activity']);
         }
 
+        if (isset($queryParams['userId']) && $queryParams['userId']) {
+            $query->where('user_id', $queryParams['userId']);
+        }
+
         return $query;
     }
 
