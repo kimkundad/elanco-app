@@ -42,7 +42,8 @@ class CourseController extends Controller
                     $query->where('isFinishCourse', true);
                 }])
                 ->when($search, function ($query, $search) {
-                    $query->where('course_title', 'like', '%' . $search . '%')
+                    $query->where('course_id', 'like', '%' . $search . '%')
+                        ->orWhere('course_title', 'like', '%' . $search . '%')
                         ->orWhere('course_preview', 'like', '%' . $search . '%');
                 })
                 ->paginate(10);
