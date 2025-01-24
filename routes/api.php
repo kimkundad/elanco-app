@@ -91,7 +91,6 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
 
     Route::post('/admin/uploadImg', [SettingController::class, 'upPicUrl']);
 
-
     Route::get('/admin/quiz', [QuizController::class, 'index']);
     Route::get('/admin/quiz/{id}', [QuizController::class, 'show']);
     Route::get('/admin/quizQuestionList/{id}', [QuizController::class, 'quizQuestionList']);
