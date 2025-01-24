@@ -1189,17 +1189,19 @@ public function courses(Request $request)
 
         $record = DB::table('email_verifications')->where('token', $verificationToken)->first();
         if (!$record) {
-            return response()->json(['message' => 'Invalid verification link.'], 403);
+            //return response()->json(['message' => 'Invalid verification link.'], 403);
+            return redirect("https://elanco-fe.vercel.app/expire");
         }
 
         if (now()->greaterThan($record->expires_at)) {
-            return response()->json(['message' => 'Expired verification link.'], 403);
+            return redirect("https://elanco-fe.vercel.app/expire");
         }
 
         $user = User::find($record->user_id);
         if (!$user) {
-            return response()->json(['message' => 'User not found.'], 404);
+            return redirect("https://elanco-fe.vercel.app/expire");
         }
+
 
         if ($user->email_verified_at) {
             $accessToken = JWTAuth::fromUser($user);
@@ -1220,7 +1222,8 @@ public function courses(Request $request)
         return redirect("https://elanco-fe.vercel.app/login?accToken={$accessToken}&refreshToken={$refreshToken}");
     } catch (\Exception $e) {
         \Log::error('Error in verifyEmail: ' . $e->getMessage());
-        return response()->json(['message' => 'An unexpected error occurred.'], 500);
+        return redirect("https://elanco-fe.vercel.app/expire");
+       // return response()->json(['message' => 'An unexpected error occurred.'], 500);
     }
 }
 
