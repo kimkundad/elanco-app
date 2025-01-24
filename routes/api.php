@@ -79,7 +79,7 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
 
     Route::get('/admin/course', [CourseController::class, 'index']);
     Route::get('/admin/courseReview/{id}', [CourseController::class, 'courseReview']);
-    Route::get('/admin/courseReview/{id}/export', [CourseController::class, 'exportCourseReview']);
+    Route::get('/admin/course-review/{id}/export', [CourseController::class, 'exportCourseReview']);
     Route::get('/admin/course/{id}', [CourseController::class, 'show']);
 
     Route::middleware(['log.system'])->group(function () {
@@ -97,7 +97,7 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
     Route::get('/admin/quizQuestionList/{id}', [QuizController::class, 'quizQuestionList']);
     Route::get('/admin/quiz-questions/{id}/export', [QuizController::class, 'exportQuizQuestions']);
     Route::get('/admin/quizParticipants/{id}', [QuizController::class, 'getQuizParticipants']);
-    Route::get('/admin/quizParticipants/{id}/export', [QuizController::class, 'exportQuizParticipants']);
+    Route::get('/admin/quiz-participants/{id}/export', [QuizController::class, 'exportQuizParticipants']);
     Route::middleware(['log.system'])->group(function () {
         Route::post('/admin/quiz', [QuizController::class, 'store']);
         Route::put('/admin/quiz/{id}', [QuizController::class, 'update']);
@@ -114,7 +114,7 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
     Route::get('/admin/getSurveyAnsList/{id}', [SurveyController::class, 'getSurveyAnsList']);
     Route::get('/admin/survey-questions/{id}/export', [SurveyController::class, 'exportSurveyQuestions']);
     Route::get('/admin/surveyParticipants/{id}', [SurveyController::class, 'getSurveyParticipants']);
-    Route::get('/admin/surveyParticipants/{id}/export', [SurveyController::class, 'exportSurveyParticipants']);
+    Route::get('/admin/survey-participants/{id}/export', [SurveyController::class, 'exportSurveyParticipants']);
     Route::get('/admin/survey', [SurveyController::class, 'index']);
     Route::get('/admin/survey/{id}', [SurveyController::class, 'show']);
 

@@ -9,20 +9,22 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 
 class SurveyQuestionsExport implements FromCollection, WithHeadings
 {
-    private $surveyId;
-    private $maxChoices;
+    private $id;
+    private $maxChoices = 0;
+    private $survey;
 
-    public function __construct($surveyId)
+    public function __construct($id)
     {
-        $this->surveyId = $surveyId;
-        $this->calculateMaxChoices();
+        $this->id = $id;
+        $this->survey = Survey::with(['questions.answers.surveyResponseAnswers'])->find($this->id);
+        if ($this->survey) {
+            $this->calculateMaxChoices();
+        }
     }
 
     private function calculateMaxChoices()
     {
-        $survey = Survey::with(['questions.answers'])->findOrFail($this->surveyId);
-
-        $this->maxChoices = $survey->questions->reduce(function ($max, $question) {
+        $this->maxChoices = $this->survey->questions->reduce(function ($max, $question) {
             return max($max, $question->answers->count());
         }, 0);
     }
@@ -32,13 +34,15 @@ class SurveyQuestionsExport implements FromCollection, WithHeadings
      */
     public function collection()
     {
-        $survey = Survey::with(['questions.answers.surveyResponseAnswers'])->findOrFail($this->surveyId);
+        if (!$this->survey) {
+            return collect([]);
+        }
 
-        $totalParticipants = SurveyResponse::where('survey_id', $this->surveyId)
+        $totalParticipants = SurveyResponse::where('survey_id', $this->id)
             ->distinct('user_id')
             ->count('user_id');
 
-        return $survey->questions->map(function ($question) use ($totalParticipants) {
+        return $this->survey->questions->map(function ($question) use ($totalParticipants) {
             $row = [
                 'Question' => $question->question_detail,
             ];
