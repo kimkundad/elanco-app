@@ -27,10 +27,17 @@ use Illuminate\Support\Facades\DB;
 
 class ApiController extends Controller
 {
+
+
     //
     public function getCourseAction($id)
     {
-        $courseAction = CourseAction::where('course_id', $id)->first();
+
+        try {
+            // ตรวจสอบและดึงผู้ใช้จาก JWT
+            $user = JWTAuth::parseToken()->authenticate();
+
+        $courseAction = CourseAction::where('course_id', $id)->where('user_id', $user->id)->first();
 
         if (!$courseAction) {
             // หากไม่พบข้อมูล ให้ส่งค่าเริ่มต้นกลับมา
@@ -53,6 +60,29 @@ class ApiController extends Controller
             'isDownloadCertificate' => $courseAction->isDownloadCertificate == 1,
             'isReview' => $courseAction->isReview == 1,
         ]);
+
+        } catch (TokenExpiredException $e) {
+            return response()->json([
+                'error' => 'Token has expired',
+                'message' => 'Please refresh your token or login again.',
+            ], 401);
+        } catch (TokenInvalidException $e) {
+            return response()->json([
+                'error' => 'Token is invalid',
+                'message' => 'The provided token is not valid.',
+            ], 401);
+        } catch (JWTException $e) {
+            return response()->json([
+                'error' => 'Token not provided',
+                'message' => 'Authorization token is missing from your request.',
+            ], 400);
+        } catch (\Exception $e) {
+            DB::rollBack(); // ย้อนกลับการเปลี่ยนแปลงหากเกิดข้อผิดพลาด
+            return response()->json([
+                'error' => 'Internal Server Error',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function getCertificate(Request $request, $id)
@@ -1093,6 +1123,11 @@ public function courses(Request $request)
                     'error' => 'Unauthorized',
                     'message' => 'User not authenticated',
                 ], 401);
+            }
+
+            // ถ้า isFinishVideo เป็น true ให้ตั้งค่า timestamp เป็น 0
+            if ($validatedData['isFinishVideo']) {
+                $validatedData['timestamp'] = 0;
             }
 
             // ใช้ updateOrCreate เพื่อตรวจสอบและอัปเดต/สร้างข้อมูล
