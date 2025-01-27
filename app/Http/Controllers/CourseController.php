@@ -478,8 +478,6 @@ class CourseController extends Controller
                 $course->quiz = ["expire_date" => ' '];
             }
 
-            $course->quiz = ["expire_date" => ' '];
-
         $response = [
             'course' => $course,
             'stats' => [
