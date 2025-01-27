@@ -412,6 +412,7 @@ class CourseController extends Controller
         }
     }
 
+
     /**
      * Export system logs to a CSV file.
      */
