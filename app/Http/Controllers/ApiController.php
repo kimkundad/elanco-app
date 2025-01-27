@@ -18,6 +18,8 @@ use App\Models\Country;
 use App\Models\Survey;
 use App\Models\SurveyResponse;
 use App\Models\SurveyResponseAnswer;
+use App\Models\Settings\FeaturedCourse;
+
 
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Str;
@@ -547,6 +549,108 @@ public function courses(Request $request)
         }
     }
 
+    // public function exploreCourses(Request $request)
+    // {
+    //     try {
+    //         // รับ country flag จาก request
+    //         $countryFlag = $request->country;
+
+    //         // ตรวจสอบว่า country flag มีอยู่ในฐานข้อมูลหรือไม่
+    //         $country = Country::where('flag', $countryFlag)->first();
+    //         //  dd($request->all());
+    //         if (!$country) {
+    //             return response()->json([
+    //                 'error' => 'Country not found',
+    //                 'message' => 'The specified country flag does not exist.',
+    //             ], 404);
+    //         }
+
+    //         // ดึงข้อมูลคอร์สที่มี featured == 1 และเชื่อมโยงกับประเทศที่ระบุ
+    //         $courses = course::where('featured', 1)
+    //             ->whereHas('countries', function ($query) use ($country) {
+    //                 $query->where('country_id', $country->id);
+    //             })
+    //             ->with([
+    //                 'countries',
+    //                 'mainCategories',
+    //                 'subCategories',
+    //                 'animalTypes',
+    //                 'itemDes',
+    //                 'Speaker',
+    //                 'referances'
+    //             ])
+    //             ->get();
+
+    //         // จัดรูปแบบข้อมูลสำหรับการส่งกลับ
+    //         $formattedCourses = $courses->map(function ($course) {
+    //             return [
+    //                 'id' => $course->id,
+    //                 'course_id' => $course->course_id,
+    //                 'course_title' => $course->course_title,
+    //                 'course_description' => $course->course_description,
+    //                 'course_preview' => $course->course_preview,
+    //                 'duration' => $course->duration,
+    //                 'url_video' => $course->url_video,
+    //                 'status' => $course->status,
+    //                 'ratting' => number_format($course->ratting, 1),
+    //                 'created_at' => $course->created_at,
+    //                 'updated_at' => $course->updated_at,
+    //                 'id_quiz' => $course->id_quiz,
+    //                 'thumbnail' => $course->course_img,
+    //                 'countries' => $course->countries->map(function ($country) {
+    //                     return ['name' => $country->name];
+    //                 }),
+    //                 'main_categories' => $course->mainCategories->map(function ($category) {
+    //                     return ['name' => $category->name];
+    //                 }),
+    //                 'sub_categories' => $course->subCategories->map(function ($subcategory) {
+    //                     return ['name' => $subcategory->name];
+    //                 }),
+    //                 'animal_types' => $course->animalTypes->map(function ($animal) {
+    //                     return ['name' => $animal->name];
+    //                 }),
+    //                 'item_des' => $course->itemDes->map(function ($item) {
+    //                     return [
+    //                         'detail' => $item->detail,
+    //                     ];
+    //                 }),
+    //                 'speakers' => $course->Speaker->map(function ($item) {
+    //                     return [
+    //                         'id' => $item->id,
+    //                         'name' => $item->name,
+    //                         'avatar' => $item->avatar,
+    //                         'job_position' => $item->job_position,
+    //                         'country' => $item->countryDetails ? $item->countryDetails->name : null, // ใช้ countryDetails
+    //                         'file' => $item->file,
+    //                         'description' => $item->description,
+    //                     ];
+    //                 }),
+    //                 'referances' => $course->referances->map(function ($referance) {
+    //                     return [
+    //                         'id' => $referance->id,
+    //                         'title' => $referance->title,
+    //                         'image' => $referance->image,
+    //                         'file' => $referance->file,
+    //                         'description' => $referance->description,
+    //                     ];
+    //                 }),
+    //             ];
+    //         });
+
+    //         // ส่งข้อมูล
+    //         return response()->json([
+    //             'courses' => $formattedCourses,
+    //         ], 200);
+    //     } catch (\Exception $e) {
+    //         // จัดการข้อผิดพลาดทั่วไป
+    //         return response()->json([
+    //             'error' => 'Internal Server Error',
+    //             'message' => $e->getMessage(),
+    //         ], 500);
+    //     }
+    // }
+
+
     public function exploreCourses(Request $request)
     {
         try {
@@ -555,7 +659,6 @@ public function courses(Request $request)
 
             // ตรวจสอบว่า country flag มีอยู่ในฐานข้อมูลหรือไม่
             $country = Country::where('flag', $countryFlag)->first();
-            //  dd($request->all());
             if (!$country) {
                 return response()->json([
                     'error' => 'Country not found',
@@ -563,24 +666,31 @@ public function courses(Request $request)
                 ], 404);
             }
 
-            // ดึงข้อมูลคอร์สที่มี featured == 1 และเชื่อมโยงกับประเทศที่ระบุ
-            $courses = course::where('featured', 1)
-                ->whereHas('countries', function ($query) use ($country) {
-                    $query->where('country_id', $country->id);
-                })
-                ->with([
-                    'countries',
-                    'mainCategories',
-                    'subCategories',
-                    'animalTypes',
-                    'itemDes',
-                    'Speaker',
-                    'referances'
-                ])
+          //  dd($country->id);
+
+            // ดึงข้อมูลจาก FeaturedCourse ที่เป็น public และเรียงตาม order
+            $featuredCourses = FeaturedCourse::where('status', 'public')
+                ->where('country_id', $country->id)
+                ->orderBy('order', 'asc')
+                ->with(['course' => function ($query) {
+                    $query->with([
+                        'countries',
+                        'mainCategories',
+                        'subCategories',
+                        'animalTypes',
+                        'itemDes',
+                        'Speaker',
+                        'referances',
+                    ]);
+                }])
                 ->get();
 
-            // จัดรูปแบบข้อมูลสำหรับการส่งกลับ
-            $formattedCourses = $courses->map(function ($course) {
+            // จัดรูปแบบข้อมูล
+            $formattedCourses = $featuredCourses->map(function ($featuredCourse) {
+                $course = $featuredCourse->course; // ดึงข้อมูล course ที่เกี่ยวข้อง
+                if (!$course) {
+                    return null; // ถ้าไม่มี course ให้ข้าม
+                }
                 return [
                     'id' => $course->id,
                     'course_id' => $course->course_id,
@@ -618,7 +728,7 @@ public function courses(Request $request)
                             'name' => $item->name,
                             'avatar' => $item->avatar,
                             'job_position' => $item->job_position,
-                            'country' => $item->countryDetails ? $item->countryDetails->name : null, // ใช้ countryDetails
+                            'country' => $item->countryDetails ? $item->countryDetails->name : null,
                             'file' => $item->file,
                             'description' => $item->description,
                         ];
@@ -633,7 +743,7 @@ public function courses(Request $request)
                         ];
                     }),
                 ];
-            });
+            })->filter(); // กรองค่า null ออก
 
             // ส่งข้อมูล
             return response()->json([
@@ -647,6 +757,7 @@ public function courses(Request $request)
             ], 500);
         }
     }
+
 
     public function courseDetail($id)
     {
