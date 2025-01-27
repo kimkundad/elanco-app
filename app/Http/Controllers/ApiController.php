@@ -20,6 +20,7 @@ use App\Models\SurveyResponse;
 use App\Models\SurveyResponseAnswer;
 use App\Models\Settings\FeaturedCourse;
 use App\Models\Settings\HomeBanner;
+use App\Models\Settings\PageBanner;
 
 
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -775,7 +776,7 @@ public function courses(Request $request)
             }
 
             // ดึงข้อมูลจาก HomeBanner ที่เป็น public และเชื่อมโยงกับประเทศที่ระบุ
-            $homeBanners = HomeBanner::where('status', 'public')
+            $homeBanners = PageBanner::where('status', 'public')
                 ->where('country_id', $country->id)
                 ->orderBy('order', 'asc') // เรียงลำดับตาม order
                 ->get();
@@ -803,6 +804,51 @@ public function courses(Request $request)
             ], 200);
         } catch (\Exception $e) {
             // จัดการข้อผิดพลาดทั่วไป
+            return response()->json([
+                'error' => 'Internal Server Error',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function homePageBanner(Request $request)
+    {
+        try {
+            $countryFlag = $request->input('country');
+
+            $country = Country::where('flag', $countryFlag)->first();
+            if (!$country) {
+                return response()->json([
+                    'error' => 'Country not found',
+                    'message' => 'The specified country flag does not exist.',
+                ], 404);
+            }
+
+            $homeBanners = HomeBanner::where('status', 'public')
+                ->where('country_id', $country->id)
+                ->orderBy('order', 'asc')
+                ->get();
+
+            $formattedBanners = $homeBanners->map(function ($banner) {
+                return [
+                    'id' => $banner->id,
+                    'title' => $banner->title,
+                    'desktop_image' => $banner->desktop_image,
+                    'mobile_image' => $banner->mobile_image,
+                    'link' => $banner->link, // รวม link
+                    'description' => $banner->description, // รวม description
+                    'country_id' => $banner->country_id,
+                    'created_at' => $banner->created_at->format('Y-m-d H:i:s'),
+                    'updated_at' => $banner->updated_at->format('Y-m-d H:i:s'),
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Home banners retrieved successfully.',
+                'data' => $formattedBanners,
+            ], 200);
+        } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Internal Server Error',
                 'message' => $e->getMessage(),

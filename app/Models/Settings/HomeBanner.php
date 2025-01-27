@@ -33,8 +33,6 @@ class HomeBanner extends Model
         'title',
         'desktop_image',
         'mobile_image',
-        'link', // เพิ่มฟิลด์ link
-        'description', // เพิ่มฟิลด์ description
         'status',
         'order',
         'country_id',
@@ -91,8 +89,6 @@ class HomeBanner extends Model
             'desktopImage' => $this->desktop_image,
             'mobileImage' => $this->mobile_image,
             'status' => $this->status,
-            'link' => $this->link,
-            'description' => $this->description,
             'order' => $this->order,
             'country' => $this->country ? $this->country->format() : null,
             'createdBy' => $this->createdByUser ? $this->createdByUser->formatIncludingCountry() : null,
