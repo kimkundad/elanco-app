@@ -616,7 +616,7 @@ class CourseController extends Controller
             $course->save();
 
             $course->itemDes()->delete(); // ลบรายการเดิม
-            if ($request->has('item_des')) {
+            if ($request->has('itemDes')) {
                 foreach ($request->item_des as $choice) {
                     if (!is_null($choice)) {
                         $itemDes = new ItemDes();
