@@ -431,8 +431,16 @@ class CourseController extends Controller
             'referances',
             'Speaker',
             'Speaker.countryDetails',
-            'creator'
+            'creator',
+            'quiz' // ดึงความสัมพันธ์กับ quiz
         ])->findOrFail($id);
+
+        $course->expire_date = isset($course->quiz->expire_date) ? $course->quiz->expire_date : null;
+
+        // จัดการค่าเริ่มต้นของ quiz หากไม่มี
+
+       // dd($course->quiz);
+       // $course->quiz = 55;
 
         $totalEnrolled = $course->courseActions()->count();
         $completedEnrolled = $course->courseActions()->where('isFinishCourse', 1)->count();
@@ -466,6 +474,12 @@ class CourseController extends Controller
                 return [date('M', mktime(0, 0, 0, $row->month, 1)) => $row->count];
             });
 
+            if (!$course->quiz) {
+                $course->quiz = ["expire_date" => ' '];
+            }
+
+            $course->quiz = ["expire_date" => ' '];
+
         $response = [
             'course' => $course,
             'stats' => [
@@ -481,6 +495,7 @@ class CourseController extends Controller
                 'userMakeQuizCount' => $userMakeQuizCount
             ],
             'enrollment_report' => $enrollmentReport,
+            'quiz' => $course->quiz,
             'created_by' => $course->creator ? [
                 'firstName' => $course->creator->firstName,
                 'lastName' => $course->creator->lastName,
