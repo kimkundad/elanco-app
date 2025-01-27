@@ -28,6 +28,10 @@ class MemberController extends Controller
                 ->whereHas('roles', function ($query) {
                     $query->where('roles.id', 3); // เฉพาะ Role ID = 3
                 })
+                ->whereHas('user', function ($userQuery) {
+                    // กรองไม่ให้อีเมลมีคำว่า "Deleted"
+                    $userQuery->where('email', 'NOT LIKE', '%Deleted%');
+                })
                 ->when($search, function ($query) use ($search) {
                     $query->where(function ($q) use ($search) {
                         $q->where('name', 'LIKE', "%$search%")
