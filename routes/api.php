@@ -84,6 +84,8 @@ Route::middleware(['auth:api', 'UserRole:superadmin|admin'])->group(function () 
     Route::get('/admin/course-review/{id}/export', [CourseController::class, 'exportCourseReview']);
     Route::get('/admin/course/{id}', [CourseController::class, 'show']);
 
+    Route::get('/admin/cloneCourse/{id}', [CourseController::class, 'cloneCourse']);
+
     Route::middleware(['log.system'])->group(function () {
         Route::get('/admin/courseStatus/{id}', [CourseController::class, 'courseStatus']);
         Route::post('/admin/course', [CourseController::class, 'store']);

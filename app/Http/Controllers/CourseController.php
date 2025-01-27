@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Http;
 
 class CourseController extends Controller
 {
@@ -419,6 +420,120 @@ class CourseController extends Controller
         $fileName = 'course_reviews_' . $id . '_' . now()->format('Y_m_d_H_i_s') . '.csv';
         return Excel::download(new CourseReviewExport($id), $fileName);
     }
+
+    public function cloneCourse(string $id){
+
+        try {
+
+            $course = course::with([
+                'countries',
+                'mainCategories',
+                'subCategories',
+                'animalTypes',
+                'itemDes',
+                'referances',
+                'Speaker',
+                'Speaker.countryDetails',
+                'creator',
+                'quiz' // ดึงความสัมพันธ์กับ quiz
+            ])->findOrFail($id);
+
+            $course->expire_date = isset($course->quiz->expire_date) ? $course->quiz->expire_date : null;
+
+            $filesToDownloadCourse_img = [];
+            $filesToDownloadReferances_img = [];
+            $filesToDownloadReferances_file = [];
+            $filesToDownloadSpeaker_avatar = [];
+            $filesToDownloadSpeaker_file = [];
+
+            if (str_contains($course->course_img, 'https://kimspace2.sgp1.cdn.digitaloceanspaces.com')) {
+                $filesToDownloadCourse_img[] = $this->downloadFile($course->course_img);
+            }
+
+            // ตัวอย่าง: ตรวจสอบ referances
+            foreach ($course->referances as $referance) {
+                if (str_contains($referance->image, 'https://kimspace2.sgp1.cdn.digitaloceanspaces.com')) {
+                    $filesToDownloadReferances_img[] = $this->downloadFile($referance->image);
+                }
+                if (str_contains($referance->file, 'https://kimspace2.sgp1.cdn.digitaloceanspaces.com')) {
+                    $filesToDownloadReferances_file[] = $this->downloadFile($referance->file);
+                }
+            }
+
+
+            foreach ($course->Speaker as $speaker) {
+                if (str_contains($speaker->avatar, 'https://kimspace2.sgp1.cdn.digitaloceanspaces.com')) {
+                    $filesToDownloadSpeaker_avatar[] = $this->downloadFile($speaker->avatar);
+                }
+                if (str_contains($speaker->file, 'https://kimspace2.sgp1.cdn.digitaloceanspaces.com')) {
+                    $filesToDownloadSpeaker_file[] = $this->downloadFile($speaker->file);
+                }
+            }
+
+            $course->ce_point = isset($course->quiz->point_cpd) ? $course->quiz->point_cpd : 0;
+
+                if (!$course->quiz) {
+                    $course->quiz = ["expire_date" => ' '];
+                }
+
+            $response = [
+                'course' => $course,
+                'course_img' => $filesToDownloadCourse_img,
+                'referance_img' => $filesToDownloadReferances_img,
+                'referance_file' => $filesToDownloadReferances_file,
+                'speaker_avatar' => $filesToDownloadSpeaker_avatar,
+                'speaker_file' => $filesToDownloadSpeaker_file,
+                'quiz' => $course->quiz,
+                'created_by' => $course->creator ? [
+                    'firstName' => $course->creator->firstName,
+                    'lastName' => $course->creator->lastName,
+                ] : null,
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Course data retrieved successfully.',
+                'data' => $response
+            ], 200);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Course not found.',
+                'error' => $e->getMessage()
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving course data.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+
+    }
+
+
+    private function downloadFile($url)
+{
+    try {
+        $response = Http::get($url);
+        if ($response->successful()) {
+            $fileContent = $response->body();
+            $fileType = $response->header('Content-Type');
+            $fileName = basename($url);
+
+            return [
+                'name' => $fileName,
+                'type' => $fileType,
+                'base64' => base64_encode($fileContent),
+                'url' => $url
+            ];
+        }
+        return null;
+    } catch (\Exception $e) {
+        return null;
+    }
+}
 
     public function show(Request $request, string $id)
 {
