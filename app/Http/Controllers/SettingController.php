@@ -40,6 +40,11 @@ class SettingController extends Controller
 
     }
 
+    public function profile(){
+
+
+    }
+
     public function overView(Request $request)
     {
         try {

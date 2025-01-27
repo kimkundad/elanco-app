@@ -37,6 +37,7 @@ class MemberController extends Controller
                 ->when($userType, function ($query) use ($userType) {
                     $query->where('userType', $userType);
                 })
+                ->orderBy('created_at', 'desc')
                 ->paginate(8);
 
             return response()->json([

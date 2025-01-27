@@ -438,7 +438,6 @@ class ApiAuthController extends Controller
             $user->load(['mainCategories', 'subCategories', 'animalTypes', 'countryDetails']);
 
             // จัดรูปแบบข้อมูลสำหรับ Response
-            // จัดรูปแบบข้อมูลสำหรับ Response
             return response()->json([
                 'id' => $user->id,
                 'userType' => $user->userType,
@@ -455,6 +454,7 @@ class ApiAuthController extends Controller
                 'avatar' => $user->avatar,
                 'country' => $user->countryDetails ? $user->countryDetails->name : null, // ดึงชื่อประเทศ ถ้ามี
                 'flag' => $user->countryDetails ? $user->countryDetails->flag : null,
+                'roles' => $user->roles()->pluck('name'),
             ], 200);
 
         } catch (TokenExpiredException $e) {

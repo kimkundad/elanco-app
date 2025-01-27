@@ -46,6 +46,7 @@ class QuizController extends Controller
                     ->orWhere('questions_title', 'LIKE', "%$search%") // ค้นหาชื่อหัวข้อคำถาม
                     ->orWhere('expire_date', 'LIKE', "%$search%"); // ค้นหาวันหมดอายุ
                 })
+                ->orderBy('updated_at', 'desc')
                 ->paginate(10); // จำนวนรายการต่อหน้า
 
             //  dd($objs);

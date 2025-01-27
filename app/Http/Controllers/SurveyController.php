@@ -41,6 +41,7 @@ class SurveyController extends Controller
                     ->orWhere('survey_id', 'LIKE', "%$search%") // ค้นหารหัส Survey
                     ->orWhere('expire_date', 'LIKE', "%$search%"); // ค้นหาวันหมดอายุ
                 })
+                ->orderBy('updated_at', 'desc')
                 ->paginate(10); // ใช้ pagination (10 รายการต่อหน้า)
 
             // Filter เฉพาะ countries ที่เกี่ยวข้อง
