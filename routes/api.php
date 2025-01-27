@@ -44,6 +44,8 @@ Route::get('/1test', function () {
     dd("test");
 });
 
+Route::get('/courses/mainPageBanner', [ApiController::class, 'mainPageBanner']);
+
 Route::middleware(['auth:api'])->group(function () {
     Route::get('/user', [ApiAuthController::class, 'user']);
     Route::get('/users/me', [ApiAuthController::class, 'user']);
