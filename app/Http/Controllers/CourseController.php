@@ -349,6 +349,10 @@ class CourseController extends Controller
             $ratings = CourseAction::with(['user.countryDetails']) // ดึงข้อมูล User และประเทศ
             ->where('isReview', 1)
             ->where('course_id', $id)
+            ->whereHas('user', function ($userQuery) {
+                // กรองไม่ให้อีเมลมีคำว่า "Deleted"
+                $userQuery->where('email', 'NOT LIKE', '%Deleted%');
+            })
                 ->when($search, function ($query, $search) {
                     // ค้นหาจากชื่อผู้ใช้ (firstName, lastName) หรืออีเมล
                     $query->whereHas('user', function ($userQuery) use ($search) {
