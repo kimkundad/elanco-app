@@ -24,6 +24,8 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Http;
+use Exception;
+use Illuminate\Support\Facades\Log;
 
 class CourseController extends Controller
 {
@@ -422,9 +424,95 @@ class CourseController extends Controller
         return Excel::download(new CourseReviewExport($id), $fileName);
     }
 
-    public function cloneCourse(string $id){
+    public function cloneCourse(string $id)
+    {
+        DB::beginTransaction();
 
         try {
+            // ค้นหาคอร์สที่ต้องการคัดลอก
+            $originalCourse = course::with([
+                'countries',
+                'mainCategories',
+                'subCategories',
+                'animalTypes',
+                'itemDes',
+                'referances',
+                'Speaker',
+                'Speaker.countryDetails',
+                'quiz'
+            ])->findOrFail($id);
+
+          //  dd($originalCourse);
+
+            // สร้าง course_id ใหม่
+            $totalCourses = course::count();
+            $nextCourseNumber = $totalCourses + 1;
+            $newCourseId = 'C' . str_pad($nextCourseNumber, 3, '0', STR_PAD_LEFT);
+
+            // คัดลอกภาพหลักของคอร์ส (course_img)
+            $newCourseImg = null;
+            if ($originalCourse->course_img) {
+                $newCourseImg = $this->copyFileFromUrl($originalCourse->course_img, 'elanco/course');
+            }
+         //   dd($newCourseImg);
+
+            // สร้างคอร์สใหม่
+            $clonedCourse = course::create([
+                'course_title' => $originalCourse->course_title . '--COPY',
+                'course_img' => $newCourseImg,
+                'course_preview' => $originalCourse->course_preview,
+                'course_description' => $originalCourse->course_description,
+                'status' => 0,
+                'duration' => $originalCourse->duration,
+                'ratting' => $originalCourse->ratting,
+                'url_video' => $originalCourse->url_video,
+                'id_quiz' => $originalCourse->id_quiz,
+                'survey_id' => $originalCourse->survey_id,
+                'created_by' => Auth::id(),
+                'course_id' => $newCourseId,
+            ]);
+
+            // คัดลอก ItemDes
+            foreach ($originalCourse->itemDes as $item) {
+                $clonedCourse->itemDes()->create([
+                    'detail' => $item->detail,
+                ]);
+            }
+
+            // คัดลอก Speaker
+            foreach ($originalCourse->Speaker as $speaker) {
+                $newAvatar = $this->copyFileFromUrl($speaker->avatar, 'elanco/speaker');
+                $newFile = $this->copyFileFromUrl($speaker->file, 'elanco/speaker');
+                $clonedCourse->Speaker()->create([
+                    'name' => $speaker->name,
+                    'avatar' => $newAvatar,
+                    'job_position' => $speaker->job_position,
+                    'country' => $speaker->country,
+                    'file' => $newFile,
+                    'description' => $speaker->description,
+                ]);
+            }
+
+            // คัดลอก Referances
+            foreach ($originalCourse->referances as $reference) {
+                $newImage = $this->copyFileFromUrl($reference->image, 'elanco/Referance');
+                $newFile = $this->copyFileFromUrl($reference->file, 'elanco/Referance');
+                $clonedCourse->referances()->create([
+                    'title' => $reference->title,
+                    'image' => $newImage,
+                    'file' => $newFile,
+                    'description' => $reference->description,
+                ]);
+            }
+
+            // คัดลอกความสัมพันธ์ (Relations)
+            $clonedCourse->countries()->attach($originalCourse->countries->pluck('id'));
+            $clonedCourse->mainCategories()->attach($originalCourse->mainCategories->pluck('id'));
+            $clonedCourse->subCategories()->attach($originalCourse->subCategories->pluck('id'));
+            $clonedCourse->animalTypes()->attach($originalCourse->animalTypes->pluck('id'));
+
+            DB::commit();
+
 
             $course = course::with([
                 'countries',
@@ -437,81 +525,70 @@ class CourseController extends Controller
                 'Speaker.countryDetails',
                 'creator',
                 'quiz' // ดึงความสัมพันธ์กับ quiz
-            ])->findOrFail($id);
+            ])->findOrFail($clonedCourse->id);
 
-            $course->expire_date = isset($course->quiz->expire_date) ? $course->quiz->expire_date : null;
-
-            $filesToDownloadCourse_img = [];
-            $filesToDownloadReferances_img = [];
-            $filesToDownloadReferances_file = [];
-            $filesToDownloadSpeaker_avatar = [];
-            $filesToDownloadSpeaker_file = [];
-
-            if (str_contains($course->course_img, 'https://kimspace2.sgp1.cdn.digitaloceanspaces.com')) {
-                $filesToDownloadCourse_img[] = $this->downloadFile($course->course_img);
-            }
-
-            // ตัวอย่าง: ตรวจสอบ referances
-            foreach ($course->referances as $referance) {
-                if (str_contains($referance->image, 'https://kimspace2.sgp1.cdn.digitaloceanspaces.com')) {
-                    $filesToDownloadReferances_img[] = $this->downloadFile($referance->image);
-                }
-                if (str_contains($referance->file, 'https://kimspace2.sgp1.cdn.digitaloceanspaces.com')) {
-                    $filesToDownloadReferances_file[] = $this->downloadFile($referance->file);
-                }
-            }
-
-
-            foreach ($course->Speaker as $speaker) {
-                if (str_contains($speaker->avatar, 'https://kimspace2.sgp1.cdn.digitaloceanspaces.com')) {
-                    $filesToDownloadSpeaker_avatar[] = $this->downloadFile($speaker->avatar);
-                }
-                if (str_contains($speaker->file, 'https://kimspace2.sgp1.cdn.digitaloceanspaces.com')) {
-                    $filesToDownloadSpeaker_file[] = $this->downloadFile($speaker->file);
-                }
-            }
-
-            $course->ce_point = isset($course->quiz->point_cpd) ? $course->quiz->point_cpd : 0;
-
-                if (!$course->quiz) {
-                    $course->quiz = ["expire_date" => ' '];
-                }
-
-            $response = [
-                'course' => $course,
-                'course_img' => $filesToDownloadCourse_img,
-                'referance_img' => $filesToDownloadReferances_img,
-                'referance_file' => $filesToDownloadReferances_file,
-                'speaker_avatar' => $filesToDownloadSpeaker_avatar,
-                'speaker_file' => $filesToDownloadSpeaker_file,
-                'quiz' => $course->quiz,
-                'created_by' => $course->creator ? [
-                    'firstName' => $course->creator->firstName,
-                    'lastName' => $course->creator->lastName,
-                ] : null,
-            ];
 
             return response()->json([
                 'success' => true,
-                'message' => 'Course data retrieved successfully.',
-                'data' => $response
-            ], 200);
+                'message' => 'Course cloned successfully.',
+                'data' => $course,
+            ], 201);
 
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Course not found.',
-                'error' => $e->getMessage()
-            ], 404);
         } catch (\Exception $e) {
+            DB::rollback();
+
             return response()->json([
                 'success' => false,
-                'message' => 'An error occurred while retrieving course data.',
-                'error' => $e->getMessage()
+                'message' => 'Failed to clone course.',
+                'error' => $e->getMessage(),
             ], 500);
         }
-
     }
+
+
+
+    private function copyFileFromUrl($url, $path)
+{
+    try {
+        // ตรวจสอบว่า URL ถูกต้องหรือไม่
+        if (filter_var($url, FILTER_VALIDATE_URL) === false) {
+            throw new Exception('Invalid URL');
+        }
+
+        // ดึงชื่อไฟล์จาก URL
+        $originalFilename = basename(parse_url($url, PHP_URL_PATH));
+
+        // สร้างชื่อไฟล์ใหม่
+        $extension = pathinfo($originalFilename, PATHINFO_EXTENSION);
+        $filename = uniqid() . '.' . $extension;
+
+        // ดาวน์โหลดไฟล์จาก URL
+        $contents = file_get_contents($url);
+
+        if ($contents === false) {
+            throw new Exception('Failed to fetch file from URL');
+        }
+
+        // บันทึกไฟล์ลงใน DigitalOcean Spaces
+        Storage::disk('do_spaces')->put(
+            "$path/$filename",
+            $contents,
+            'public'
+        );
+
+        // คืน URL ใหม่ที่เก็บไฟล์ใน DigitalOcean Spaces
+        $fileUrl = "https://kimspace2.sgp1.cdn.digitaloceanspaces.com/$path/$filename";
+
+        return $fileUrl;
+    } catch (Exception $e) {
+        // บันทึกข้อผิดพลาดลงใน Log
+        Log::error('Failed to copy file: ' . $e->getMessage());
+
+        return null;
+    }
+}
+
+
 
 
     private function downloadFile($url)

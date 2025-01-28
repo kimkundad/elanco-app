@@ -16,7 +16,7 @@ class course extends Model
     }
 
     protected $fillable = [
-        'course_title', 'course_id', 'course_img', 'course_preview', 'duration', 'url_video', 'status', 'ratting'
+        'course_title', 'course_id', 'course_img', 'course_preview', 'duration', 'url_video', 'status', 'ratting', 'course_description', 'created_by', 'id_quiz', 'survey_id', ''
     ];
 
     // Relationships
