@@ -856,7 +856,6 @@ public function courses(Request $request)
         }
     }
 
-
     public function courseDetail($id)
     {
         try {
