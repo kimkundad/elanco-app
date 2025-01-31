@@ -196,6 +196,9 @@ class ApiController extends Controller
             $startDate = $request->input('start_date');
             $endDate = $request->input('end_date');
 
+            // ดึงไอดีของ quiz ที่อยู่ในช่วงวันหมดอายุ
+            $quizIds = Quiz::whereBetween('expire_date', [$startDate, $endDate])->pluck('id');
+
             // Base Query
             $coursesQuery = course::whereHas('countries', function ($query) use ($userCountryId) {
                 $query->where('country_id', $userCountryId);
@@ -216,8 +219,10 @@ class ApiController extends Controller
                     $subQuery->where('name', 'LIKE', "%$animalType%");
                 });
             })
-            // กรองคอร์สที่มี Quiz และอยู่ในช่วงเวลาที่กำหนด
-
+            // กรองเฉพาะคอร์สที่มี id_quiz และอยู่ในช่วงที่กำหนด
+            ->when($startDate && $endDate, function ($query) use ($quizIds) {
+                $query->whereIn('id_quiz', $quizIds);
+            })
             ->with([
                 'countries:id,name',
                 'mainCategories:id,name',
@@ -230,7 +235,7 @@ class ApiController extends Controller
                     $query->where('user_id', $user->id)->select('course_id', 'isFinishCourse');
                 },
             ])
-            ->orderBy('updated_at', $uploadDate) // จัดลำดับตาม updated_at
+            ->orderBy('updated_at', $uploadDate)
             ->get();
 
             // Sort Data
@@ -294,6 +299,8 @@ class ApiController extends Controller
             return response()->json(['error' => 'Token not provided', 'message' => 'Authorization token is missing from your request.'], 400);
         }
     }
+
+
 
 
 
