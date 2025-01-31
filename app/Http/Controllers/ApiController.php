@@ -180,24 +180,26 @@ class ApiController extends Controller
 
 
 
-public function courses(Request $request)
-{
-    try {
-        $user = JWTAuth::parseToken()->authenticate();
-        $userCountryId = $user->country;
+    public function courses(Request $request)
+    {
+        try {
+            $user = JWTAuth::parseToken()->authenticate();
+            $userCountryId = $user->country;
 
-        // Get filter inputs
-        $search = $request->input('search', '');
-        $topic = $request->input('topic', 'all');
-        $animalType = $request->input('animalType', 'all');
-        $uploadDate = $request->input('uploadDate', 'desc');
-        $ratingOrder = $request->input('rating', 'desc');
-        $durationOrder = $request->input('duration', 'asc');
+            // รับค่าที่ใช้กรอง
+            $search = $request->input('search', '');
+            $topic = $request->input('topic', 'all');
+            $animalType = $request->input('animalType', 'all');
+            $uploadDate = $request->input('uploadDate', 'desc');
+            $ratingOrder = $request->input('rating', 'desc');
+            $durationOrder = $request->input('duration', 'asc');
+            $startDate = $request->input('start_date');
+            $endDate = $request->input('end_date');
 
-        // Step 1: Base query
-        $coursesQuery = course::whereHas('countries', function ($query) use ($userCountryId) {
-            $query->where('country_id', $userCountryId);
-        })
+            // Base Query
+            $coursesQuery = course::whereHas('countries', function ($query) use ($userCountryId) {
+                $query->where('country_id', $userCountryId);
+            })
             ->when(!empty($search), function ($query) use ($search) {
                 $query->where(function ($subQuery) use ($search) {
                     $subQuery->where('course_title', 'LIKE', "%$search%")
@@ -214,6 +216,12 @@ public function courses(Request $request)
                     $subQuery->where('name', 'LIKE', "%$animalType%");
                 });
             })
+            // กรองคอร์สที่มี Quiz และอยู่ในช่วงเวลาที่กำหนด
+            ->when($startDate && $endDate, function ($query) use ($startDate, $endDate) {
+                $query->whereHas('quiz', function ($quizQuery) use ($startDate, $endDate) {
+                    $quizQuery->whereBetween('expire_date', [$startDate, $endDate]);
+                });
+            })
             ->with([
                 'countries:id,name',
                 'mainCategories:id,name',
@@ -227,86 +235,70 @@ public function courses(Request $request)
                 },
             ])
             ->orderBy('updated_at', $uploadDate) // จัดลำดับตาม updated_at
-            ->get(); // ดึงข้อมูลทั้งหมดออกมา
+            ->get();
 
-        // Step 2: Sorting within the collection
-        $courses = $coursesQuery->sortByDesc('ratting') // กรองตาม ratting
-            ->sortBy($durationOrder === 'asc' ? 'duration' : function ($course) {
-                return -$course->duration; // จัดลำดับตาม duration
-            })->values(); // รีเซ็ตดัชนีใหม่
+            // Sort Data
+            $courses = $coursesQuery->sortByDesc('ratting')
+                ->sortBy($durationOrder === 'asc' ? 'duration' : function ($course) {
+                    return -$course->duration;
+                })->values();
 
-        // Step 3: Map the results
-        $courses = $courses->map(function ($course) {
-            $isFinishCourse = $course->courseActions->first()
-                ? $course->courseActions->first()->isFinishCourse == 1
-                : false;
+            // Format Data
+            $courses = $courses->map(function ($course) {
+                $isFinishCourse = $course->courseActions->first()
+                    ? $course->courseActions->first()->isFinishCourse == 1
+                    : false;
 
-            $course->thumbnail = $course->course_img;
-            unset($course->course_img);
-
-            return [
-                'id' => $course->id,
-                'course_id' => $course->course_id,
-                'course_title' => $course->course_title,
-                'course_description' => $course->course_description,
-                'course_preview' => $course->course_preview,
-                'duration' => $course->duration,
-                'url_video' => $course->url_video,
-                'status' => $course->status,
-                'ratting' => number_format($course->ratting, 1),
-                'created_at' => $course->created_at,
-                'updated_at' => $course->updated_at,
-                'id_quiz' => $course->id_quiz,
-                'thumbnail' => $course->thumbnail,
-                'isFinishCourse' => $isFinishCourse,
-                'countries' => $course->countries->map(function ($country) {
-                    return ['name' => $country->name];
-                }),
-                'main_categories' => $course->mainCategories->map(function ($category) {
-                    return ['name' => $category->name];
-                }),
-                'sub_categories' => $course->subCategories->map(function ($subcategory) {
-                    return ['name' => $subcategory->name];
-                }),
-                'animal_types' => $course->animalTypes->map(function ($animal) {
-                    return ['name' => $animal->name];
-                }),
-                'item_des' => $course->itemDes->map(function ($item) {
-                    return ['detail' => $item->detail];
-                }),
-                'speakers' => $course->Speaker->map(function ($speaker) {
-                    return [
+                return [
+                    'id' => $course->id,
+                    'course_id' => $course->course_id,
+                    'course_title' => $course->course_title,
+                    'course_description' => $course->course_description,
+                    'course_preview' => $course->course_preview,
+                    'duration' => $course->duration,
+                    'url_video' => $course->url_video,
+                    'status' => $course->status,
+                    'ratting' => number_format($course->ratting, 1),
+                    'created_at' => $course->created_at,
+                    'updated_at' => $course->updated_at,
+                    'id_quiz' => $course->id_quiz,
+                    'thumbnail' => $course->course_img,
+                    'isFinishCourse' => $isFinishCourse,
+                    'countries' => $course->countries->map(fn ($country) => ['name' => $country->name]),
+                    'main_categories' => $course->mainCategories->map(fn ($category) => ['name' => $category->name]),
+                    'sub_categories' => $course->subCategories->map(fn ($subcategory) => ['name' => $subcategory->name]),
+                    'animal_types' => $course->animalTypes->map(fn ($animal) => ['name' => $animal->name]),
+                    'item_des' => $course->itemDes->map(fn ($item) => ['detail' => $item->detail]),
+                    'speakers' => $course->Speaker->map(fn ($speaker) => [
                         'id' => $speaker->id,
                         'name' => $speaker->name,
                         'avatar' => $speaker->avatar,
                         'job_position' => $speaker->job_position,
-                        'country' => $speaker->countryDetails ? $speaker->countryDetails->name : null,
+                        'country' => $speaker->countryDetails?->name,
                         'file' => $speaker->file,
                         'description' => $speaker->description,
-                    ];
-                }),
-                'referances' => $course->referances->map(function ($referance) {
-                    return [
+                    ]),
+                    'referances' => $course->referances->map(fn ($referance) => [
                         'id' => $referance->id,
                         'title' => $referance->title,
                         'image' => $referance->image,
                         'file' => $referance->file,
                         'description' => $referance->description,
-                    ];
-                }),
-            ];
-        });
+                    ]),
+                ];
+            });
 
-        return response()->json(['success' => true, 'courses' => $courses], 200);
+            return response()->json(['success' => true, 'courses' => $courses], 200);
 
-    } catch (TokenExpiredException $e) {
-        return response()->json(['error' => 'Token has expired', 'message' => 'Please refresh your token or login again.'], 401);
-    } catch (TokenInvalidException $e) {
-        return response()->json(['error' => 'Token is invalid', 'message' => 'The provided token is not valid.'], 401);
-    } catch (JWTException $e) {
-        return response()->json(['error' => 'Token not provided', 'message' => 'Authorization token is missing from your request.'], 400);
+        } catch (TokenExpiredException $e) {
+            return response()->json(['error' => 'Token has expired', 'message' => 'Please refresh your token or login again.'], 401);
+        } catch (TokenInvalidException $e) {
+            return response()->json(['error' => 'Token is invalid', 'message' => 'The provided token is not valid.'], 401);
+        } catch (JWTException $e) {
+            return response()->json(['error' => 'Token not provided', 'message' => 'Authorization token is missing from your request.'], 400);
+        }
     }
-}
+
 
 
 
