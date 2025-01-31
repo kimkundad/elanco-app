@@ -197,8 +197,12 @@ class ApiController extends Controller
             $endDate = $request->input('end_date');
 
             // ดึงไอดีของ quiz ที่อยู่ในช่วงวันหมดอายุ
-            $quizIds = Quiz::whereBetween('expire_date', [$startDate, $endDate])->pluck('id');
 
+            $quizIds = quiz::whereBetween(
+                DB::raw("STR_TO_DATE(expire_date, '%d-%m-%Y')"), // แปลงจาก DD-MM-YYYY เป็น Date
+                [$startDate, $endDate]
+            )->pluck('id');
+          //  dd($quizIds);
             // Base Query
             $coursesQuery = course::whereHas('countries', function ($query) use ($userCountryId) {
                 $query->where('country_id', $userCountryId);
