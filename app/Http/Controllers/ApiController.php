@@ -217,11 +217,7 @@ class ApiController extends Controller
                 });
             })
             // กรองคอร์สที่มี Quiz และอยู่ในช่วงเวลาที่กำหนด
-            ->when($startDate && $endDate, function ($query) use ($startDate, $endDate) {
-                $query->whereHas('quiz', function ($quizQuery) use ($startDate, $endDate) {
-                    $quizQuery->whereBetween('expire_date', [$startDate, $endDate]);
-                });
-            })
+
             ->with([
                 'countries:id,name',
                 'mainCategories:id,name',
